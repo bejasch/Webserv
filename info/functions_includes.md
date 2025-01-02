@@ -1,7 +1,9 @@
+### See markdown in VScode: `Ctrl+K V`
 
 
-
-See markdown in VScode: `Ctrl+K V`
+You must write a HTTP server in C++ 98.
+Your executable will be run as follows:
+./webserv [configuration file]
 
 ---
 
@@ -33,7 +35,7 @@ See markdown in VScode: `Ctrl+K V`
   #include <dirent.h>
   ```
 - **Explanations**:  
-  - **`access`**: Checks the file's accessibility (e.g., read/write permissions).
+  - **`int access(const char *pathname, int mode)`**: Checks the file's accessibility (e.g., read/write permissions).
   - **`stat`**: Retrieves file information like size, modification time, etc.
   - **`open`**: Opens a file for reading/writing. Returns a file descriptor.
   - **`opendir`**, **`readdir`**, **`closedir`**: Work with directories. For example, `opendir` opens a directory, `readdir` reads entries, and `closedir` closes the directory.
@@ -122,8 +124,6 @@ See markdown in VScode: `Ctrl+K V`
 - **Signal Handling**: `signal`, `kill`.
 
 ---
-
-Would you like help structuring this into a C++98 implementation skeleton for a basic web server?
 ---
 
 ### **Example Workflow in a Server:**
