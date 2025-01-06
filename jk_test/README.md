@@ -58,3 +58,6 @@ Here is a breakdown of the requirements in your project, organized into what you
 
 ### Response Headers for Dynamic Content (like Content-Length)
 ❌ **Missing**: When serving actual files (especially larger files), you'll need to properly set headers like `Content-Length` for dynamic responses. You’re currently hardcoding `Content-Length` for static responses, but this will need to be calculated for real file content.
+
+### CGI
+❌ **Missing**:
