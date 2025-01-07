@@ -6,6 +6,11 @@
 
 class HttpReq {
 private:
+
+	// - Request line:	*method, target, protocol*
+	std::string line;
+
+	// - Request headers:
 	std::string	method;
 	std::string	target;
 	std::string	protocol;
@@ -18,7 +23,11 @@ private:
 	// - Representation headers:	*if message has a body*
 	// - Request body:
 public:
-	int	parse(std::string buffer);
+	int	parse(std::string &buffer);
+
+	int	parseStartLine(std::string line);
+	int	parseHeaders(std::string line);
+	int	parseBody(std::string line);
 
 	// --> Get-methods:
 	std::string	getMethod();
@@ -26,3 +35,26 @@ public:
 	std::string	getProtocol();
 
 };
+
+
+HttpReq::HttpReq() {}
+HttpReq::~HttpReq() {}
+int	HttpReq::parse(std::string &buffer) {
+	std::string line;
+	std::string::size_type pos = 0;
+	std::string::size_type prev = 0;
+	while ((pos = buffer.find("\r\n", prev)) != std::string::npos) {
+		line = buffer.substr(prev, pos - prev);
+		if (line.empty()) {
+			break;
+		}
+		if (prev == 0) {
+			parseStartLine(line);
+		} else {
+			parseHeaders(line);
+		}
+		prev = pos + 2;
+	}
+	parseBody(buffer.substr(prev));
+	return 0;
+}
