@@ -123,7 +123,6 @@ int main(int argc, char const *argv[])
     fcntl(server_fd, F_SETFL, O_NONBLOCK);
     listen(server_fd, 10); // 10 defines how many pending connections can be queued before connections are refused.
 
-
     // Create epoll instance
     epoll_fd = epoll_create1(0);
     // Add server_fd to epoll instance to monitor incoming connections
