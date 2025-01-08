@@ -17,7 +17,7 @@ struct http_request
     char *path;
     char *version;
 };
-
+  
 struct http_response
 {
     char *status;
