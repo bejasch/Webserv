@@ -6,9 +6,7 @@
 
 class HttpReq {
 private:
-
-	// - Request line:	*method, target, protocol*
-	std::string line;
+	size_t	buffer_section_;
 
 	// - Request headers:
 	std::string	method;
@@ -23,18 +21,26 @@ private:
 	// - Request headers:	*additional context to a request or add extra logic* -> case-insensitive string followed by a colon (:) and a value.
 	// - Representation headers:	*if message has a body*
 	// - Request body:
+	int		parseStartLine(const std::string &buffer);
+	bool	isValidMethod(std::string &method) const;
+	bool	isValidTarget(std::string &target) const;
+	bool	isValidProtocol(std::string &protocol) const;
+
+	int		parseHeaders(std::string &buffer);
+
 public:
-	int	parse(std::string &buffer);
+	int	parse(const std::string &buffer);
 
-	int	parseStartLine(std::string line);
-	int	parseHeaders(std::string line);
-	int	parseSpecialHeaders(buffer);
+	// int	parseSpecialHeaders(std::string &buffer);
 
-	int	parseBody(std::string line);
+	// int	parseBody(std::string &buffer);
 	
 	// --> Get-methods:
-	std::string	getMethod();
-	std::string	getTarget();
-	std::string	getProtocol();
+	std::string	getMethod() const;
+	std::string	getTarget() const;
+	std::string	getProtocol() const;
+
+	// print content
+	void	print() const;
 
 };
