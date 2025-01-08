@@ -9,9 +9,9 @@ private:
 	size_t	buffer_section_;
 
 	// - Request headers:
-	std::string	method;
-	std::string	target;
-	std::string	protocol;
+	std::string	_method;
+	std::string	_target;
+	std::string	_protocol;
 	// *GET /en-US/docs/Web/HTTP/Messages HTTP/1.1*
 	std::map<std::string, std::string> headers;
     
