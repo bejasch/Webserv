@@ -1,4 +1,6 @@
 #include "../headers/server.hpp"
+#include "../headers/HttpReq.hpp"
+#include "../headers/HttpRes.hpp"
 
 Server::Server() {
     // Creating the file descriptor of the program running the server
@@ -48,6 +50,8 @@ void Server::stop() {
 
 void Server::acceptConnection() {
     int new_socket;
+    int addrlen = sizeof(address);
+
     // server_fd is the listening socket, thus we need to create a new socket for the communication with the client. This socket is used for communication.
     new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
     // Make the new socket non-blocking
@@ -59,6 +63,9 @@ void Server::acceptConnection() {
 }
 
 void Server::handleRequest(int client_fd) {
+    HttpReq httpRequest;
+    HttpRes httpResponse;
+
     // Data is available to read from the socket
     char buffer[30000] = {0};
     int valread = read(client_fd, buffer, sizeof(buffer));
@@ -77,12 +84,15 @@ void Server::handleRequest(int client_fd) {
     {
         // Process the HTTP request and generate a response
         printf("HTTP Request: \n\n\n%s\n\n\n", buffer);
-        request = parse_http_request(buffer);
-        response = handle_request(request);
-        write_response(client_fd, response);
-        free(request);
-        free(response);
+        //request = parse_http_request(buffer); OLD
+        int parse_status = httpRequest.parse(buffer);
+        std::cout << "Parse status: " << parse_status << std::endl;
+        httpRequest.print();
+        httpResponse.handleRequest(&httpRequest);
+        httpResponse.writeResponse(client_fd);
+        // free(request);
+        // free(response);
         // Close the socket after handling the request
-        close(client_fd);
+        //close(client_fd);
     }
 }

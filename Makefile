@@ -1,7 +1,22 @@
+NAME = webserv
 
-FLAGS = -std=c++98 -Wall -Wextra -Werror
+CXX = c++
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 
-test_requests:
-	c++ src/requests/HttpReq.cpp src/requests/HttpReq_test.cpp -o test_requests $(FLAGS)
-	./test_requests
-	rm test_requests
+SRCS = src/main.cpp src/config.cpp src/HttpReq.cpp src/HttpRes.cpp src/route.cpp src/server.cpp
+OBJS = $(SRCS:.cpp=.o)
+
+all: $(NAME)
+
+$(NAME): $(OBJS)
+	$(CXX) $(CXXFLAGS) $(OBJS) -o $(NAME)
+
+clean:
+	rm -f $(OBJS)
+
+fclean: clean
+	rm -f $(NAME)
+
+re: fclean all
+
+.PHONY: all clean fclean re
