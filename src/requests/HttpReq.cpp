@@ -109,22 +109,6 @@ std::string	HttpReq::getTarget() const { return (target); }
 std::string	HttpReq::getProtocol() const { return (protocol); }
 
 int	HttpReq::parseHeaders(std::string &buffer) {
-	size_t		pos = 0;
-	size_t		prev_pos = 0;
-	std::string	header_line;
-	std::string	key;
-	std::string	value;
-
-	while (buffer_section_ < buffer.size()) {
-		if ((pos = buffer.find("\r\n", buffer_section_)) == std::string::npos || pos == buffer_section_)
-			return 400;
-		header_line = buffer.substr(buffer_section_, pos - buffer_section_);
-		buffer_section_ = pos + 2;
-		if ((pos = header_line.find(":")) == std::string::npos || pos == 0)
-			return 400;
-		key = header_line.substr(0, pos);
-		value = header_line.substr(pos + 1);
-		headers[key] = value;
-	}
+	(void)buffer;
 	return 200;
 }
