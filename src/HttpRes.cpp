@@ -8,26 +8,21 @@ void HttpRes::handleRequest(HttpReq *httpRequest) {
     if (httpRequest->getMethod() == "GET") {
         if (httpRequest->getTarget() == "/info.html")
         {
-            std::cout << "GET request for /info.html" << std::endl;
             protocol = httpRequest->getProtocol();
             status = 200;
             status_message = "OK";
-            content_type = "text/html"; //here we should dynamically determine the content type
-            //content_length = fileLength(httpRequest->getTarget());
-            content_length = 15;
-            //body = parseFile(httpRequest->getTarget());
-            body = "<h1>Hello world!</h1>";
+            content_type = determineContentType(httpRequest->getTarget());
+            body = parseFile(httpRequest->getTarget());
+            content_length = body.length();
         }
         else
         {
             protocol = httpRequest->getProtocol();
-            status = 200;
-            status_message = "OK";
-            content_type = "text/html"; //here we should dynamically determine the content type
-            //content_length = fileLength("www/error_404.html");
-            content_length = 13;
-            //body = parseFile("www/error_404.html");
-            body = "<h1>Hello STD!</h1>";
+            status = 404;
+            status_message = "Not Found";
+            content_type = "text/html";
+            body = parseFile("/error_404.html");
+            content_length = body.length();
         }
     }
     else {
@@ -42,10 +37,49 @@ void HttpRes::handleRequest(HttpReq *httpRequest) {
     }
 }
 
-// std::string HttpRes::parseFile(const std::string &filename) {
+std::string HttpRes::determineContentType(const std::string &filename) {
+    // - Determine the content type based on the file extension
+    std::string extension = filename.substr(filename.find_last_of(".") + 1); //find_last_of returns the index of the last occurrence of the given input.
+    if (extension == "html") {
+        return "text/html";
+    }
+    else if (extension == "css") {
+        return "text/css";
+    }
+    else if (extension == "js") {
+        return "text/javascript";
+    }
+    else if (extension == "jpg") {
+        return "image/jpeg";
+    }
+    else if (extension == "jpeg") {
+        return "image/jpeg";
+    }
+    else if (extension == "png") {
+        return "image/png";
+    }
+    else if (extension == "gif") {
+        return "image/gif";
+    }
+    else if (extension == "ico") {
+        return "image/x-icon";
+    }
+    else {
+        return "text/plain";
+    }
+}
 
-//     return -1;
-// }
+std::string HttpRes::parseFile(const std::string &filename) {
+    std::ifstream file(("data/www" + filename).c_str());
+    if (!file.is_open()) {
+        return parseFile("/error_404.html");
+    }
+    std::stringstream buffer;
+    buffer << file.rdbuf(); // Read entire file
+    std::string body = buffer.str();
+    file.close();
+    return body;
+}
 
 void HttpRes::writeResponse(int client_fd) {
     // Build the status line
