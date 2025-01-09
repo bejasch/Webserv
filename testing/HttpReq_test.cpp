@@ -1,23 +1,19 @@
 #include <iostream>
-#include "HttpReq.hpp"
+#include "../headers/HttpReq.hpp"
 
 void testHttpRequest(const std::string &requestData) {
     HttpReq httpRequest;
 
-    std::cout << "\n\t###--- Testing HTTP Request:\n" << requestData << "\n";
+    std::cout << "\n\t---> NEW raw HTTP Request:\n" << requestData << "\n^^^^^^^^^^^^^\n";
 
     int parse_status = httpRequest.parse(requestData);
 
     // Print parsed results
-    std::cout << "Parsed Request:\n";
+    std::cout << "\t#### Parsed Request:\n";
     httpRequest.print();
-    std::cout << "\n";
+	std::cout << "Parse-status: " << parse_status << "\n";
+    std::cout << "\n\t###---\n";
 
-    // Access individual parts
-    std::cout << "Method: ->" << httpRequest.getMethod() << "<-\n";
-    std::cout << "Target: ->" << httpRequest.getTarget() << "<-\n";
-    std::cout << "Protocol: ->" << httpRequest.getProtocol() << "<-\n";
-	std::cout << "Parse-status: ->" << parse_status << "<-\n";
 }
 
 int main() {
@@ -44,11 +40,22 @@ int main() {
 
     // Test Case 3: Invalid request line
     std::string test3 =
-        "INVALIDLINE\r\n"
-        "Host: invalid.example.com\r\n"
-        "\r\n";
+		"INVALIDLINE\r\n"
+		"Host: invalid.example.com\r\n"
+		"\r\n";
 
     testHttpRequest(test3);
+
+	std::string test4 =
+		"GET /shared-assets/images/diagrams/http/messages/response-headers.svg HTTP/1.1\r\n"
+		"Host: mdn.github.io\r\n"
+		"User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:134.0) Gecko/20100101 Firefox/134.0\r\n"
+		"Accept: image/avif,image/webp,image/png,image/svg+xml,image/*;q=0.8,*/*;q=0.5\r\n"
+		"Accept-Language: en-US,en;q=0.5\r\n"
+		"Accept-Encoding: gzip, deflate, br, zstd\r\n"
+		"Referer: https://developer.mozilla.org/\r\n";
+	
+	testHttpRequest(test4);
 
     return (0);
 }

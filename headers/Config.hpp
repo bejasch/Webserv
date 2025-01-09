@@ -1,10 +1,9 @@
+
+#pragma once
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 
-#include <vector>
-#include <string>
-#include <iostream>
-#include "route.hpp"
+#include "AllHeaders.hpp"
 
 class Config {
     private:

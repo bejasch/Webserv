@@ -1,9 +1,9 @@
+
+#pragma once
 #ifndef ROUTE_HPP
 #define ROUTE_HPP
 
-#include <vector>
-#include <string>
-#include <iostream>
+#include "AllHeaders.hpp"
 
 class Route {
     private:

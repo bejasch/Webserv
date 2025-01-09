@@ -1,6 +1,4 @@
-#include "../headers/config.hpp"
-#include "../headers/server.hpp"
-#include "../headers/HttpReq.hpp"
+#include "../headers/AllHeaders.hpp"
 
 int main () {
     //config file
