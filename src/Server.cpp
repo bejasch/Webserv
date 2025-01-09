@@ -47,17 +47,17 @@ void Server::stop() {
 }
 
 void Server::acceptConnection() {
-    int new_socket;
+    int client_fd;
     int addrlen = sizeof(address);
 
     // server_fd is the listening socket, thus we need to create a new socket for the communication with the client. This socket is used for communication.
-    new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
+    client_fd = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
     // Make the new socket non-blocking
-    fcntl(new_socket, F_SETFL, O_NONBLOCK);
-    // Add new_socket to epoll instance to monitor read events
+    fcntl(client_fd, F_SETFL, O_NONBLOCK);
+    // Add new_socket (=client_fd) to epoll instance to monitor read events
     ev.events = EPOLLIN; // Event for reading data
-    ev.data.fd = new_socket;
-    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, new_socket, &ev); ///adds `new_socket` to epoll instance and watch it for EPOLLIN
+    ev.data.fd = client_fd;
+    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev); ///adds `new_socket` (=client_fd) to epoll instance and watch it for EPOLLIN
 }
 
 void Server::handleRequest(int client_fd) {
@@ -71,7 +71,7 @@ void Server::handleRequest(int client_fd) {
     if (valread == 0)
     {
         printf("Connection closed by client.\n");
-        // close(client_fd);
+        close(client_fd);
     }
     else if (valread == -1)
     {
@@ -91,6 +91,6 @@ void Server::handleRequest(int client_fd) {
         // free(request);
         // free(response);
         // Close the socket after handling the request
-        //close(client_fd);
+        close(client_fd);
     }
 }
