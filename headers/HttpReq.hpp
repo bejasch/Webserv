@@ -20,6 +20,10 @@ private:
 	size_t		_bodySize;
 	std::string _body;
 	
+	// Helper function to trim leading and trailing whitespaces
+	std::string	trim(const std::string& str);
+	bool	HttpReq::verifyHeaders() const;
+
 	// - Request headers:	*additional context to a request or add extra logic* -> case-insensitive string followed by a colon (:) and a value.
 	// - Representation headers:	*if message has a body*
 	// - Request body:
@@ -33,8 +37,6 @@ private:
 
 public:
 	int	parse(const std::string &buffer);
-
-	// int	parseSpecialHeaders(std::string &buffer);
 
 	// --> Get-methods:
 	std::string	getMethod() const;

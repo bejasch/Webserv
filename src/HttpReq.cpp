@@ -4,6 +4,14 @@
 // HttpReq::HttpReq() {}
 // HttpReq::~HttpReq() {}
 
+// Helper function to trim leading and trailing whitespaces
+std::string	trim(const std::string& str) {
+	size_t start = str.find_first_not_of(" \t");
+	size_t end = str.find_last_not_of(" \t");
+	return (start == std::string::npos) ? "" : str.substr(start, end - start + 1);
+}
+
+
 int	HttpReq::parse(const std::string &buffer) {
 	_buffer_section = 0;
 	int http_status = 0;
@@ -30,22 +38,29 @@ int	HttpReq::parseStartLine(const std::string &buffer) {
 	size_t		pos = 0;
 
 	if ((pos = buffer.find("\r\n")) == std::string::npos || pos == 0)
-		return 400;
+		return (400);
 	_buffer_section = pos + 2;
 
 	std::string	start_line = buffer.substr(0, pos);
 	if ((pos = start_line.find(" ")) == std::string::npos || pos == 0)
-		return 400;
+		return (400);
 	_method = start_line.substr(0, pos);
 	size_t	prev_pos = pos + 1;
 	if ((pos = start_line.find(" ", prev_pos)) == std::string::npos || pos == prev_pos)
-		return 400;
+		return (400);
 	_target = start_line.substr(prev_pos, pos - prev_pos);
 	prev_pos = pos + 1;
 	if ((pos = start_line.find(" ", prev_pos)) != std::string::npos || pos == prev_pos)
-		return 400;
+		return (400);
 	_protocol = start_line.substr(prev_pos);
-	
+
+    if (!isValidMethod(_method))
+		return (405);
+    if (!isValidTarget(_target))
+		return (400);
+    if (!isValidProtocol(_protocol))
+		return (505);
+		
 	return (200);
 }
 
@@ -104,25 +119,46 @@ std::string	HttpReq::getBody() const { return (_body); }
 int	HttpReq::parseHeaders(const std::string &buffer) {
 	size_t		pos = 0;
 
+
+
 	while ((pos = buffer.find("\r\n", _buffer_section)) != std::string::npos) {
 		if (pos == _buffer_section)
 			break;
 		std::string	line = buffer.substr(_buffer_section, pos - _buffer_section);
+		if (line.length() > MAX_HEADER_SIZE)
+			return 413; // Payload Too Large
+		if (_headers.size() >= MAX_HEADER_COUNT)
+			return 431; // Request Header Fields Too Large
 		size_t		pos_colon = line.find(":");
 		if (pos_colon == std::string::npos || pos_colon == 0)
 			return 400;
 		
-		std::string	key = line.substr(0, pos_colon);
-		if (line[pos_colon + 1] == ' ')
-			pos_colon++; 
+		std::string	key = trim(line.substr(0, pos_colon));
+		std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+		if (key.empty() || _headers.find(key) != _headers.end())
+			return 400;
 		if (line.length() == pos_colon)
 			return 400;
-		std::string	value = line.substr(pos_colon + 1);
+		std::string	value = trim(line.substr(pos_colon + 1));
+		if (value.empty())
+			return 400;
 		_headers[key] = value;
 		_buffer_section = pos + 2;
 	}
 	return (200);
 }
+
+// bool	HttpReq::verifyHeaders() const {
+// 	if (_headers.find("host") == _headers.end())
+// 		return (false);
+// 	if (_headers.find("content-length") != _headers.end()) {
+// 		if (_headers["content-length"].find_first_not_of("0123456789") != std::string::npos)
+// 			return (false);
+// 		if (std::stoul(_headers["content-length"]) != _bodySize)
+// 			return (false);
+// 	}
+// 	return (true);
+// }
 
 int	HttpReq::parseBody(const std::string &buffer) {
 	if (buffer.find("\r\n", _buffer_section) == _buffer_section) {
