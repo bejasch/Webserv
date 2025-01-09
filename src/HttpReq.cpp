@@ -13,11 +13,9 @@ int	HttpReq::parse(const std::string &buffer) {
 			return http_status;
 		if ((http_status = parseHeaders(buffer)) != 200)
 			return http_status;
-		// if ((http_status = parseSpecialHeaders(buffer)) != 200)
-		// 	return http_status;
-		
-		// if ((http_status = parseBody(buffer)) != 200)
-		// 	return http_status;
+		// SpecialHeaders ???
+		if ((http_status = parseBody(buffer)) != 200)
+			return http_status;
 		
 	}
 	catch (const std::exception &e)
@@ -80,7 +78,6 @@ bool	HttpReq::isValidProtocol(std::string &protocol) const {
 	return true;
 }
 
-
 void	HttpReq::print() const {
     std::cout << "Method: " << _method << "\n";
     std::cout << "Target: " << _target << "\n";
@@ -92,13 +89,17 @@ void	HttpReq::print() const {
     std::cout << "Body: " << _body << "\n";
 }
 
-
-
 std::string	HttpReq::getMethod() const { return (_method); }
 
 std::string	HttpReq::getTarget() const { return (_target); }
 
 std::string	HttpReq::getProtocol() const { return (_protocol); }
+
+std::string	HttpReq::getHeader(std::string key) const { return (_headers.at(key)); }
+
+size_t		HttpReq::getBodySize() const { return (_bodySize); }
+
+std::string	HttpReq::getBody() const { return (_body); }
 
 int	HttpReq::parseHeaders(const std::string &buffer) {
 	size_t		pos = 0;
@@ -121,4 +122,13 @@ int	HttpReq::parseHeaders(const std::string &buffer) {
 		_buffer_section = pos + 2;
 	}
 	return (200);
+}
+
+int	HttpReq::parseBody(const std::string &buffer) {
+	if (buffer.find("\r\n", _buffer_section) == _buffer_section) {
+		_body = buffer.substr(_buffer_section + 2);
+		_bodySize = _body.length();
+		return (200);
+	}
+	return (0);
 }
