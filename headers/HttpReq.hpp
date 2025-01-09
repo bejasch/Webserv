@@ -17,7 +17,7 @@ private:
 	// *GET /en-US/docs/Web/HTTP/Messages HTTP/1.1*
 	std::map<std::string, std::string> _headers;
     
-	// size_t		_bodySize;
+	size_t		_bodySize;
 	std::string _body;
 	
 	// - Request headers:	*additional context to a request or add extra logic* -> case-insensitive string followed by a colon (:) and a value.
@@ -29,18 +29,20 @@ private:
 	bool	isValidProtocol(std::string &protocol) const;
 
 	int		parseHeaders(const std::string &buffer);
+	int		parseBody(const std::string &buffer);
 
 public:
 	int	parse(const std::string &buffer);
 
 	// int	parseSpecialHeaders(std::string &buffer);
 
-	// int	parseBody(std::string &buffer);
-	
 	// --> Get-methods:
 	std::string	getMethod() const;
 	std::string	getTarget() const;
 	std::string	getProtocol() const;
+	std::string	getHeader(std::string key) const;
+	size_t		getBodySize() const;
+	std::string	getBody() const;
 
 	// print content
 	void	print() const;
