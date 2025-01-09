@@ -6,14 +6,14 @@
 // HttpReq::~HttpReq() {}
 
 int	HttpReq::parse(const std::string &buffer) {
-	buffer_section_ = 0;
+	_buffer_section = 0;
 	int http_status = 0;
 	try
 	{
 		if ((http_status = parseStartLine(buffer)) != 200)
 			return http_status;
-		// if ((http_status = parseHeaders(buffer)) != 200)
-		// 	return http_status;
+		if ((http_status = parseHeaders(buffer)) != 200)
+			return http_status;
 		// if ((http_status = parseSpecialHeaders(buffer)) != 200)
 		// 	return http_status;
 		
@@ -34,20 +34,20 @@ int	HttpReq::parseStartLine(const std::string &buffer) {
 
 	if ((pos = buffer.find("\r\n")) == std::string::npos || pos == 0)
 		return 400;
-	buffer_section_ = pos + 2;
+	_buffer_section = pos + 2;
 
 	std::string	start_line = buffer.substr(0, pos);
 	if ((pos = start_line.find(" ")) == std::string::npos || pos == 0)
 		return 400;
-	method = start_line.substr(0, pos);
+	_method = start_line.substr(0, pos);
 	size_t	prev_pos = pos + 1;
 	if ((pos = start_line.find(" ", prev_pos)) == std::string::npos || pos == prev_pos)
 		return 400;
-	target = start_line.substr(prev_pos, pos - prev_pos);
+	_target = start_line.substr(prev_pos, pos - prev_pos);
 	prev_pos = pos + 1;
 	if ((pos = start_line.find(" ", prev_pos)) != std::string::npos || pos == prev_pos)
 		return 400;
-	protocol = start_line.substr(prev_pos);
+	_protocol = start_line.substr(prev_pos);
 	
 	return (200);
 }
@@ -72,43 +72,54 @@ bool	HttpReq::isValidTarget(std::string &target) const {
 	return (true);
 }
 
+// normally return 505 if invalid protocol
 bool	HttpReq::isValidProtocol(std::string &protocol) const {
-	if (protocol.substr(0, 5) != "HTTP/")
+	if (protocol.length() != 8 || protocol.substr(0, 7) != "HTTP/1.")
 		return false;
-
-	std::string version = protocol.substr(5);
-	if (version.size() < 3 || version[0] != '1' || version[1] != '.')
-		return 505;
-	for (size_t i = 2; i < version.size(); i++)
-	{
-		if (!isdigit(version[i]))
-			return 505;
-	}
-
-	return 200;
+	if (protocol[7] != '0' && protocol[7] != '1')
+		return false;
+	return true;
 }
 
 
 void	HttpReq::print() const {
-    std::cout << "Method: " << method << "\n";
-    std::cout << "Target: " << target << "\n";
-    std::cout << "Protocol: " << protocol << "\n";
+    std::cout << "Method: " << _method << "\n";
+    std::cout << "Target: " << _target << "\n";
+    std::cout << "Protocol: " << _protocol << "\n";
     std::cout << "Headers:\n";
-    for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it) {
-        std::cout << it->first << ": " << it->second << "\n";
+    for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
+        std::cout << "\t" << it->first << ": " << it->second << "\n";
     }
-    std::cout << "Body: " << body << "\n";
+    std::cout << "Body: " << _body << "\n";
 }
 
 
 
-std::string	HttpReq::getMethod() const { return (method); }
+std::string	HttpReq::getMethod() const { return (_method); }
 
-std::string	HttpReq::getTarget() const { return (target); }
+std::string	HttpReq::getTarget() const { return (_target); }
 
-std::string	HttpReq::getProtocol() const { return (protocol); }
+std::string	HttpReq::getProtocol() const { return (_protocol); }
 
-int	HttpReq::parseHeaders(std::string &buffer) {
-	(void)buffer;
-	return 200;
+int	HttpReq::parseHeaders(const std::string &buffer) {
+	size_t		pos = 0;
+
+	while ((pos = buffer.find("\r\n", _buffer_section)) != std::string::npos) {
+		if (pos == _buffer_section)
+			break;
+		std::string	line = buffer.substr(_buffer_section, pos - _buffer_section);
+		size_t		pos_colon = line.find(":");
+		if (pos_colon == std::string::npos || pos_colon == 0)
+			return 400;
+		
+		std::string	key = line.substr(0, pos_colon);
+		if (line[pos_colon + 1] == ' ')
+			pos_colon++; 
+		if (line.length() == pos_colon)
+			return 400;
+		std::string	value = line.substr(pos_colon + 1);
+		_headers[key] = value;
+		_buffer_section = pos + 2;
+	}
+	return (200);
 }
