@@ -1,4 +1,4 @@
-#include "../headers/config.hpp"
+#include "../headers/AllHeaders.hpp"
 
 Config::Config() {
     this->server_port = 8080;

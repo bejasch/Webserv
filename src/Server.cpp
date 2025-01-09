@@ -1,6 +1,4 @@
-#include "../headers/server.hpp"
-#include "../headers/HttpReq.hpp"
-#include "../headers/HttpRes.hpp"
+#include "../headers/AllHeaders.hpp"
 
 Server::Server() {
     // Creating the file descriptor of the program running the server

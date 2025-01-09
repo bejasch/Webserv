@@ -1,4 +1,4 @@
-#include "../headers/route.hpp"
+#include "../headers/AllHeaders.hpp"
 
 Route::Route() {
     this->path = "/info/";

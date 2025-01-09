@@ -1,5 +1,5 @@
 #include <iostream>
-#include "HttpReq.hpp"
+#include "../headers/HttpReq.hpp"
 
 void testHttpRequest(const std::string &requestData) {
     HttpReq httpRequest;

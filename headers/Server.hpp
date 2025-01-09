@@ -1,17 +1,9 @@
+
+#pragma once
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include <stdio.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <sys/epoll.h>
-#include <fcntl.h>
-#include <iostream>
-
-#include "route.hpp"
+#include "AllHeaders.hpp"
 
 class Server {
     private:

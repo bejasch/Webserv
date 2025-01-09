@@ -1,14 +1,9 @@
+
+#pragma once
 #ifndef HTTPRES_HPP
 #define HTTPRES_HPP
 
-#include "HttpReq.hpp"
-#include <unistd.h>
-#include <string.h>
-#include <cstdlib> //probably illegal, used for malloc
-#include <cstdio> //probably illegal, used for sprintf
-#include <iostream>
-#include <fstream>
-#include <sstream>
+#include "AllHeaders.hpp"
 
 class HttpRes {
     private:
