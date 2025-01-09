@@ -37,7 +37,7 @@ void Server::start() {
         {
             if (events[i].data.fd == server_fd)
                 acceptConnection();
-            if (events[i].events & EPOLLIN)
+            else if (events[i].events & EPOLLIN)
                 handleRequest(events[i].data.fd);
         }
     }
@@ -73,7 +73,7 @@ void Server::handleRequest(int client_fd) {
     if (valread == 0)
     {
         printf("Connection closed by client.\n");
-        close(client_fd);
+        // close(client_fd);
     }
     else if (valread == -1)
     {

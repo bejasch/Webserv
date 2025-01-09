@@ -15,7 +15,7 @@ private:
 	// *GET /en-US/docs/Web/HTTP/Messages HTTP/1.1*
 	std::map<std::string, std::string> headers;
     
-	size_t		bodySize;
+	// size_t		bodySize;
 	std::string body;
 	
 	// - Request headers:	*additional context to a request or add extra logic* -> case-insensitive string followed by a colon (:) and a value.

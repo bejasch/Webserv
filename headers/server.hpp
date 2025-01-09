@@ -11,12 +11,15 @@
 #include <fcntl.h>
 #include <iostream>
 
+#include "route.hpp"
+
 class Server {
     private:
         const static int MAX_EVENTS = 10;
         int server_fd, epoll_fd;
         struct sockaddr_in address;
         struct epoll_event ev, events[MAX_EVENTS];
+		// Config	config;
 
     public:
         Server();

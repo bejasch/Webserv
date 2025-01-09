@@ -35,18 +35,12 @@ void HttpRes::handleRequest(HttpReq *httpRequest) {
         status = 404;
         status_message = "Not Found";
         content_type = "text/html"; //here we should dynamically determine the content type
-        //content_length = fileLength("www/error_404.html");
         content_length = 9;
         //body = parseFile("www/error_404.html");
+		// use body.length() instead of hardcoding the length
         body = "Not found!";
     }
 }
-
-// int HttpRes::fileLength(const std::string &filename) {
-//     std::ifstream HttpResFile(filename);
-//     HttpResFile.close();
-//     return -1;
-// }
 
 // std::string HttpRes::parseFile(const std::string &filename) {
 
@@ -60,8 +54,8 @@ void HttpRes::writeResponse(int new_socket) {
 
     // Add headers
     response_stream << "Content-Type: " << content_type << "\n";
-    response_stream << "Content-Length: " << content_length << "\n";
-    response_stream << "Connection: keep-alive\n\n"; //without this we still be stuck in the loop (still issues here)
+    response_stream << "Content-Length: " << content_length << "\n\n";
+    // response_stream << "Connection: keep-alive\n\n"; //without this we still be stuck in the loop (still issues here)
 
     // Add body
     response_stream << body;
