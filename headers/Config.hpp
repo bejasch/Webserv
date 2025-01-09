@@ -20,8 +20,11 @@ class Config {
     public:
         Config();
         ~Config();
+        void parseConfigFile(const std::string& config_file);
+        void parseServer(std::ifstream& file);
+        void parseRoute(std::ifstream& file);
         void addRoute(const Route& route);
-        //setter and getter functions
+        void printConfig(const Config& config);
 };
 
 #endif
