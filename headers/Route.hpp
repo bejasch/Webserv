@@ -8,7 +8,7 @@
 class Route {
     private:
         std::string                 path;
-        std::vector<std::string>    allowed_methods;
+        std::vector<std::string>    allowed_methods; //{"GET", "POST", "DELETE", "PUT"};
         std::string                 root_dir;
         std::string                 index_file;
         bool                        autoindex;
