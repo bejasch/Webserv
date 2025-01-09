@@ -24,7 +24,7 @@ class HttpRes {
         HttpRes();
         ~HttpRes();
         void handleRequest(HttpReq *httpRequest);
-        void writeResponse(int new_socket);
+        void writeResponse(int client_fd);
 
     private:
         // int fileLength(const std::string &filename);

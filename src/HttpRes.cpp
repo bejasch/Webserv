@@ -47,7 +47,7 @@ void HttpRes::handleRequest(HttpReq *httpRequest) {
 //     return -1;
 // }
 
-void HttpRes::writeResponse(int new_socket) {
+void HttpRes::writeResponse(int client_fd) {
     // Build the status line
     std::ostringstream response_stream;
     response_stream << protocol << " " << status << " " << status_message << "\n";
@@ -65,5 +65,5 @@ void HttpRes::writeResponse(int new_socket) {
     const char* response_cstr = response_string.c_str();
 
     // Write the response to the socket
-    write(new_socket, response_cstr, strlen(response_cstr));
+    write(client_fd, response_cstr, strlen(response_cstr));
 }
