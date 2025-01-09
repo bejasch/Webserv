@@ -61,3 +61,6 @@ Here is a breakdown of the requirements in your project, organized into what you
 
 ### CGI
 ❌ **Missing**:
+
+### Multiple Servers
+❌ **Missing**: Handle multiple servers with several different ports. (Choose the port and host of each ’server’)
