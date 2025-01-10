@@ -19,6 +19,9 @@ private:
     
 	size_t		_bodySize;
 	std::string _body;
+
+	bool	_isChunked = false;     // Whether the body uses chunked transfer
+	bool	_bodyComplete = false;  // Whether the body is fully received
 	
 	// Helper function to trim leading and trailing whitespaces
 	std::string	trim(const std::string& str);
