@@ -5,8 +5,8 @@
 #ifndef ALLHEADERS_HPP
 #define ALLHEADERS_HPP
 
-const size_t MAX_HEADER_SIZE = 8192;  // 8 KB
-const size_t MAX_HEADER_COUNT = 100; // Arbitrary limit
+#define MAX_HEADER_SIZE 8192	// 8 KB
+#define MAX_HEADER_COUNT 100	// Arbitrary limit
 
 class	Config;
 class	HttpReq;

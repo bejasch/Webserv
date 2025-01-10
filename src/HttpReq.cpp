@@ -119,31 +119,31 @@ std::string	HttpReq::getBody() const { return (_body); }
 int	HttpReq::parseHeaders(const std::string &buffer) {
 	size_t		pos = 0;
 
-
-
 	while ((pos = buffer.find("\r\n", _buffer_section)) != std::string::npos) {
 		if (pos == _buffer_section)
 			break;
+		
 		std::string	line = buffer.substr(_buffer_section, pos - _buffer_section);
+		_buffer_section = pos + 2;
+		
 		if (line.length() > MAX_HEADER_SIZE)
 			return 413; // Payload Too Large
 		if (_headers.size() >= MAX_HEADER_COUNT)
 			return 431; // Request Header Fields Too Large
+		
 		size_t		pos_colon = line.find(":");
-		if (pos_colon == std::string::npos || pos_colon == 0)
+		if (pos_colon == std::string::npos || pos_colon == 0 || pos_colon == line.length())
 			return 400;
 		
 		std::string	key = trim(line.substr(0, pos_colon));
-		std::transform(key.begin(), key.end(), key.begin(), ::tolower);
-		if (key.empty() || _headers.find(key) != _headers.end())
-			return 400;
-		if (line.length() == pos_colon)
-			return 400;
 		std::string	value = trim(line.substr(pos_colon + 1));
-		if (value.empty())
+		
+		std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+		
+		if (key.empty() || value.empty() || _headers.find(key) != _headers.end())
 			return 400;
+
 		_headers[key] = value;
-		_buffer_section = pos + 2;
 	}
 	return (200);
 }
