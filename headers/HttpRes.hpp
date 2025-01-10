@@ -22,8 +22,8 @@ class HttpRes {
         void writeResponse(int client_fd);
 
     private:
-        // int fileLength(const std::string &filename);
-        // std::string parseFile(const std::string &filename);
+        std::string parseFile(const std::string &filename);
+        std::string determineContentType(const std::string &filename);
 };
 
 #endif
