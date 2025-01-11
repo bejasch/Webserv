@@ -54,41 +54,41 @@ int	HttpReq::parseStartLine(const std::string &buffer) {
 		return (400);
 	_protocol = start_line.substr(prev_pos);
 
-    if (!isValidMethod(_method))
+    if (!isValidMethod())
 		return (405);
-    if (!isValidTarget(_target))
+    if (!isValidTarget())
 		return (400);
-    if (!isValidProtocol(_protocol))
+    if (!isValidProtocol())
 		return (505);
 		
 	return (200);
 }
 
-bool	HttpReq::isValidMethod(std::string &method) const {
-	if (method == "GET" || method == "POST" || method == "PUT" || method == "DELETE")
+bool	HttpReq::isValidMethod(void) const {
+	if (_method == "GET" || _method == "POST" || _method == "PUT" || _method == "DELETE")
 		return (true);
 	return (false);
 }
 
-bool	HttpReq::isValidTarget(std::string &target) const {
-	if (target.empty() || target[0] != '/')
+bool	HttpReq::isValidTarget(void) const {
+	if (_target.empty() || _target[0] != '/')
 		return false;
-	if (target.find("..") != std::string::npos)
+	if (_target.find("..") != std::string::npos)
 		return false;
-	if (target.find("//") != std::string::npos)
+	if (_target.find("//") != std::string::npos)
 		return false;
-	for (size_t i = 1; i < target.length(); ++i) {
-		if (!isalnum(target[i]) && target[i] != '/' && target[i] != '-' && target[i] != '_' && target[i] != '.' && target[i] != '?')
+	for (size_t i = 1; i < _target.length(); ++i) {
+		if (!isalnum(_target[i]) && _target[i] != '/' && _target[i] != '-' && _target[i] != '_' && _target[i] != '.' && _target[i] != '?')
 			return false;
 	}
 	return (true);
 }
 
 // normally return 505 if invalid protocol
-bool	HttpReq::isValidProtocol(std::string &protocol) const {
-	if (protocol.length() != 8 || protocol.substr(0, 7) != "HTTP/1.")
+bool	HttpReq::isValidProtocol(void) const {
+	if (_protocol.length() != 8 || _protocol.substr(0, 7) != "HTTP/1.")
 		return false;
-	if (protocol[7] != '0' && protocol[7] != '1')
+	if (_protocol[7] != '0' && _protocol[7] != '1')
 		return false;
 	return true;
 }
@@ -115,6 +115,28 @@ std::string	HttpReq::getHeader(std::string key) const { return (_headers.at(key)
 size_t		HttpReq::getBodySize() const { return (_bodySize); }
 
 std::string	HttpReq::getBody() const { return (_body); }
+
+bool HttpReq::processData(const std::string &data) {
+	_buffer += data;
+
+	// Parse headers if not already done
+	if (!_headersParsed) {
+		if (!parseHeaders()) {
+			// Headers are not fully received yet
+			return false;
+		}
+	}
+
+	// If the request is chunked, process the chunked body
+	if (_isChunked) {
+		return parseChunkedBody(); // Returns true if the full body is assembled
+	} else {
+		// For non-chunked, assume Content-Length specifies the body size
+		body += _buffer;
+		_buffer.clear();
+		return true; // Full request assembled
+	}
+}
 
 int	HttpReq::parseHeaders(const std::string &buffer) {
 	size_t		pos = 0;
@@ -167,4 +189,9 @@ int	HttpReq::parseBody(const std::string &buffer) {
 		return (200);
 	}
 	return (0);
+}
+
+// Reset for a new request - or better destroy and create a new object ?
+void	HttpReq::reset() {
+	_headers.clear();
 }

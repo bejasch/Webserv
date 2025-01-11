@@ -8,7 +8,8 @@
 
 class HttpReq {
 private:
-	size_t	_buffer_section;
+	size_t		_buffer_section;
+	std::string	_buffer;
 
 	// - Request headers:
 	std::string	_method;
@@ -20,20 +21,25 @@ private:
 	size_t		_bodySize;
 	std::string _body;
 
+	bool	_headersParsed = false;	// Whether the headers are fully received
 	bool	_isChunked = false;     // Whether the body uses chunked transfer
 	bool	_bodyComplete = false;  // Whether the body is fully received
 	
 	// Helper function to trim leading and trailing whitespaces
 	std::string	trim(const std::string& str);
-	bool	HttpReq::verifyHeaders() const;
+	bool		verifyHeaders(void) const;
+	bool		headersAreParsed(void) const;
+
 
 	// - Request headers:	*additional context to a request or add extra logic* -> case-insensitive string followed by a colon (:) and a value.
 	// - Representation headers:	*if message has a body*
 	// - Request body:
 	int		parseStartLine(const std::string &buffer);
-	bool	isValidMethod(std::string &method) const;
-	bool	isValidTarget(std::string &target) const;
-	bool	isValidProtocol(std::string &protocol) const;
+	bool	isValidMethod(void) const;
+	bool	isValidTarget(void) const;
+	bool	isValidProtocol(void) const;
+
+	bool 	processData(const std::string &data);
 
 	int		parseHeaders(const std::string &buffer);
 	int		parseBody(const std::string &buffer);
@@ -52,6 +58,8 @@ public:
 	// print content
 	void	print() const;
 
+	// Reset for a new request
+    void	reset();
 };
 
 #endif
