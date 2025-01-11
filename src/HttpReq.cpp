@@ -7,41 +7,43 @@
 // Helper function to trim leading and trailing whitespaces
 std::string	trim(const std::string& str) {
 	size_t start = str.find_first_not_of(" \t");
+	if (start == std::string::npos)
+		return ("");
 	size_t end = str.find_last_not_of(" \t");
-	return (start == std::string::npos) ? "" : str.substr(start, end - start + 1);
+	return (str.substr(start, end - start + 1));
 }
 
 
-int	HttpReq::parse(const std::string &buffer) {
-	_buffer_section = 0;
-	int http_status = 0;
-	try
-	{
-		if ((http_status = parseStartLine(buffer)) != 200)
-			return http_status;
-		if ((http_status = parseHeaders(buffer)) != 200)
-			return http_status;
-		// SpecialHeaders ???
-		if ((http_status = parseBody(buffer)) != 200)
-			return http_status;
+// int	HttpReq::parse(const std::string &buffer) {
+// 	_buffer_section = 0;
+// 	int http_status = 0;
+// 	try
+// 	{
+// 		if ((http_status = parseStartLine()) != 200)
+// 			return http_status;
+// 		if ((http_status = parseHeaders()) != 200)
+// 			return http_status;
+// 		// SpecialHeaders ???
+// 		if ((http_status = parseBody()) != 200)
+// 			return http_status;
 		
-	}
-	catch (const std::exception &e)
-	{
-		std::cerr << "Parsing-exception: " << e.what() << std::endl;
-		return 500;
-	}
-	return 200;
-}
+// 	}
+// 	catch (const std::exception &e)
+// 	{
+// 		std::cerr << "Parsing-exception: " << e.what() << std::endl;
+// 		return 500;
+// 	}
+// 	return 200;
+// }
 
-int	HttpReq::parseStartLine(const std::string &buffer) {
+int	HttpReq::parseStartLine(void) {
 	size_t		pos = 0;
 
-	if ((pos = buffer.find("\r\n")) == std::string::npos || pos == 0)
+	if ((pos = _buffer.find("\r\n")) == std::string::npos || pos == 0)
 		return (400);
 	_buffer_section = pos + 2;
 
-	std::string	start_line = buffer.substr(0, pos);
+	std::string	start_line = _buffer.substr(0, pos);
 	if ((pos = start_line.find(" ")) == std::string::npos || pos == 0)
 		return (400);
 	_method = start_line.substr(0, pos);
@@ -93,7 +95,7 @@ bool	HttpReq::isValidProtocol(void) const {
 	return true;
 }
 
-void	HttpReq::print() const {
+void	HttpReq::print(void) const {
     std::cout << "Method: " << _method << "\n";
     std::cout << "Target: " << _target << "\n";
     std::cout << "Protocol: " << _protocol << "\n";
@@ -104,70 +106,114 @@ void	HttpReq::print() const {
     std::cout << "Body: " << _body << "\n";
 }
 
-std::string	HttpReq::getMethod() const { return (_method); }
+std::string	HttpReq::getMethod(void) const { return (_method); }
 
-std::string	HttpReq::getTarget() const { return (_target); }
+std::string	HttpReq::getTarget(void) const { return (_target); }
 
-std::string	HttpReq::getProtocol() const { return (_protocol); }
+std::string	HttpReq::getProtocol(void) const { return (_protocol); }
 
 std::string	HttpReq::getHeader(std::string key) const { return (_headers.at(key)); }
 
-size_t		HttpReq::getBodySize() const { return (_bodySize); }
+size_t		HttpReq::getBodySize(void) const { return (_bodySize); }
 
-std::string	HttpReq::getBody() const { return (_body); }
+std::string	HttpReq::getBody(void) const { return (_body); }
 
+
+// TODO: How to react if an error occurs during (previous) parsing ???
 bool HttpReq::processData(const std::string &data) {
 	_buffer += data;
 
-	// Parse headers if not already done
-	if (!_headersParsed) {
-		if (!parseHeaders()) {
-			// Headers are not fully received yet
-			return false;
+	if (!_startlineParsed) {		// Parse start line if not already done
+		if (!parseStartLine()) {
+			return (false);
 		}
 	}
-
-	// If the request is chunked, process the chunked body
-	if (_isChunked) {
-		return parseChunkedBody(); // Returns true if the full body is assembled
-	} else {
-		// For non-chunked, assume Content-Length specifies the body size
-		body += _buffer;
-		_buffer.clear();
-		return true; // Full request assembled
+	if (!_headersParsed) {		// Parse headers if not already done
+		if (!parseHeaders()) {
+			// Headers are not fully received yet
+			return (false);
+		}
 	}
+	// If the request is chunked, process the chunked body
+	if (_isChunked)
+		return (parseChunkedBody()); // Returns true if the full body is assembled, false otherwise
+	parseBody();
+
+	return (true); // Full request assembled
 }
 
-int	HttpReq::parseHeaders(const std::string &buffer) {
+bool	HttpReq::parseChunkedBody(void) {
+    while (!_buffer.empty()) {
+        if (currentChunkSize == 0) {
+            // Parse chunk size
+            size_t pos = _buffer.find("\r\n");
+            if (pos == std::string::npos) {
+                return false; // Wait for full chunk size
+            }
+            std::string sizeStr = _buffer.substr(0, pos);
+            std::istringstream sizeStream(sizeStr);
+            sizeStream >> std::hex >> currentChunkSize;
+            _buffer = _buffer.substr(pos + 2); // Remove chunk size and CRLF
+
+            if (currentChunkSize == 0) {
+                // End of chunks
+                return true; // Full body assembled
+            }
+        }
+
+        // Read chunk data
+        if (_buffer.size() >= currentChunkSize + 2) { // Include trailing CRLF
+            _body += _buffer.substr(0, currentChunkSize);
+            _buffer = _buffer.substr(currentChunkSize + 2); // Remove chunk data and CRLF
+            currentChunkSize = 0; // Reset for the next chunk
+        } else {
+            return false; // Wait for more data
+        }
+    }
+
+    return (false); // Not fully assembled yet
+}
+
+
+bool	HttpReq::parseHeaders(void) {
 	size_t		pos = 0;
 
-	while ((pos = buffer.find("\r\n", _buffer_section)) != std::string::npos) {
-		if (pos == _buffer_section)
+	// Check if headers are fully received
+	if (_buffer.find("\r\n\r\n") == std::string::npos) {
+		// Headers are incomplete, wait for more data
+		return (false);
+	}
+
+	while ((pos = _buffer.find("\r\n", _buffer_section)) != std::string::npos) {
+		if (pos == _buffer_section) {
+			_buffer_section += 2;
+			_headersParsed = true;
 			break;
+		}
 		
-		std::string	line = buffer.substr(_buffer_section, pos - _buffer_section);
+		std::string	line = _buffer.substr(_buffer_section, pos - _buffer_section);
 		_buffer_section = pos + 2;
 		
 		if (line.length() > MAX_HEADER_SIZE)
-			return 413; // Payload Too Large
+			return (_httpStatus = 413, true); // Payload Too Large
 		if (_headers.size() >= MAX_HEADER_COUNT)
-			return 431; // Request Header Fields Too Large
+			return (_httpStatus = 431, true); // Request Header Fields Too Large
 		
 		size_t		pos_colon = line.find(":");
 		if (pos_colon == std::string::npos || pos_colon == 0 || pos_colon == line.length())
-			return 400;
+			return (_httpStatus = 400, true);
 		
 		std::string	key = trim(line.substr(0, pos_colon));
 		std::string	value = trim(line.substr(pos_colon + 1));
 		
 		std::transform(key.begin(), key.end(), key.begin(), ::tolower);
-		
+
 		if (key.empty() || value.empty() || _headers.find(key) != _headers.end())
-			return 400;
+			return (_httpStatus = 400, true);
 
 		_headers[key] = value;
 	}
-	return (200);
+	return (true);
 }
 
 // bool	HttpReq::verifyHeaders() const {
@@ -182,16 +228,16 @@ int	HttpReq::parseHeaders(const std::string &buffer) {
 // 	return (true);
 // }
 
-int	HttpReq::parseBody(const std::string &buffer) {
-	if (buffer.find("\r\n", _buffer_section) == _buffer_section) {
-		_body = buffer.substr(_buffer_section + 2);
+void	HttpReq::parseBody(void) {
+	if (_buffer.find("\r\n", _buffer_section) != _buffer_section) {
+		_body = _buffer.substr(_buffer_section + 2);
 		_bodySize = _body.length();
-		return (200);
+		return (_httpStatus = 200, void());
 	}
-	return (0);
+	_httpStatus = 400; // TODO: Check if this is the correct status code
 }
 
 // Reset for a new request - or better destroy and create a new object ?
-void	HttpReq::reset() {
+void	HttpReq::reset(void) {
 	_headers.clear();
 }

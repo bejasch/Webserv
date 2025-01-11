@@ -61,12 +61,13 @@ void Server::acceptConnection() {
 }
 
 void Server::handleRequest(int client_fd) {
-    HttpReq httpRequest;
+    HttpReq	&request = client_requests[client_fd];
     HttpRes httpResponse;
 
     // Data is available to read from the socket
     char buffer[30000] = {0};
     int valread = read(client_fd, buffer, sizeof(buffer));
+	// int bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0);	// Is this better???
 
     if (valread == 0) {	// Client closed connection
         printf("Connection closed by client.\n");
@@ -82,11 +83,11 @@ void Server::handleRequest(int client_fd) {
 	printf("Received data ([part of a] HTTP Request): \n\n\n%s\n\n\n", buffer);
 
     // Process the incoming data
-    if (client_requests[client_fd].processData(std::string(buffer, valread))) {
-		int parse_status = httpRequest.parse(buffer);
+    if (request.processData(std::string(buffer, valread))) {
+		int parse_status = request.parse(buffer);
 		std::cout << "Parse status: " << parse_status << std::endl;
-		httpRequest.print();
-		httpResponse.handleRequest(&httpRequest);
+		client_requests[client_fd].print();
+		httpResponse.handleRequest(request);
 		httpResponse.writeResponse(client_fd);
 
         // // Full request assembled

@@ -10,20 +10,23 @@ class HttpReq {
 private:
 	size_t		_buffer_section;
 	std::string	_buffer;
+	int			_httpStatus;
 
-	// - Request headers:
 	std::string	_method;
 	std::string	_target;
 	std::string	_protocol;
-	// *GET /en-US/docs/Web/HTTP/Messages HTTP/1.1*
-	std::map<std::string, std::string> _headers;
+
+	std::map<std::string, std::string> _headers;	// Headers are case-insensitive (tolower-ed)
     
 	size_t		_bodySize;
 	std::string _body;
 
-	bool	_headersParsed = false;	// Whether the headers are fully received
-	bool	_isChunked = false;     // Whether the body uses chunked transfer
-	bool	_bodyComplete = false;  // Whether the body is fully received
+	bool	_startlineParsed = false;	// Whether the start line is fully received
+	bool	_headersParsed = false;		// Whether the headers are fully received
+	bool	_isChunked = false;     	// Whether the body uses chunked transfer
+	bool	_bodyComplete = false;  	// Whether the body is fully received
+
+    size_t	currentChunkSize = 0;	// Size of the current chunk being read
 	
 	// Helper function to trim leading and trailing whitespaces
 	std::string	trim(const std::string& str);
@@ -34,32 +37,34 @@ private:
 	// - Request headers:	*additional context to a request or add extra logic* -> case-insensitive string followed by a colon (:) and a value.
 	// - Representation headers:	*if message has a body*
 	// - Request body:
-	int		parseStartLine(const std::string &buffer);
+	int		parseStartLine(void);
 	bool	isValidMethod(void) const;
 	bool	isValidTarget(void) const;
 	bool	isValidProtocol(void) const;
 
-	bool 	processData(const std::string &data);
 
-	int		parseHeaders(const std::string &buffer);
-	int		parseBody(const std::string &buffer);
+	bool	parseHeaders(void);
+	void	parseBody(void);
+	bool	parseChunkedBody(void);
 
 public:
-	int	parse(const std::string &buffer);
+	// int	parse(const std::string &buffer);
 
 	// --> Get-methods:
-	std::string	getMethod() const;
-	std::string	getTarget() const;
-	std::string	getProtocol() const;
+	std::string	getMethod(void) const;
+	std::string	getTarget(void) const;
+	std::string	getProtocol(void) const;
 	std::string	getHeader(std::string key) const;
-	size_t		getBodySize() const;
-	std::string	getBody() const;
+	size_t		getBodySize(void) const;
+	std::string	getBody(void) const;
+
+	bool 	processData(const std::string &data);	// Encapsulates the parsing of the incoming data
 
 	// print content
-	void	print() const;
+	void	print(void) const;
 
 	// Reset for a new request
-    void	reset();
+    void	reset(void);
 };
 
 #endif
