@@ -84,7 +84,7 @@ void Server::handleRequest(int client_fd) {
 
     // Process the incoming data
     if (request.processData(std::string(buffer, valread))) {
-		int parse_status = request.parse(buffer);
+		int parse_status = request.getHttpStatus();
 		std::cout << "Parse status: " << parse_status << std::endl;
 		client_requests[client_fd].print();
 		httpResponse.handleRequest(request);

@@ -8,7 +8,6 @@
 
 class HttpReq {
 private:
-	size_t		_buffer_section;
 	std::string	_buffer;
 	int			_httpStatus;
 
@@ -37,7 +36,7 @@ private:
 	// - Request headers:	*additional context to a request or add extra logic* -> case-insensitive string followed by a colon (:) and a value.
 	// - Representation headers:	*if message has a body*
 	// - Request body:
-	int		parseStartLine(void);
+	bool	parseStartLine(void);
 	bool	isValidMethod(void) const;
 	bool	isValidTarget(void) const;
 	bool	isValidProtocol(void) const;
@@ -57,6 +56,7 @@ public:
 	std::string	getHeader(std::string key) const;
 	size_t		getBodySize(void) const;
 	std::string	getBody(void) const;
+	int			getHttpStatus(void) const;
 
 	bool 	processData(const std::string &data);	// Encapsulates the parsing of the incoming data
 
