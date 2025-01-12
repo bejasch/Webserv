@@ -49,6 +49,16 @@ Here is a breakdown of the requirements in your project, organized into what you
 
 ### Stress Testing / Performance Under Load
 ❌ **Missing**: You will need to test your server’s performance under load, especially to ensure it stays available and responsive during high traffic.
+siege
+locust
+
+
+config;
+cout << config << endl;
+RDP;
+STL; std::map<>, std::pair<>, std::vec<>, 
+
+CLF common log format
 
 ### Listening to Multiple Ports
 ❌ **Missing**: Your server currently only listens on a single port (8080). You need to implement the ability to listen on multiple ports as specified in the configuration file.
