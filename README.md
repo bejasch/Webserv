@@ -31,6 +31,9 @@ Here is a breakdown of the requirements in your project, organized into what you
 
 ### Configuration File Handling
 ❌ **Missing**: Your program does not currently handle a configuration file, which should be passed as a command-line argument or use a default path. The configuration file might specify settings like ports to listen on, file paths, or other server settings.
+https://www.youtube.com/watch?v=8P2r0xSXk28&ab_channel=TonyTeachesTech
+https://www.youtube.com/watch?v=MQpw4oXjIqY&ab_channel=KacperSzurekEN
+https://www.youtube.com/watch?v=C5kMgshNc6g&ab_channel=NGINX
 
 ### Serving Static Files
 ❌ **Missing**: While you serve basic text responses, you do not yet handle serving actual static files (like HTML, CSS, JavaScript, images, etc.) from the filesystem based on the GET request path (e.g., serving `index.html` from disk).
