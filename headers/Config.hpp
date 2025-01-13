@@ -15,16 +15,12 @@ class Config {
         std::string error_file;
         int         error_status;
 
-        std::vector<Route> routes;
-
     public:
         Config();
         ~Config();
-        void parseConfigFile(const std::string& config_file);
-        void parseServer(std::ifstream& file);
-        void parseRoute(std::ifstream& file);
-        void addRoute(const Route& route);
+        int parseConfigFile(const std::string& config_file);
         void printConfig(const Config& config);
+        int getPort() const;
 };
 
 #endif

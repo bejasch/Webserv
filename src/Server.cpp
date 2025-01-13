@@ -1,53 +1,55 @@
 #include "../headers/AllHeaders.hpp"
 
 Server::Server() {
-    // Creating the file descriptor of the program running the server
-    server_fd = socket(AF_INET, SOCK_STREAM, 0); //
-
-    address.sin_family = AF_INET; // address family used previously
-    address.sin_addr.s_addr = INADDR_ANY; // this is my IP address
-    address.sin_port = htons( 8080 ); // the port I would like to expose
-    bind(server_fd, (struct sockaddr *)&address, sizeof(address)); // bind server file descriptor to socket address
-
-    // Make server_fd non-blocking
-    fcntl(server_fd, F_SETFL, O_NONBLOCK);
-    listen(server_fd, 10); // 10 defines how many pending connections can be queued before connections are refused.
-
-    // Create epoll instance
-    epoll_fd = epoll_create1(0);
-    // Add server_fd to epoll instance to monitor incoming connections
-    ev.events = EPOLLIN;
-    ev.data.fd = server_fd;
-    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &ev);
+	std::cout << "Server default constructor called" << std::endl;
 }
 
 Server::~Server() {
     std::cout << "Server destructor called" << std::endl;
 }
 
-void Server::stop() {
-	close(server_fd);
-	close(epoll_fd);
+void Server::setServer(const std::string& server_config) {
+	//server_config should contain the server block
+	// Config config;
+	//config.parseConfigFile(server_config);
+	addServer(Config()); // Add a server with default config
+	addRoute(Route()); // Add a route with default values
+	setUpServer();
 }
 
-void Server::start() {
-	int n, i;
-	while (true)
-	{
-		n = epoll_wait(epoll_fd, events, MAX_EVENTS, -1); // every time there is a new connection, an event is triggered, and n increases by 1
-		// Loop through the events
-		for (i = 0; i < n; i++)
-		{
-			if (events[i].data.fd == server_fd)
-				acceptConnection();
-			else if (events[i].events & EPOLLIN)
-				handleRequest(events[i].data.fd);
-		}
-	}
+void Server::addServer(const Config& config) {
+	this->config = config;
 }
 
-void Server::acceptConnection() {
+void Server::addRoute(const Route& route) {
+	routes.push_back(route);
+}
+
+void Server::setUpServer() {
+	    // Creating the file descriptor of the program running the server
+    server_fd = socket(AF_INET, SOCK_STREAM, 0); //
+
+    address.sin_family = AF_INET; // address family used previously
+    address.sin_addr.s_addr = INADDR_ANY; // this is my IP address
+    address.sin_port = htons( config.getPort() ); // the port I would like to expose
+    bind(server_fd, (struct sockaddr *)&address, sizeof(address)); // bind server file descriptor to socket address
+
+    // Make server_fd non-blocking
+    fcntl(server_fd, F_SETFL, O_NONBLOCK);
+    listen(server_fd, 10); // 10 defines how many pending connections can be queued before connections are refused.
+}
+
+void Server::handleEvent(int fd, uint32_t events, int epoll_fd) {
+    if (fd == server_fd) {
+        acceptConnection(epoll_fd);
+    } else if (events & EPOLLIN) {
+        handleRequest(fd);
+    }
+}
+
+void Server::acceptConnection(int epoll_fd) {
 	int client_fd;
+	epoll_event ev;
 	int addrlen = sizeof(address);
 
 	// server_fd is the listening socket, thus we need to create a new socket for the communication with the client. This socket is used for communication.
@@ -63,7 +65,7 @@ void Server::acceptConnection() {
 	ev.data.fd = client_fd;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1) {
 		perror("Failed to add client_fd to epoll");
-		close(client_fd); // Clean up if adding to epoll fails
+		close(client_fd); // Clean up if adding to epoll fails. Might want to use EAGAIN or EINTR
 		return;
 	}	///adds `new_socket` (=client_fd) to epoll instance and watch it for EPOLLIN
 	// Add the new client to the client_requests map
@@ -108,4 +110,8 @@ void Server::handleRequest(int client_fd) {
 		client_requests.erase(client_fd);
 		close(client_fd);
 	}
+}
+
+int Server::getServerFd() {
+	return this->server_fd;
 }

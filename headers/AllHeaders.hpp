@@ -13,6 +13,7 @@ class	HttpReq;
 class	HttpRes;
 class	Route;
 class	Server;
+class	ServerManager;
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -39,5 +40,6 @@ class	Server;
 #include "HttpRes.hpp"
 #include "Route.hpp"
 #include "Server.hpp"
+#include "ServerManager.hpp"
 
 #endif
