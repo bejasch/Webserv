@@ -25,11 +25,11 @@ private:
 	bool	_isChunked = false;     	// Whether the body uses chunked transfer
 	bool	_bodyComplete = false;  	// Whether the body is fully received
 
-    size_t	currentChunkSize = 0;	// Size of the current chunk being read
+    size_t	_currentChunkSize = 0;		// Size of the current chunk being read
 	
 	// Helper function to trim leading and trailing whitespaces
 	std::string	trim(const std::string& str);
-	bool		verifyHeaders(void) const;
+	bool		verifyHeaders(void);
 	bool		headersAreParsed(void) const;
 
 

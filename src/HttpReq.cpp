@@ -5,36 +5,13 @@
 // HttpReq::~HttpReq() {}
 
 // Helper function to trim leading and trailing whitespaces
-std::string	trim(const std::string& str) {
+std::string	HttpReq::trim(const std::string& str) {
 	size_t start = str.find_first_not_of(" \t");
 	if (start == std::string::npos)
 		return ("");
 	size_t end = str.find_last_not_of(" \t");
 	return (str.substr(start, end - start + 1));
 }
-
-
-// int	HttpReq::parse(const std::string &buffer) {
-// 	_buffer_section = 0;
-// 	int http_status = 0;
-// 	try
-// 	{
-// 		if ((http_status = parseStartLine()) != 200)
-// 			return http_status;
-// 		if ((http_status = parseHeaders()) != 200)
-// 			return http_status;
-// 		// SpecialHeaders ???
-// 		if ((http_status = parseBody()) != 200)
-// 			return http_status;
-		
-// 	}
-// 	catch (const std::exception &e)
-// 	{
-// 		std::cerr << "Parsing-exception: " << e.what() << std::endl;
-// 		return 500;
-// 	}
-// 	return 200;
-// }
 
 // false means errors occurred, true means the startline does not contain errors
 bool	HttpReq::parseStartLine(void) {
@@ -64,6 +41,7 @@ bool	HttpReq::parseStartLine(void) {
     if (!isValidProtocol())
 		return (_httpStatus = 505, false);
 		
+	_startlineParsed = true;
 	return (_httpStatus = 200, true);
 }
 
@@ -98,6 +76,7 @@ void	HttpReq::print(void) const {
     std::cout << "Method: " << _method << "\n";
     std::cout << "Target: " << _target << "\n";
     std::cout << "Protocol: " << _protocol << "\n";
+	std::cout << "Chunked transfer: " << _isChunked << "\n";
     std::cout << "Headers:\n";
     for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
         std::cout << "\t" << it->first << ": " << it->second << "\n";
@@ -123,23 +102,24 @@ int			HttpReq::getHttpStatus(void) const { return (_httpStatus); }
 // true means the full request is assembled (incl errors), false means more data is needed
 bool HttpReq::processData(const std::string &data) {
 	_buffer += data;
-
 	if (!_startlineParsed && !parseStartLine())	// Parse start line if not already done
 		return (true);
 
 	if (!_headersParsed && !parseHeaders())
 		return (false);							// Headers are not fully received yet
-
+	// std::cout << "HERE!" << std::endl;
 	if (_isChunked)						// If the request is chunked, process the chunked body
 		return (parseChunkedBody());	// Returns true if the full body is assembled, false otherwise
-	
+	// std::cout << "DATA NOT CHUNKED!" << std::endl;
 	return (parseBody(), true); // Full request assembled
 }
 
 bool	HttpReq::parseChunkedBody(void) {
 	size_t pos = 0;
+	std::cout << "### Parsing chunked body..." << std::endl;
 	while (!_buffer.empty()) {
-		if (currentChunkSize == 0) {	// Parse new chunk size -> hex number followed by CRLF
+		// std::cout << "Current buffer: " << _buffer << std::endl;
+		if (_currentChunkSize == 0) {	// Parse new chunk size -> hex number followed by CRLF
 			if ((pos = _buffer.find("\r\n")) == std::string::npos) {
 				return (false); // Wait for full chunk size
 			} else if (pos == 0)
@@ -147,14 +127,15 @@ bool	HttpReq::parseChunkedBody(void) {
 
 			std::string sizeStr = _buffer.substr(0, pos);
 			std::istringstream sizeStream(sizeStr);
-			sizeStream >> std::hex >> currentChunkSize;
+			sizeStream >> std::hex >> _currentChunkSize;
 			if (sizeStream.fail() || !sizeStream.eof()) {
 				_httpStatus = 400;
 				return (true); // Invalid chunk size
 			}
+			// std::cout << "Current chunk size: " << _currentChunkSize << std::endl;
 			_buffer = _buffer.substr(pos + 2); // Remove chunk size and CRLF
 
-			if (currentChunkSize == 0) {	// End of chunks
+			if (_currentChunkSize == 0) {	// End of chunks
 				if (_buffer.size() > 2) {
 					_httpStatus = 400;
 					return (true); // Invalid chunks
@@ -163,15 +144,16 @@ bool	HttpReq::parseChunkedBody(void) {
 			}
 		}
 		// Read chunk data
-		if (_buffer.size() >= currentChunkSize + 2) { // Include trailing CRLF
-			if (_buffer[currentChunkSize] != '\r' || _buffer[currentChunkSize + 1] != '\n')
+		if (_buffer.size() >= _currentChunkSize + 2) { // Include trailing CRLF
+			if (_buffer[_currentChunkSize] != '\r' || _buffer[_currentChunkSize + 1] != '\n')
 				return (_httpStatus = 400, true); // Invalid chunk data
-			_body += _buffer.substr(0, currentChunkSize);
-			_buffer = _buffer.substr(currentChunkSize + 2); // Remove chunk data and CRLF
-			currentChunkSize = 0;	// Reset for the next chunk
+			_body += _buffer.substr(0, _currentChunkSize);
+			_buffer = _buffer.substr(_currentChunkSize + 2); // Remove chunk data and CRLF
+			_currentChunkSize = 0;	// Reset for the next chunk
 		} else
 			break;
 	}
+	std::cout << "### Not fully assembled yet..." << std::endl;
 	return (false); // Not fully assembled yet
 }
 
@@ -192,7 +174,7 @@ bool	HttpReq::parseHeaders(void) {
 		if (pos == 0) {
 			_buffer = _buffer.substr(2);
 			_headersParsed = true;
-			return (true);
+			break;
 		}
 		
 		std::string	line = _buffer.substr(0, pos);
@@ -217,6 +199,7 @@ bool	HttpReq::parseHeaders(void) {
 
 		_headers[key] = value;
 	}
+	verifyHeaders();
 	return (true);
 }
 
@@ -231,6 +214,34 @@ bool	HttpReq::parseHeaders(void) {
 // 	}
 // 	return (true);
 // }
+
+bool	HttpReq::verifyHeaders() {
+	// Check required headers
+	if (_headers.find("host") == _headers.end()) {
+		std::cerr << "Error: Missing 'Host' header.\n";
+		return (false);
+	}
+
+	if (_headers.find("content-length") != _headers.end() &&
+		_headers.find("transfer-encoding") != _headers.end()) {
+		std::cerr << "Error: Both 'Content-Length' and 'Transfer-Encoding' are present.\n";
+		return (false);
+	}
+
+	// Check if Transfer-Encoding is chunked
+	std::map<std::string, std::string>::iterator it = _headers.find("transfer-encoding");
+	if (it != _headers.end()) {
+		std::string encoding = it->second;
+		std::transform(encoding.begin(), encoding.end(), encoding.begin(), ::tolower);
+		if (encoding == "chunked") {
+			_isChunked = true;
+		} else {
+			std::cerr << "Error: Unsupported Transfer-Encoding: " << encoding << "\n";
+			return (false);
+		}
+	}
+	return (true);
+}
 
 void	HttpReq::parseBody(void) {
 	size_t		pos;
