@@ -18,7 +18,7 @@ class HttpRes {
     public:
         HttpRes();
         ~HttpRes();
-        void handleRequest(HttpReq *httpRequest);
+        void handleRequest(HttpReq &httpRequest);
         void writeResponse(int client_fd);
 
     private:

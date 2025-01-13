@@ -3,21 +3,21 @@
 HttpRes::HttpRes() {}
 HttpRes::~HttpRes() {}
 
-void HttpRes::handleRequest(HttpReq *httpRequest) {
+void HttpRes::handleRequest(HttpReq &httpRequest) {
     // - Response headers:
-    if (httpRequest->getMethod() == "GET") {
-        if (httpRequest->getTarget() == "/info.html")
+    if (httpRequest.getMethod() == "GET") {
+        if (httpRequest.getTarget() == "/info.html")
         {
-            protocol = httpRequest->getProtocol();
+            protocol = httpRequest.getProtocol();
             status = 200;
             status_message = "OK";
-            content_type = determineContentType(httpRequest->getTarget());
-            body = parseFile(httpRequest->getTarget());
+            content_type = determineContentType(httpRequest.getTarget());
+            body = parseFile(httpRequest.getTarget());
             content_length = body.length();
         }
         else
         {
-            protocol = httpRequest->getProtocol();
+            protocol = httpRequest.getProtocol();
             status = 404;
             status_message = "Not Found";
             content_type = "text/html";
@@ -26,7 +26,7 @@ void HttpRes::handleRequest(HttpReq *httpRequest) {
         }
     }
     else {
-        protocol = httpRequest->getProtocol();
+        protocol = httpRequest.getProtocol();
         status = 404;
         status_message = "Not Found";
         content_type = "text/html"; //here we should dynamically determine the content type
