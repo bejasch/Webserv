@@ -51,14 +51,14 @@ bool	HttpReq::isValidMethod(void) const {
 
 bool	HttpReq::isValidTarget(void) const {
 	if (_target.empty() || _target[0] != '/')
-		return false;
+		return (false);
 	if (_target.find("..") != std::string::npos)
-		return false;
+		return (false);
 	if (_target.find("//") != std::string::npos)
-		return false;
+		return (false);
 	for (size_t i = 1; i < _target.length(); ++i) {
 		if (!isalnum(_target[i]) && _target[i] != '/' && _target[i] != '-' && _target[i] != '_' && _target[i] != '.' && _target[i] != '?')
-			return false;
+			return (false);
 	}
 	return (true);
 }
@@ -66,10 +66,10 @@ bool	HttpReq::isValidTarget(void) const {
 // normally return 505 if invalid protocol
 bool	HttpReq::isValidProtocol(void) const {
 	if (_protocol.length() != 8 || _protocol.substr(0, 7) != "HTTP/1.")
-		return false;
+		return (false);
 	if (_protocol[7] != '0' && _protocol[7] != '1')
-		return false;
-	return true;
+		return (false);
+	return (true);
 }
 
 void	HttpReq::print(void) const {
@@ -81,7 +81,7 @@ void	HttpReq::print(void) const {
     for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
         std::cout << "\t" << it->first << ": " << it->second << "\n";
     }
-    std::cout << "Body: " << _body << "\n";
+    std::cout << "Body:\n" << _body << "\n";
 }
 
 std::string	HttpReq::getMethod(void) const { return (_method); }
@@ -90,6 +90,7 @@ std::string	HttpReq::getTarget(void) const { return (_target); }
 
 std::string	HttpReq::getProtocol(void) const { return (_protocol); }
 
+// Care for exceptions if key does not exist
 std::string	HttpReq::getHeader(std::string key) const { return (_headers.at(key)); }
 
 size_t		HttpReq::getBodySize(void) const { return (_bodySize); }
@@ -103,15 +104,15 @@ int			HttpReq::getHttpStatus(void) const { return (_httpStatus); }
 bool HttpReq::processData(const std::string &data) {
 	_buffer += data;
 	if (!_startlineParsed && !parseStartLine())	// Parse start line if not already done
-		return (true);
+		return (true);							// Error occurred or short request in start line
 
 	if (!_headersParsed && !parseHeaders())
 		return (false);							// Headers are not fully received yet
-	// std::cout << "HERE!" << std::endl;
-	if (_isChunked)						// If the request is chunked, process the chunked body
-		return (parseChunkedBody());	// Returns true if the full body is assembled, false otherwise
-	// std::cout << "DATA NOT CHUNKED!" << std::endl;
-	return (parseBody(), true); // Full request assembled
+
+	if (_isChunked)								// If the request is chunked, process the chunked body
+		return (parseChunkedBody());			// Returns true if the full body is assembled, false otherwise
+	
+	return (parseBody(), true);					// Full request assembled
 }
 
 bool	HttpReq::parseChunkedBody(void) {
@@ -132,7 +133,6 @@ bool	HttpReq::parseChunkedBody(void) {
 				_httpStatus = 400;
 				return (true); // Invalid chunk size
 			}
-			// std::cout << "Current chunk size: " << _currentChunkSize << std::endl;
 			_buffer = _buffer.substr(pos + 2); // Remove chunk size and CRLF
 
 			if (_currentChunkSize == 0) {	// End of chunks
@@ -203,40 +203,41 @@ bool	HttpReq::parseHeaders(void) {
 	return (true);
 }
 
-// bool	HttpReq::verifyHeaders() const {
-// 	if (_headers.find("host") == _headers.end())
-// 		return (false);
-// 	if (_headers.find("content-length") != _headers.end()) {
-// 		if (_headers["content-length"].find_first_not_of("0123456789") != std::string::npos)
-// 			return (false);
-// 		if (std::stoul(_headers["content-length"]) != _bodySize)
-// 			return (false);
-// 	}
-// 	return (true);
-// }
-
-bool	HttpReq::verifyHeaders() {
-	// Check required headers
-	if (_headers.find("host") == _headers.end()) {
-		std::cerr << "Error: Missing 'Host' header.\n";
+bool HttpReq::verifyHeaders() {
+	// Reject completely empty headers
+	if (_headers.empty()) {
+		std::cerr << "Error: Request contains no headers.\n";
+		_httpStatus = 400; // Bad Request
 		return (false);
 	}
 
-	if (_headers.find("content-length") != _headers.end() &&
-		_headers.find("transfer-encoding") != _headers.end()) {
+	// Check Host header (required in HTTP/1.1)
+	if (_protocol == "HTTP/1.1" && _headers.find("host") == _headers.end()) {
+		std::cerr << "Error: Missing 'Host' header in HTTP/1.1 request.\n";
+		_httpStatus = 400; // Bad Request
+		return (false);
+	}
+
+	// Check for conflicting Content-Length and Transfer-Encoding
+	bool	hasContentLength = _headers.find("content-length") != _headers.end();
+	bool	hasTransferEncoding = _headers.find("transfer-encoding") != _headers.end();
+
+	if (hasContentLength && hasTransferEncoding) {
 		std::cerr << "Error: Both 'Content-Length' and 'Transfer-Encoding' are present.\n";
+		_httpStatus = 400; // Bad Request
 		return (false);
 	}
 
-	// Check if Transfer-Encoding is chunked
-	std::map<std::string, std::string>::iterator it = _headers.find("transfer-encoding");
-	if (it != _headers.end()) {
-		std::string encoding = it->second;
+	// Validate Transfer-Encoding
+	if (hasTransferEncoding) {
+		std::string	encoding = _headers["transfer-encoding"];
 		std::transform(encoding.begin(), encoding.end(), encoding.begin(), ::tolower);
+
 		if (encoding == "chunked") {
 			_isChunked = true;
 		} else {
 			std::cerr << "Error: Unsupported Transfer-Encoding: " << encoding << "\n";
+			_httpStatus = 501; // Not Implemented
 			return (false);
 		}
 	}
@@ -260,5 +261,17 @@ void	HttpReq::parseBody(void) {
 
 // Reset for a new request - or better destroy and create a new object ?
 void	HttpReq::reset(void) {
+	_buffer.clear();
+	_httpStatus = 0;
+	_method.clear();
+	_target.clear();
+	_protocol.clear();
 	_headers.clear();
+	_bodySize = 0;
+	_body.clear();
+	_startlineParsed = false;
+	_headersParsed = false;
+	_isChunked = false;
+	_bodyComplete = false;
+	_currentChunkSize = 0;
 }
