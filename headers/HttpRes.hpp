@@ -6,24 +6,28 @@
 #include "AllHeaders.hpp"
 
 class HttpRes {
-    private:
-        // - Response headers:
-        std::string	protocol;
-        int	status;
-        std::string status_message;
-        std::string	content_type;
-        int	content_length;
-        std::string	body;
+private:
+	// - Response headers:
+	std::string	_protocol;
+	int			_httpStatus;
 
-    public:
-        HttpRes();
-        ~HttpRes();
-        void handleRequest(HttpReq &httpRequest);
-        void writeResponse(int client_fd);
+	std::string status_message;
+	std::string	content_type;
+	int	content_length;
+	std::string	body;
 
-    private:
-        std::string parseFile(const std::string &filename);
-        std::string determineContentType(const std::string &filename);
+	std::string parseFile(const std::string &filename);
+	std::string determineContentType(const std::string &filename);
+
+	static std::map<int, std::string> statusMessages;
+	static std::map<std::string, std::string> mimeTypes;
+
+public:
+	HttpRes();
+	~HttpRes();
+	void handleRequest(HttpReq &httpRequest);
+	void writeResponse(int client_fd);
+
 };
 
 #endif

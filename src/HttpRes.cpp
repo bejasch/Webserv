@@ -3,13 +3,47 @@
 HttpRes::HttpRes() {}
 HttpRes::~HttpRes() {}
 
+std::map<std::string, std::string> HttpRes::mimeTypes = {
+	{"html", "text/html"},
+	{"css", "text/css"},
+	{"js", "text/javascript"},
+	{"jpg", "image/jpeg"},
+	{"jpeg", "image/jpeg"},
+	{"png", "image/png"},
+	{"gif", "image/gif"},
+	{"ico", "image/x-icon"}
+};
+
+std::map<int, std::string> HttpRes::statusMessages = {
+    {400, "Bad Request"},
+    {401, "Unauthorized"},
+    {403, "Forbidden"},
+    {404, "Not Found"},
+    {405, "Method Not Allowed"},
+    {408, "Request Timeout"},
+    {500, "Internal Server Error"},
+    {501, "Not Implemented"},
+    {502, "Bad Gateway"},
+    {503, "Service Unavailable"},
+    {504, "Gateway Timeout"}
+};
+
 void HttpRes::handleRequest(HttpReq &httpRequest) {
     // - Response headers:
     if (httpRequest.getMethod() == "GET") {
         if (httpRequest.getTarget() == "/info.html")
         {
-            protocol = httpRequest.getProtocol();
-            status = 200;
+            _protocol = httpRequest.getProtocol();
+            _httpStatus = 200;
+            status_message = "OK";
+            content_type = determineContentType(httpRequest.getTarget());
+            body = parseFile(httpRequest.getTarget());
+            content_length = body.length();
+        }
+		else if (httpRequest.getTarget() == "/image.jpg")
+        {
+            _protocol = httpRequest.getProtocol();
+            _httpStatus = 200;
             status_message = "OK";
             content_type = determineContentType(httpRequest.getTarget());
             body = parseFile(httpRequest.getTarget());
@@ -17,8 +51,8 @@ void HttpRes::handleRequest(HttpReq &httpRequest) {
         }
         else
         {
-            protocol = httpRequest.getProtocol();
-            status = 404;
+            _protocol = httpRequest.getProtocol();
+            _httpStatus = 404;
             status_message = "Not Found";
             content_type = "text/html";
             body = parseFile("/error_404.html");
@@ -26,8 +60,8 @@ void HttpRes::handleRequest(HttpReq &httpRequest) {
         }
     }
     else {
-        protocol = httpRequest.getProtocol();
-        status = 404;
+        _protocol = httpRequest.getProtocol();
+        _httpStatus = 404;
         status_message = "Not Found";
         content_type = "text/html"; //here we should dynamically determine the content type
         content_length = 9;
@@ -37,36 +71,18 @@ void HttpRes::handleRequest(HttpReq &httpRequest) {
     }
 }
 
+
 std::string HttpRes::determineContentType(const std::string &filename) {
-    // - Determine the content type based on the file extension
-    std::string extension = filename.substr(filename.find_last_of(".") + 1); //find_last_of returns the index of the last occurrence of the given input.
-    if (extension == "html") {
-        return "text/html";
-    }
-    else if (extension == "css") {
-        return "text/css";
-    }
-    else if (extension == "js") {
-        return "text/javascript";
-    }
-    else if (extension == "jpg") {
-        return "image/jpeg";
-    }
-    else if (extension == "jpeg") {
-        return "image/jpeg";
-    }
-    else if (extension == "png") {
-        return "image/png";
-    }
-    else if (extension == "gif") {
-        return "image/gif";
-    }
-    else if (extension == "ico") {
-        return "image/x-icon";
-    }
-    else {
-        return "text/plain";
-    }
+	std::string extension = filename.substr(filename.find_last_of(".") + 1);
+
+	// Look up the MIME type in the static map
+	std::map<std::string, std::string>::const_iterator it = mimeTypes.find(extension);
+
+	if (it != mimeTypes.end()) {
+		return it->second;
+	} else {
+		return "text/plain";
+	}
 }
 
 std::string HttpRes::parseFile(const std::string &filename) {
@@ -84,7 +100,7 @@ std::string HttpRes::parseFile(const std::string &filename) {
 void HttpRes::writeResponse(int client_fd) {
     // Build the status line
     std::ostringstream response_stream;
-    response_stream << protocol << " " << status << " " << status_message << "\n";
+    response_stream << _protocol << " " << _httpStatus << " " << status_message << "\n";
 
     // Add headers
     response_stream << "Content-Type: " << content_type << "\n";
