@@ -8,6 +8,7 @@
 #define MAX_HEADER_SIZE 8192	// 8 KB
 #define MAX_HEADER_COUNT 100	// Arbitrary limit
 
+class	CGI;
 class	Config;
 class	HttpReq;
 class	HttpRes;
