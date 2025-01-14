@@ -1,6 +1,6 @@
 #include "../headers/AllHeaders.hpp"
 
-Server::Server() {
+Server::Server(ServerManager &server_manager) : server_manager(server_manager) {
 	std::cout << "Server default constructor called" << std::endl;
 }
 
@@ -26,7 +26,7 @@ void Server::addRoute(const Route& route) {
 }
 
 void Server::setUpServer() {
-	    // Creating the file descriptor of the program running the server
+	// Creating the file descriptor of the program running the server
     server_fd = socket(AF_INET, SOCK_STREAM, 0); //
 
     address.sin_family = AF_INET; // address family used previously
@@ -37,14 +37,6 @@ void Server::setUpServer() {
     // Make server_fd non-blocking
     fcntl(server_fd, F_SETFL, O_NONBLOCK);
     listen(server_fd, 10); // 10 defines how many pending connections can be queued before connections are refused.
-}
-
-void Server::handleEvent(int fd, uint32_t events, int epoll_fd) {
-    if (fd == server_fd) {
-        acceptConnection(epoll_fd);
-    } else if (events & EPOLLIN) {
-        handleRequest(fd);
-    }
 }
 
 void Server::acceptConnection(int epoll_fd) {
@@ -70,6 +62,7 @@ void Server::acceptConnection(int epoll_fd) {
 	}	///adds `new_socket` (=client_fd) to epoll instance and watch it for EPOLLIN
 	// Add the new client to the client_requests map
 	client_requests[client_fd] = HttpReq();
+	server_manager.clientfd_to_serverfd[client_fd] = this;	
 
 	std::cout << "New client connected: fd " << client_fd << std::endl;
 }

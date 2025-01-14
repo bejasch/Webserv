@@ -15,6 +15,7 @@ public:
     int setServers(const std::string& config_file);
     void startServers(); // Runs the central event loop
     int getEpollFd() const { return epoll_fd; }
+    std::map<int, Server*> clientfd_to_serverfd;
 
 private:
     void handleEvents();

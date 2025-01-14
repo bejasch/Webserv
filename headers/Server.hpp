@@ -13,22 +13,20 @@ class Server {
 		std::map<int, HttpReq>	client_requests;
 		Config config;
         std::vector<Route> routes;
+		ServerManager &server_manager;
 
     public:
-        Server();
-        ~Server();
-        void setServer(const std::string& config_file);
-        void handleEvent(int fd, uint32_t events, int epoll_fd);
-        void setUpServer();
-        int getServerFd();
-        void acceptConnection(int epoll_fd);
-        void handleRequest(int fd);
+		Server(ServerManager &server_manager);
+		~Server();
+		void setServer(const std::string& config_file);
+		void setUpServer();
+		int getServerFd();
+		void acceptConnection(int epoll_fd);
+		void handleRequest(int fd);
 
     private:
-        void addRoute(const Route& route);
+		void addRoute(const Route& route);
         void addServer(const Config& config);
-        
-
 };
 
 #endif

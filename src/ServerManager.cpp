@@ -10,9 +10,8 @@ ServerManager::~ServerManager() {
 int ServerManager::setServers(const std::string& config_file)
 {
     // this should be a loop that reads the config file and creates a server for each server block
-
     //for testing assume only one server block
-    Server server;
+    Server server(*this);
     std::cout << "Setting up server" << std::endl;
     server.setServer(config_file);
     servers.push_back(server);
@@ -28,7 +27,7 @@ void ServerManager::startServers() {
     }
     // Add all server_fd to epoll instance to monitor incoming connections
     for (int i = 0; i < servers.size(); ++i) {
-        Server& server = servers[i]; // Access the Server object by index
+        Server &server = servers[i]; // Access the Server object by index
         int server_fd = server.getServerFd();
         epoll_event ev;
         ev.events = EPOLLIN;
@@ -57,15 +56,21 @@ void ServerManager::handleEvents() {
     }
 }
 
-//checks which server the event is for.
-//currently not very efficient algo
-//potential improvement: std::unordered_map<int, Server*>
 void ServerManager::dispatchEvent(const epoll_event& event) {
     for (int i = 0; i < servers.size(); ++i) {
         Server& server = servers[i];
         // this implies its a new connection, that needs to be added to epoll instance
         if (event.data.fd == server.getServerFd()) {
-            server.handleEvent(event.data.fd, event.events, epoll_fd);
+            //server.handleEvent(event.data.fd, event.events, epoll_fd);
+            server.acceptConnection(epoll_fd);
+            return;
+        }
+    }
+    for (std::map<int, Server*>::iterator it = clientfd_to_serverfd.begin(); it != clientfd_to_serverfd.end(); ++it) {
+        if (event.data.fd == it->first) {
+            std::cout << "Existing connection" << std::endl;
+            Server *server = it->second;
+            server->handleRequest(event.data.fd);
             return;
         }
     }
