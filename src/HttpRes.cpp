@@ -28,46 +28,113 @@ std::map<int, std::string> HttpRes::statusMessages = {
     {504, "Gateway Timeout"}
 };
 
-void HttpRes::handleRequest(HttpReq &httpRequest) {
-    // - Response headers:
-    if (httpRequest.getMethod() == "GET") {
-        if (httpRequest.getTarget() == "/info.html")
-        {
-            _protocol = httpRequest.getProtocol();
-            _httpStatus = 200;
-            status_message = "OK";
-            content_type = determineContentType(httpRequest.getTarget());
-            body = parseFile(httpRequest.getTarget());
-            content_length = body.length();
+std::map<int, std::string> statusDescription = {
+	{200, "OK"},
+	{201, "Created"},
+	{202, "Accepted"},
+	{204, "No Content"},
+	{301, "Moved Permanently"},
+	{302, "Found"},
+	{303, "See Other"},
+	{304, "Not Modified"},
+	{307, "Temporary Redirect"},
+	{308, "Permanent Redirect"},
+	{400, "The server could not understand the request due to invalid syntax."},
+	{401, "Unauthorized"},
+	{403, "Forbidden"},
+	{404, "Not Found"},
+	{405, "Method Not Allowed"},
+	{408, "Request Timeout"},
+	{500, "Internal Server Error"},
+	{501, "Not Implemented"},
+	{502, "Bad Gateway"},
+	{503, "Service Unavailable"},
+	{504, "Gateway Timeout"}
+};
+
+void	HttpRes::generateErrorResponse(int client_fd) {
+	
+	_body = "<html><head><title>" + std::to_string(_httpStatus) + " "
+			+ _statusMessage + "</title></head><body><h1>"
+			+ std::to_string(_httpStatus) + " " + _statusMessage + "</h1>";
+	if (statusDescription.find(_httpStatus) != statusDescription.end())
+		_body += "<p>" + statusDescription[_httpStatus] + "</p>";
+	_body += "</body></html>";
+
+
+	std::ostringstream response;
+
+    // Status line
+    response << "HTTP/1.1 " << _httpStatus << " " << _statusMessage << "\r\n";
+
+    // Headers
+    response << "Content-Type: text/html\r\n";
+    response << "Content-Length: " << _body.size() << "\r\n";
+    response << "Connection: close\r\n";
+
+    // Blank line to separate headers from body
+    response << "\r\n";
+
+    // Body
+    response << _body;
+
+	std::string response_string = response.str();
+    const char* response_cstr = response_string.c_str();
+    size_t total_sent = 0;
+    size_t to_send = response_string.size();
+
+    while (total_sent < to_send) {
+        ssize_t sent = write(client_fd, response_cstr + total_sent, to_send - total_sent);
+        if (sent < 0) {
+            perror("Error writing to socket");
+            break;
         }
-		else if (httpRequest.getTarget() == "/image.jpg")
+        total_sent += sent;
+    }
+}
+
+void HttpRes::handleRequest(HttpReq &httpRequest) {
+	_protocol = httpRequest.getProtocol();
+	_httpStatus = httpRequest.getHttpStatus();
+	_statusMessage = statusMessages[_httpStatus];
+	_target = httpRequest.getTarget();
+    if (_httpStatus != 200) {
+		_contentType = "text/html";
+		return;
+	}
+	// - Response headers:
+    if (httpRequest.getMethod() == "GET") {
+        if (_target == "/info.html")
         {
             _protocol = httpRequest.getProtocol();
-            _httpStatus = 200;
-            status_message = "OK";
-            content_type = determineContentType(httpRequest.getTarget());
-            body = parseFile(httpRequest.getTarget());
-            content_length = body.length();
+            _contentType = determineContentType(_target);
+            _body = parseFile(_target);
+            contentLength = _body.length();
+        }
+		else if (_target == "/image.jpg")
+        {
+            _protocol = httpRequest.getProtocol();
+            _contentType = determineContentType(_target);
+            _body = parseFile(_target);
+            contentLength = _body.length();
         }
         else
         {
             _protocol = httpRequest.getProtocol();
             _httpStatus = 404;
-            status_message = "Not Found";
-            content_type = "text/html";
-            body = parseFile("/error_404.html");
-            content_length = body.length();
+            _contentType = "text/html";
+            _body = parseFile("/error_404.html");
+            contentLength = _body.length();
         }
     }
     else {
         _protocol = httpRequest.getProtocol();
         _httpStatus = 404;
-        status_message = "Not Found";
-        content_type = "text/html"; //here we should dynamically determine the content type
-        content_length = 9;
+        _contentType = "text/html"; //here we should dynamically determine the content type
+        contentLength = 9;
         //body = parseFile("www/error_404.html");
 		// use body.length() instead of hardcoding the length
-        body = "Not found!";
+        _body = "Not found!";
     }
 }
 
@@ -98,24 +165,27 @@ std::string HttpRes::parseFile(const std::string &filename) {
 }
 
 void HttpRes::writeResponse(int client_fd) {
-    // Build the status line
+    if (_httpStatus != 200)
+		return	(generateErrorResponse(client_fd));
+	
+	// Build the status line
     std::ostringstream response_stream;
-    response_stream << _protocol << " " << _httpStatus << " " << status_message << "\n";
+    response_stream << _protocol << " " << _httpStatus << " " << _statusMessage << "\n";
 
     // Add headers
-    response_stream << "Content-Type: " << content_type << "\n";
-    response_stream << "Content-Length: " << content_length << "\n\n";
+    response_stream << "Content-Type: " << _contentType << "\n";
+    response_stream << "Content-Length: " << contentLength << "\n\n";
     // response_stream << "Connection: keep-alive\n\n"; //without this we still be stuck in the loop (still issues here)
 
     // Add body
-    response_stream << body;
+    response_stream << _body;
 
-    // Convert the response to a C string
-    std::string response_string = response_stream.str();
-    const char* response_cstr = response_string.c_str();
+	// Convert the response to a C string
+	std::string response_string = response_stream.str();
+	const char* response_cstr = response_string.c_str();
 
-    // Write the response to the socket
-    write(client_fd, response_cstr, strlen(response_cstr));
+	// Write the response to the socket
+	write(client_fd, response_cstr, strlen(response_cstr));
 }
 
 
