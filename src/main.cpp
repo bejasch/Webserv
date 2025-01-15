@@ -10,10 +10,6 @@ int main(int argc, char **argv) {
     serverManager.setServers(argv[1]);
     serverManager.startServers();
 
-    // Config config;
-    // config.parseConfigFile(argv[1]);
-    // config.printConfig(config);
-
     //server
     // Server server;
     // server.start();

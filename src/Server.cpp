@@ -8,21 +8,9 @@ Server::~Server() {
     std::cout << "Server destructor called" << std::endl;
 }
 
-void Server::setServer(const std::string& server_config) {
-	//server_config should contain the server block
-	// Config config;
-	//config.parseConfigFile(server_config);
-	addServer(Config()); // Add a server with default config
-	addRoute(Route()); // Add a route with default values
-	setUpServer();
-}
-
-void Server::addServer(const Config& config) {
+void Server::setServer(Config *config) {
 	this->config = config;
-}
-
-void Server::addRoute(const Route& route) {
-	routes.push_back(route);
+	setUpServer();
 }
 
 void Server::setUpServer() {
@@ -31,7 +19,7 @@ void Server::setUpServer() {
 
     address.sin_family = AF_INET; // address family used previously
     address.sin_addr.s_addr = INADDR_ANY; // this is my IP address
-    address.sin_port = htons( config.getPort() ); // the port I would like to expose
+    address.sin_port = htons( config->getPort() ); // the port I would like to expose
     bind(server_fd, (struct sockaddr *)&address, sizeof(address)); // bind server file descriptor to socket address
 
     // Make server_fd non-blocking

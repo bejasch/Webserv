@@ -42,5 +42,6 @@ class	ServerManager;
 #include "Route.hpp"
 #include "Server.hpp"
 #include "ServerManager.hpp"
+#include "Utils.hpp"
 
 #endif

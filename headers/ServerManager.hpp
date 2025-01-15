@@ -6,7 +6,7 @@
 class ServerManager {
 private:
     int epoll_fd;
-    std::vector<Server> servers;
+    std::vector<Server*> servers;
     const static int MAX_EVENTS = 100; // For all servers
 
 public:
@@ -20,6 +20,8 @@ public:
 private:
     void handleEvents();
     void dispatchEvent(const epoll_event& event);
+    int fillConfig(std::string line, std::ifstream &file, Config *config);
+    int fillRoute(std::string line, std::ifstream &file, Config *config, Route *route);
 };
 
 
