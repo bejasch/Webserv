@@ -78,63 +78,81 @@ void	HttpRes::generateErrorResponse(int client_fd) {
     // Body
     response << _body;
 
-	std::string response_string = response.str();
-    const char* response_cstr = response_string.c_str();
-    size_t total_sent = 0;
-    size_t to_send = response_string.size();
-
-    while (total_sent < to_send) {
-        ssize_t sent = write(client_fd, response_cstr + total_sent, to_send - total_sent);
-        if (sent < 0) {
-            perror("Error writing to socket");
-            break;
-        }
-        total_sent += sent;
-    }
+	// TODO: Exception handling ???
+	sendResponse(client_fd, response.str());
 }
 
-void HttpRes::handleRequest(HttpReq &httpRequest) {
+void	HttpRes::sendResponse(int client_fd, const std::string &response) {
+	const char*	response_cstr = response.c_str();
+	size_t		size = response.size();
+	if (response_cstr == NULL || size == 0)
+		return;
+	
+	size_t	total_sent = 0;
+    int		retry_count = 0;
+
+	while (total_sent < size) {
+		ssize_t sent = write(client_fd, response_cstr + total_sent, size - total_sent);
+		if (sent < 0) {
+			retry_count++;
+
+			// If maximum retries reached, log and stop trying
+			if (retry_count >= MAX_RETRY_COUNT) {
+				fprintf(stderr, "Error: Failed to write to socket after %d retries.\n", MAX_RETRY_COUNT);
+				break;
+			}
+
+			// Log a generic error and retry
+			fprintf(stderr, "Warning: Write failed, retrying (%d/%d)...\n", retry_count, MAX_RETRY_COUNT);
+			continue;
+		}
+		retry_count = 0;
+		total_sent += sent;
+	}
+	if (total_sent < size)
+		fprintf(stderr, "Warning: Only %zu out of %zu bytes were sent.\n", total_sent, size);
+	else
+		printf("Successfully sent %zu bytes to client.\n", total_sent);
+}
+
+
+void	HttpRes::handleRequest(HttpReq &httpRequest) {
 	_protocol = httpRequest.getProtocol();
 	_httpStatus = httpRequest.getHttpStatus();
 	_statusMessage = statusMessages[_httpStatus];
 	_target = httpRequest.getTarget();
     if (_httpStatus != 200) {
-		_contentType = "text/html";
 		return;
 	}
 	// - Response headers:
     if (httpRequest.getMethod() == "GET") {
         if (_target == "/info.html")
         {
-            _protocol = httpRequest.getProtocol();
             _contentType = determineContentType(_target);
             _body = parseFile(_target);
             contentLength = _body.length();
         }
 		else if (_target == "/image.jpg")
         {
-            _protocol = httpRequest.getProtocol();
+            
+            _contentType = determineContentType(_target);
+            _body = parseFile(_target);
+            contentLength = _body.length();
+        }
+		else if (_target == "/giphy.gif")
+        {
+            
             _contentType = determineContentType(_target);
             _body = parseFile(_target);
             contentLength = _body.length();
         }
         else
         {
-            _protocol = httpRequest.getProtocol();
             _httpStatus = 404;
-            _contentType = "text/html";
-            _body = parseFile("/error_404.html");
-            contentLength = _body.length();
         }
     }
     else {
-        _protocol = httpRequest.getProtocol();
         _httpStatus = 404;
-        _contentType = "text/html"; //here we should dynamically determine the content type
-        contentLength = 9;
-        //body = parseFile("www/error_404.html");
-		// use body.length() instead of hardcoding the length
-        _body = "Not found!";
     }
 }
 
@@ -169,7 +187,7 @@ void HttpRes::writeResponse(int client_fd) {
 		return	(generateErrorResponse(client_fd));
 	
 	// Build the status line
-    std::ostringstream response_stream;
+    std::ostringstream	response_stream;
     response_stream << _protocol << " " << _httpStatus << " " << _statusMessage << "\n";
 
     // Add headers
@@ -180,12 +198,7 @@ void HttpRes::writeResponse(int client_fd) {
     // Add body
     response_stream << _body;
 
-	// Convert the response to a C string
-	std::string response_string = response_stream.str();
-	const char* response_cstr = response_string.c_str();
-
-	// Write the response to the socket
-	write(client_fd, response_cstr, strlen(response_cstr));
+	sendResponse(client_fd, response_stream.str());
 }
 
 

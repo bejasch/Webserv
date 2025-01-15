@@ -256,7 +256,8 @@ void	HttpReq::parseBody(void) {
 		_bodySize = content_length;
 		return (_httpStatus = 200, void());
 	}
-	_httpStatus = 400; // TODO: Check if this is the correct status code
+	// _httpStatus = 400; // TODO: Check if this is the correct status code
+	_httpStatus = 200; 
 }
 
 // Reset for a new request - or better destroy and create a new object ?

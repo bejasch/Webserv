@@ -24,12 +24,14 @@ private:
 	static std::map<std::string, std::string>	mimeTypes;
 	static std::map<int, std::string>			statusDescriptions;
 
+	void	sendResponse(int client_fd, const std::string &response);
+
 public:
 	HttpRes();
 	~HttpRes();
 
 	void		handleRequest(HttpReq &httpRequest);
-	std::string	generateErrorResponse(void);
+	void		generateErrorResponse(int client_fd);
 	void		writeResponse(int client_fd);
 
 };
