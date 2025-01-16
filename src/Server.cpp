@@ -82,6 +82,7 @@ void Server::handleRequest(int client_fd) {
 		int parse_status = request.getHttpStatus();
 		std::cout << "\nDATA READING FINISHED with status: " << parse_status << std::endl;
 		client_requests[client_fd].print();
+		
 		httpResponse.handleRequest(request);
 		httpResponse.writeResponse(client_fd);
 

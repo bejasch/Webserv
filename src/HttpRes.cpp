@@ -13,70 +13,171 @@ HttpRes::~HttpRes() {
     std::cout << "HttpRes destructor called" << std::endl;
 }
 
-void HttpRes::handleRequest(HttpReq &httpRequest) {
-    // - Response headers:
+std::map<std::string, std::string> HttpRes::mimeTypes = {
+	{"html", "text/html"},
+	{"css", "text/css"},
+	{"js", "text/javascript"},
+	{"jpg", "image/jpeg"},
+	{"jpeg", "image/jpeg"},
+	{"png", "image/png"},
+	{"gif", "image/gif"},
+	{"ico", "image/x-icon"}
+};
+
+std::map<int, std::string> HttpRes::statusMessages = {
+    {400, "Bad Request"},
+    {401, "Unauthorized"},
+    {403, "Forbidden"},
+    {404, "Not Found"},
+    {405, "Method Not Allowed"},
+    {408, "Request Timeout"},
+    {500, "Internal Server Error"},
+    {501, "Not Implemented"},
+    {502, "Bad Gateway"},
+    {503, "Service Unavailable"},
+    {504, "Gateway Timeout"}
+};
+
+std::map<int, std::string> statusDescription = {
+	{200, "OK"},
+	{201, "Created"},
+	{202, "Accepted"},
+	{204, "No Content"},
+	{301, "Moved Permanently"},
+	{302, "Found"},
+	{303, "See Other"},
+	{304, "Not Modified"},
+	{307, "Temporary Redirect"},
+	{308, "Permanent Redirect"},
+	{400, "The server could not understand the request due to invalid syntax."},
+	{401, "Unauthorized"},
+	{403, "Forbidden"},
+	{404, "Not Found"},
+	{405, "Method Not Allowed"},
+	{408, "Request Timeout"},
+	{500, "Internal Server Error"},
+	{501, "Not Implemented"},
+	{502, "Bad Gateway"},
+	{503, "Service Unavailable"},
+	{504, "Gateway Timeout"}
+};
+
+void	HttpRes::generateErrorResponse(int client_fd) {
+	
+	_body = "<html><head><title>" + std::to_string(_httpStatus) + " "
+			+ _statusMessage + "</title></head><body><h1>"
+			+ std::to_string(_httpStatus) + " " + _statusMessage + "</h1>";
+	if (statusDescription.find(_httpStatus) != statusDescription.end())
+		_body += "<p>" + statusDescription[_httpStatus] + "</p>";
+	_body += "</body></html>";
+
+
+	std::ostringstream response;
+
+    // Status line
+    response << "HTTP/1.1 " << _httpStatus << " " << _statusMessage << "\r\n";
+
+    // Headers
+    response << "Content-Type: text/html\r\n";
+    response << "Content-Length: " << _body.size() << "\r\n";
+    response << "Connection: close\r\n";
+
+    // Blank line to separate headers from body
+    response << "\r\n";
+
+    // Body
+    response << _body;
+
+	// TODO: Exception handling ???
+	sendResponse(client_fd, response.str());
+}
+
+void	HttpRes::sendResponse(int client_fd, const std::string &response) {
+	const char*	response_cstr = response.c_str();
+	size_t		size = response.size();
+	if (response_cstr == NULL || size == 0)
+		return;
+	
+	size_t	total_sent = 0;
+    int		retry_count = 0;
+
+	while (total_sent < size) {
+		ssize_t sent = write(client_fd, response_cstr + total_sent, size - total_sent);
+		if (sent < 0) {
+			retry_count++;
+
+			// If maximum retries reached, log and stop trying
+			if (retry_count >= MAX_RETRY_COUNT) {
+				fprintf(stderr, "Error: Failed to write to socket after %d retries.\n", MAX_RETRY_COUNT);
+				break;
+			}
+
+			// Log a generic error and retry
+			fprintf(stderr, "Warning: Write failed, retrying (%d/%d)...\n", retry_count, MAX_RETRY_COUNT);
+			continue;
+		}
+		retry_count = 0;
+		total_sent += sent;
+	}
+	if (total_sent < size)
+		fprintf(stderr, "Warning: Only %zu out of %zu bytes were sent.\n", total_sent, size);
+	else
+		printf("Successfully sent %zu bytes to client.\n", total_sent);
+}
+
+
+void	HttpRes::handleRequest(HttpReq &httpRequest) {
+	_protocol = httpRequest.getProtocol();
+	_httpStatus = httpRequest.getHttpStatus();
+	_statusMessage = statusMessages[_httpStatus];
+	_target = httpRequest.getTarget();
+    if (_httpStatus != 200) {
+		return;
+	}
+	// - Response headers:
     if (httpRequest.getMethod() == "GET") {
-        if (httpRequest.getTarget() == "/info.html")
+        if (_target == "/info.html")
         {
-            protocol = httpRequest.getProtocol();
-            status = 200;
-            status_message = "OK";
-            content_type = determineContentType(httpRequest.getTarget());
-            body = parseFile(httpRequest.getTarget());
-            content_length = body.length();
+            _contentType = determineContentType(_target);
+            _body = parseFile(_target);
+            contentLength = _body.length();
+        }
+		else if (_target == "/image.jpg")
+        {
+            
+            _contentType = determineContentType(_target);
+            _body = parseFile(_target);
+            contentLength = _body.length();
+        }
+		else if (_target == "/giphy.gif")
+        {
+            
+            _contentType = determineContentType(_target);
+            _body = parseFile(_target);
+            contentLength = _body.length();
         }
         else
         {
-            protocol = httpRequest.getProtocol();
-            status = 404;
-            status_message = "Not Found";
-            content_type = "text/html";
-            body = parseFile("/error_404.html");
-            content_length = body.length();
+            _httpStatus = 404;
         }
     }
     else {
-        protocol = httpRequest.getProtocol();
-        status = 404;
-        status_message = "Not Found";
-        content_type = "text/html"; //here we should dynamically determine the content type
-        content_length = 9;
-        //body = parseFile("www/error_404.html");
-		// use body.length() instead of hardcoding the length
-        body = "Not found!";
+        _httpStatus = 404;
     }
 }
 
+
 std::string HttpRes::determineContentType(const std::string &filename) {
-    // - Determine the content type based on the file extension
-    std::string extension = filename.substr(filename.find_last_of(".") + 1); //find_last_of returns the index of the last occurrence of the given input.
-    if (extension == "html") {
-        return "text/html";
-    }
-    else if (extension == "css") {
-        return "text/css";
-    }
-    else if (extension == "js") {
-        return "text/javascript";
-    }
-    else if (extension == "jpg") {
-        return "image/jpeg";
-    }
-    else if (extension == "jpeg") {
-        return "image/jpeg";
-    }
-    else if (extension == "png") {
-        return "image/png";
-    }
-    else if (extension == "gif") {
-        return "image/gif";
-    }
-    else if (extension == "ico") {
-        return "image/x-icon";
-    }
-    else {
-        return "text/plain";
-    }
+	std::string extension = filename.substr(filename.find_last_of(".") + 1);
+
+	// Look up the MIME type in the static map
+	std::map<std::string, std::string>::const_iterator it = mimeTypes.find(extension);
+
+	if (it != mimeTypes.end()) {
+		return it->second;
+	} else {
+		return "text/plain";
+	}
 }
 
 std::string HttpRes::parseFile(const std::string &filename) {
@@ -92,24 +193,22 @@ std::string HttpRes::parseFile(const std::string &filename) {
 }
 
 void HttpRes::writeResponse(int client_fd) {
-    // Build the status line
-    std::ostringstream response_stream;
-    response_stream << protocol << " " << status << " " << status_message << "\n";
+    if (_httpStatus != 200)
+		return	(generateErrorResponse(client_fd));
+	
+	// Build the status line
+    std::ostringstream	response_stream;
+    response_stream << _protocol << " " << _httpStatus << " " << _statusMessage << "\n";
 
     // Add headers
-    response_stream << "Content-Type: " << content_type << "\n";
-    response_stream << "Content-Length: " << content_length << "\n\n";
+    response_stream << "Content-Type: " << _contentType << "\n";
+    response_stream << "Content-Length: " << contentLength << "\n\n";
     // response_stream << "Connection: keep-alive\n\n"; //without this we still be stuck in the loop (still issues here)
 
     // Add body
-    response_stream << body;
+    response_stream << _body;
 
-    // Convert the response to a C string
-    std::string response_string = response_stream.str();
-    const char* response_cstr = response_string.c_str();
-
-    // Write the response to the socket
-    write(client_fd, response_cstr, strlen(response_cstr));
+	sendResponse(client_fd, response_stream.str());
 }
 
 
