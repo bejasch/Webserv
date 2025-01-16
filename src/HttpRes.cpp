@@ -115,6 +115,85 @@ void	HttpRes::sendResponse(int client_fd, const std::string &response) {
 		printf("Successfully sent %zu bytes to client.\n", total_sent);
 }
 
+// Parse HTTP POST data (application/x-www-form-urlencoded)
+// Example body: "name=Ben&message=This+is+a+test%21"
+std::map<std::string, std::string> HttpRes::parsePostData(const std::string& data) {
+    std::map<std::string, std::string> postData;
+    std::istringstream stream(data);
+    std::string pair;
+
+    while (std::getline(stream, pair, '&')) {
+        size_t pos = pair.find('=');
+        if (pos != std::string::npos) {
+            std::string key = pair.substr(0, pos);
+            std::string value = pair.substr(pos + 1);
+            // Decode URL-encoded values (basic implementation)
+            std::replace(value.begin(), value.end(), '+', ' ');
+			// Decode URL-encoded values (extended implementation)
+			for (size_t i = 0; i < value.length(); ++i) {
+				if (value[i] == '%') {
+					char c;
+					if (sscanf(value.substr(i + 1, 2).c_str(), "%2hhx", &c) == 1) {
+						value[i] = c;
+						value.erase(i + 1, 2);
+					}
+				}
+			}
+            postData[key] = value;
+        }
+    }
+    return (postData);
+}
+
+// Generate HTML for guestbook
+std::string	HttpRes::generateGuestbookHTML(void) {
+    std::ostringstream html;
+    html << "<!DOCTYPE html><html><head><title>Guestbook</title></head><body>";
+    html << "<h1>Welcome to the Guestbook</h1>";
+    html << "<form method='POST' action='/guestbook.html'>"
+         << "Name: <input type='text' name='name'><br>"
+         << "Message: <textarea name='message'></textarea><br>"
+         << "<button type='submit'>Submit</button></form><hr>";
+    html << "<h2>Messages</h2>";
+
+	// Load guestbook entries from file
+	std::ifstream file(GUESTBOOK_FILE.c_str());
+	if (file) {
+		std::string line;
+		while (std::getline(file, line)) {
+			size_t sep = line.find('|');
+			if (sep != std::string::npos) {
+				html << "<p><strong>" << line.substr(0, sep) << ":</strong> " << line.substr(sep + 1) << "</p>";
+			}
+		}
+	}
+
+    html << "</body></html>";
+    return (html.str());
+}
+
+// Save a new entry to the file
+void	HttpRes::saveEntry(const std::string& name, const std::string& message) {
+    if (name.empty() || message.empty()) {
+		return;
+	}
+	if (name.find('|') != std::string::npos || message.find('|') != std::string::npos) {
+		fprintf(stderr, "Warning: Invalid characters in guestbook entry.\n");
+		return;
+	}
+	if (name.length() > 100 || message.length() > 1000) {
+		fprintf(stderr, "Warning: Guestbook entry too long.\n");
+		return;
+	}
+
+	// Append entry to file	
+	std::ofstream file(GUESTBOOK_FILE.c_str(), std::ios::app); // Append mode
+	if (file) {
+		file << name << "|" << message << "\n";
+	} else {
+		std::cerr << "Error: Could not open file " << GUESTBOOK_FILE << " for writing.\n";
+	}
+}
 
 void	HttpRes::handleRequest(HttpReq &httpRequest) {
 	_protocol = httpRequest.getProtocol();
@@ -126,6 +205,12 @@ void	HttpRes::handleRequest(HttpReq &httpRequest) {
 	}
 	// - Response headers:
     if (httpRequest.getMethod() == "GET") {
+		if (_target == "/guestbook.html") {
+			_contentType = determineContentType(_target);
+			_body = generateGuestbookHTML();
+			contentLength = _body.length();
+			return;
+		}
 		if (access(("data/www" + _target).c_str(), F_OK) == -1) {
 			_httpStatus = 404;
 			return;
@@ -139,9 +224,23 @@ void	HttpRes::handleRequest(HttpReq &httpRequest) {
 		_contentType = determineContentType(_target);
 		_body = parseFile(_target);
 		contentLength = _body.length();
-    }
-    else {
-        _httpStatus = 404;
+    } else if (httpRequest.getMethod() == "POST" && _target == "/guestbook.html") {
+        // Parse POST data
+        if (httpRequest.getBodySize() > 0) {
+            std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
+
+            if (formData.count("name") && formData.count("message")) {
+                saveEntry(formData["name"], formData["message"]);
+				printf("Saved entry: %s: %s\n", formData["name"].c_str(), formData["message"].c_str());
+            }
+        }
+
+        // Redirect back to guestbook
+		_httpStatus = 303;
+        // response << "HTTP/1.1 303 See Other\r\nLocation: /\r\n\r\n";
+
+    } else {
+        _httpStatus = 405;
     }
 }
 

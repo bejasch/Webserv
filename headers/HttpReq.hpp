@@ -55,7 +55,7 @@ public:
 	std::string	getProtocol(void) const;
 	std::string	getHeader(std::string key) const;
 	size_t		getBodySize(void) const;
-	std::string	getBody(void) const;
+	std::string	&getBody(void);
 	int			getHttpStatus(void) const;
 
 	bool 	processData(const std::string &data);	// Encapsulates the parsing of the incoming data

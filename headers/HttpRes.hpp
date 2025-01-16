@@ -24,6 +24,16 @@ private:
 	static std::map<std::string, std::string>	mimeTypes;
 	static std::map<int, std::string>			statusDescriptions;
 
+
+	const std::string	GUESTBOOK_FILE = "guestbook.txt";
+
+	std::map<std::string, std::string>	parsePostData(const std::string& data);
+
+	std::string	generateGuestbookHTML(void);
+	void		saveEntry(const std::string& name, const std::string& message);
+	
+	void	generateErrorResponse(int client_fd);
+
 	void	sendResponse(int client_fd, const std::string &response);
 
 public:
@@ -31,7 +41,6 @@ public:
 	~HttpRes();
 
 	void		handleRequest(HttpReq &httpRequest);
-	void		generateErrorResponse(int client_fd);
 	void		writeResponse(int client_fd);
 
 };
