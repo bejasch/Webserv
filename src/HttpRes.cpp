@@ -126,30 +126,19 @@ void	HttpRes::handleRequest(HttpReq &httpRequest) {
 	}
 	// - Response headers:
     if (httpRequest.getMethod() == "GET") {
-        if (_target == "/info.html")
-        {
-            _contentType = determineContentType(_target);
-            _body = parseFile(_target);
-            contentLength = _body.length();
-        }
-		else if (_target == "/image.jpg")
-        {
-            
-            _contentType = determineContentType(_target);
-            _body = parseFile(_target);
-            contentLength = _body.length();
-        }
-		else if (_target == "/giphy.gif")
-        {
-            
-            _contentType = determineContentType(_target);
-            _body = parseFile(_target);
-            contentLength = _body.length();
-        }
-        else
-        {
-            _httpStatus = 404;
-        }
+		if (access(("data/www" + _target).c_str(), F_OK) == -1) {
+			_httpStatus = 404;
+			return;
+		} else if (access(("data/www" + _target).c_str(), R_OK) == -1) {
+			_httpStatus = 403;
+			return;
+		}
+		if (_target == "/") {
+			_target = "/index.html";
+		}
+		_contentType = determineContentType(_target);
+		_body = parseFile(_target);
+		contentLength = _body.length();
     }
     else {
         _httpStatus = 404;
