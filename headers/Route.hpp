@@ -18,7 +18,27 @@ class Route {
     public:
         Route();
         ~Route();
-        //setter and getter functions
+        
+        //setter functions
+        void setPath(const std::string &path);
+        void setAllowedMethods(const std::vector<std::string> &allowed_methods);
+        void setRootDir(const std::string &root_dir);
+        void setIndexFile(const std::string &index_file);
+        void setAutoindex(std::string autoindex);
+        void setRedirectStatus(int redirect_status);
+        void setRedirectUrl(const std::string &redirect_url);
+
+        //getter functions
+        std::string getPath() const { return path; }
+        std::vector<std::string> getAllowedMethods() const { return allowed_methods; }
+        std::string getRootDir() const { return root_dir; }
+        std::string getIndexFile() const { return index_file; }
+        bool getAutoindex() const { return autoindex; }
+        int getRedirectStatus() const { return redirect_status; }
+        std::string getRedirectUrl() const { return redirect_url; }
+
+        //utils
+        void printRoute();
 };
 
 #endif

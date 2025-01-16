@@ -36,6 +36,7 @@ struct  Entry;
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <cctype>
 
 
 // #include "
@@ -45,6 +46,7 @@ struct  Entry;
 #include "Route.hpp"
 #include "Server.hpp"
 #include "ServerManager.hpp"
+#include "Utils.hpp"
 
 
 // Structure to hold a guestbook entry

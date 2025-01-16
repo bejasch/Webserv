@@ -1,7 +1,11 @@
 #include "../headers/AllHeaders.hpp"
 
-HttpRes::HttpRes() {}
-HttpRes::~HttpRes() {}
+HttpRes::HttpRes() {
+    std::cout << "HttpRes default constructor called" << std::endl;
+}
+HttpRes::~HttpRes() {
+    std::cout << "HttpRes destructor called" << std::endl;
+}
 
 std::map<std::string, std::string> HttpRes::mimeTypes = {
 	{"html", "text/html"},
