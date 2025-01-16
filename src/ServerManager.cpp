@@ -5,6 +5,7 @@ ServerManager::ServerManager() {
 }
 
 ServerManager::~ServerManager() {
+    std::cout << "ServerManager destructor called" << std::endl;
 }
 
 int ServerManager::setServers(const std::string &config_file)
@@ -25,16 +26,15 @@ int ServerManager::setServers(const std::string &config_file)
             server = new Server(*this);
             config = new Config();
             // Call fillConfig to parse and fill the server's configuration
-            fillConfig(line, file, config);  // Pass the file by reference
-            std::cout << "Config filled" << std::endl;
+            line = fillConfig(line, file, config);  // Pass the file by reference
         }
         if (line.find("location") != std::string::npos) {
             route = new Route();
+            route->setPath(line.substr(line.find("location") + std::string("location").length() + 1, line.find("{") - line.find(" ") - 2));
             fillRoute(line, file, config, route);
-            route->printRoute(*route);
-            std::cout << "Route filled" << std::endl;
         }
     }
+    //config->printConfig();  // Print the configuration
     server->setServer(config);  // Set server configuration
     servers.push_back(server);  // Add to server collection
     file.close();  // Close the file explicitly (optional since it's auto-closed on scope exit)
@@ -102,43 +102,29 @@ void ServerManager::dispatchEvent(const epoll_event& event) {
 }
 
 //TODO: this assumes that there is only one space between the key and value
-int ServerManager::fillConfig(std::string line, std::ifstream &file, Config *config) {
+//TODO: this also assumes that there are tabs in front of the key
+std::string ServerManager::fillConfig(std::string line, std::ifstream &file, Config *config) {
     // std::string line;
     while (std::getline(file, line)) {
-        if (line.find("{") != std::string::npos) {
-            break; // Stop if we find the closing brace
-        }
+        if (line.find("{") != std::string::npos)
+            return(line); // Stop if we find the closing brace
         // Parse each line and assign values to the config object
-        if (line.find("listen") != std::string::npos) {
-            config->setPort(stringToInt(line.substr(line.find("listen") + std::string("listen").length(), line.find(";") - line.find(" ") - 1)));
-            std::cout << "Port: " << config->getPort() << std::endl;
-        }
-        else if (line.find("server_name") != std::string::npos) {
-            config->setName(line.substr(line.find("server_name") + std::string("server_name").length(), line.find(";") - line.find(" ") - 1));
-            std::cout << "Name: " << config->getName() << std::endl;
-        }
-        else if (line.find("root") != std::string::npos) {
-            config->setRootDir(line.substr(line.find("root") + std::string("root").length(), line.find(";") - line.find(" ") - 1));
-            std::cout << "Root dir: " << config->getRootDir() << std::endl;
-        }
-        else if (line.find("client_max_body_size") != std::string::npos) {
-            config->setMaxBodySize(stringToInt(line.substr(line.find("client_max_body_size") + std::string("client_max_body_size").length(), line.find(";") - line.find(" ") - 1)));
-            std::cout << "Max body size: " << config->getMaxBodySize() << std::endl;
-        }
-        else if (line.find("index") != std::string::npos) {
-            config->setDefaultFile(line.substr(line.find("index") + std::string("index").length(), line.find(";") - line.find(" ") - 1));
-            std::cout << "Default file: " << config->getDefaultFile() << std::endl;
-        }
+        if (line.find("listen") != std::string::npos)
+            config->setPort(stringToInt(line.substr(line.find("listen") + std::string("listen").length() + 1, line.find(";") - line.find(" ") - 1)));
+        else if (line.find("server_name") != std::string::npos)
+            config->setName(line.substr(line.find("server_name") + std::string("server_name").length() + 1, line.find(";") - line.find(" ") - 1));
+        else if (line.find("root") != std::string::npos)
+            config->setRootDir(line.substr(line.find("root") + std::string("root").length() + 1, line.find(";") - line.find(" ") - 1));
+        else if (line.find("client_max_body_size") != std::string::npos)
+            config->setMaxBodySize(stringToInt(line.substr(line.find("client_max_body_size") + std::string("client_max_body_size").length() + 1, line.find(";") - line.find(" ") - 1)));
+        else if (line.find("index") != std::string::npos)
+            config->setDefaultFile(line.substr(line.find("index") + std::string("index").length() + 1, line.find(";") - line.find(" ") - 1));
         else if (line.find("error_page") != std::string::npos) {
-            config->setErrorFile(line.substr(line.find("error_page") + std::string("error_page").length(), line.find(";") - line.find(" ") - 1));
-            std::cout << "Error file: " << config->getErrorFile() << std::endl;
-        }
-        else if (line.find("error_status") != std::string::npos) {
-            config->setErrorStatus(stringToInt(line.substr(line.find("error_status") + std::string("error_status").length(), line.find(";") - line.find(" ") - 1)));
-            std::cout << "Error status: " << config->getErrorStatus() << std::endl;
+            config->setErrorStatus(stringToInt(line.substr(line.find("error_page") + std::string("error_page").length() + 1, line.find(" ") - line.find("error_page") - 1)));
+            config->setErrorFile(line.substr(line.find("error_page") + std::string("error_page").length() + 5, line.find(";") - line.find(" ") - 5));
         }
     }
-    return 0; // Return 0 to indicate successful parsing
+    return ""; // Return 0 to indicate successful parsing
 }
 
 int ServerManager::fillRoute(std::string line, std::ifstream &file, Config *config, Route *route) {
@@ -147,31 +133,27 @@ int ServerManager::fillRoute(std::string line, std::ifstream &file, Config *conf
             config->addRoute(route);
             break; // Stop if we find the closing brace
         }
-        if (line.find("path") != std::string::npos) {
-            route->setPath(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
-        }
-        else if (line.find("allowed_methods") != std::string::npos) {
+        if (line.find("allow_methods") != std::string::npos) {
             // Parse the allowed methods and set them to the route
             std::string methods = line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1);
             std::vector<std::string> allowed_methods;
             std::string method;
             std::istringstream iss(methods);
-            while (std::getline(iss, method, ',')) {
+            while (std::getline(iss, method, ' ')) {
                 allowed_methods.push_back(method);
             }
             route->setAllowedMethods(allowed_methods);
         }
-        else if (line.find("root_dir") != std::string::npos)
+        else if (line.find("alias") != std::string::npos)
             route->setRootDir(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
-        else if (line.find("index_file") != std::string::npos)
+        else if (line.find("return") != std::string::npos) {
+            route->setRedirectStatus(stringToInt(line.substr(line.find("return") + std::string("return").length() + 1, line.find(" ") - line.find("return") - 1)));
+            route->setRedirectUrl(line.substr(line.find("return") + std::string("return").length() + 5, line.find(";") - line.find(" ") - 5));
+        }
+        else if (line.find("index") != std::string::npos && isStandaloneWord(line, "index", line.find("index")))
             route->setIndexFile(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
         else if (line.find("autoindex") != std::string::npos)
             route->setAutoindex(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
-        else if (line.find("redirect_status") != std::string::npos)
-            route->setRedirectStatus(stringToInt(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1)));
-        else if (line.find("redirect_url") != std::string::npos) {
-            route->setRedirectUrl(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
-        }
     }
     return 0;
 }

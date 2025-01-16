@@ -4,5 +4,6 @@
 #include "AllHeaders.hpp"
 
 int stringToInt(const std::string &str);
+bool isStandaloneWord(const std::string& line, const std::string& word, size_t pos);
 
 #endif

@@ -1,7 +1,17 @@
 #include "../headers/AllHeaders.hpp"
 
-HttpRes::HttpRes() {}
-HttpRes::~HttpRes() {}
+HttpRes::HttpRes() {
+    protocol = "";
+    status = 0;
+    status_message = "";
+    content_type = "";
+    content_length = 0;
+    body = "";
+    std::cout << "HttpRes default constructor called" << std::endl;
+}
+HttpRes::~HttpRes() {
+    std::cout << "HttpRes destructor called" << std::endl;
+}
 
 void HttpRes::handleRequest(HttpReq &httpRequest) {
     // - Response headers:

@@ -33,6 +33,7 @@ class	ServerManager;
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <cctype>
 
 
 // #include "

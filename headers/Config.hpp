@@ -14,7 +14,7 @@ class Config {
         std::string default_file;
         std::string error_file;
         int         error_status;
-        std::vector<Route> routes;
+        std::vector<Route*> routes;
 
     public:
         Config();
@@ -40,7 +40,7 @@ class Config {
         int getErrorStatus() const {return this->error_status;};
 
         //utils
-        void printConfig(const Config& config);
+        void printConfig();
 };
 
 #endif

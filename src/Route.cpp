@@ -1,6 +1,14 @@
 #include "../headers/AllHeaders.hpp"
 
 Route::Route() {
+    this->path = "";
+    this->allowed_methods = {""};
+    this->root_dir = "";
+    this->index_file = "";
+    this->autoindex = false;
+    this->redirect_status = 000;
+    this->redirect_url = "";
+    std::cout << "Route default constructor called" << std::endl;
 }
 
 Route::~Route() {
@@ -38,13 +46,14 @@ void Route::setRedirectUrl(const std::string &redirect_url) {
     this->redirect_url = redirect_url;
 }
 
-void Route::printRoute(const Route &route) {
-    std::cout << "path: " << route.path << std::endl;
-    std::cout << "allowed_methods1: " << route.allowed_methods[0] << std::endl;
-    std::cout << "allowed_methods2: " << route.allowed_methods[1] << std::endl;
-    std::cout << "root_dir: " << route.root_dir << std::endl;
-    std::cout << "index_file: " << route.index_file << std::endl;
-    std::cout << "autoindex: " << route.autoindex << std::endl;
-    std::cout << "redirect_status: " << route.redirect_status << std::endl;
-    std::cout << "redirect_url: " << route.redirect_url << std::endl;
+void Route::printRoute() {
+    std::cout << "path: " << path << std::endl;
+    for (int i = 0; i < allowed_methods.size(); i++) {
+        std::cout << "allowed_methods: " << allowed_methods[i] << std::endl;
+    }
+    std::cout << "root_dir: " << root_dir << std::endl;
+    std::cout << "index_file: " << index_file << std::endl;
+    std::cout << "autoindex: " << autoindex << std::endl;
+    std::cout << "redirect_status: " << redirect_status << std::endl;
+    std::cout << "redirect_url: " << redirect_url << std::endl;
 }

@@ -20,7 +20,7 @@ public:
 private:
     void handleEvents();
     void dispatchEvent(const epoll_event& event);
-    int fillConfig(std::string line, std::ifstream &file, Config *config);
+    std::string fillConfig(std::string line, std::ifstream &file, Config *config);
     int fillRoute(std::string line, std::ifstream &file, Config *config, Route *route);
 };
 
