@@ -17,7 +17,6 @@ class	HttpRes;
 class	Route;
 class	Server;
 class	ServerManager;
-struct  Entry;
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -48,11 +47,5 @@ struct  Entry;
 #include "ServerManager.hpp"
 #include "Utils.hpp"
 
-
-// Structure to hold a guestbook entry
-struct Entry {
-    std::string name;
-    std::string message;
-};
 
 #endif
