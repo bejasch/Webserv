@@ -1,12 +1,6 @@
 #include "../headers/AllHeaders.hpp"
 
 HttpRes::HttpRes() {
-    protocol = "";
-    status = 0;
-    status_message = "";
-    content_type = "";
-    content_length = 0;
-    body = "";
     std::cout << "HttpRes default constructor called" << std::endl;
 }
 HttpRes::~HttpRes() {
