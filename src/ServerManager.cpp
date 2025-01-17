@@ -34,19 +34,23 @@ int ServerManager::setServers(const std::string &config_file)
             if (portCheck(config->getPort()) == 1) {
                 delete server;
                 delete config;
+                server = NULL; // Avoid dangling pointer
+                config = NULL; // Avoid dangling pointer
                 continue;
             }
             server->setServer(config);
             servers.push_back(server);
         }
-        if (line.find("location") != std::string::npos) {
+        if (line.find("location") != std::string::npos && server != NULL) {
+            std::cout << "port of config" << config->getPort() << std::endl;
             route = new Route();
             route->setPath(line.substr(line.find("location") + std::string("location").length() + 1, line.find("{") - line.find(" ") - 2));
             fillRoute(line, file, config, route);
             config->addRoute(route);
+            route->printRoute();
         }
     }
-    printConfigAll();  // Print the configuration
+    //printConfigAll();  // Print the configuration
     file.close();  // Close the file explicitly (optional since it's auto-closed on scope exit)
     return 0;  // Return 0 to indicate success
 }
@@ -69,7 +73,7 @@ void ServerManager::startServers() {
             perror("Failed to add server_fd to epoll");
             return;
             }
-        std::cout << "Added server_fd: " << server_fd << " to epoll" << std::endl;
+        //std::cout << "Added server_fd: " << server_fd << " to epoll" << std::endl;
     }
     handleEvents();
 }

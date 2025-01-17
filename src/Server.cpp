@@ -25,7 +25,7 @@ void Server::setUpServer() {
     // Make server_fd non-blocking
     fcntl(server_fd, F_SETFL, O_NONBLOCK);
     listen(server_fd, 10); // 10 defines how many pending connections can be queued before connections are refused.
-	std::cout << "Server set up on port " << config->getPort() << " fd: " << server_fd << std::endl;
+	//std::cout << "Server set up on port " << config->getPort() << " fd: " << server_fd << std::endl;
 }
 
 void Server::acceptConnection(int epoll_fd) {
