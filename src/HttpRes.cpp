@@ -275,7 +275,7 @@ std::string HttpRes::parseFile(const std::string &filename) {
 }
 
 void HttpRes::writeResponse(int client_fd) {
-    if (_httpStatus != 200)
+    if (_httpStatus >= 400 && _httpStatus < 600)
 		return	(generateErrorResponse(client_fd));
 	
 	// Build the status line
@@ -284,6 +284,7 @@ void HttpRes::writeResponse(int client_fd) {
 
     // Add headers
     response_stream << "Content-Type: " << _contentType << "\n";
+	response_stream << "Location: " << _target << "\n";
     response_stream << "Content-Length: " << contentLength << "\n\n";
     // response_stream << "Connection: keep-alive\n\n"; //without this we still be stuck in the loop (still issues here)
 
