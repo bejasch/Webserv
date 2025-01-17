@@ -9,6 +9,7 @@ class HttpRes {
 private:
 	// - Response headers:
 	std::string	_protocol;
+	std::string	_method;
 	int			_httpStatus;
 
 	std::string	_target;
@@ -23,7 +24,6 @@ private:
 	static std::map<int, std::string>			statusMessages;
 	static std::map<std::string, std::string>	mimeTypes;
 	static std::map<int, std::string>			statusDescriptions;
-
 
 	const std::string	GUESTBOOK_FILE = "guestbook.txt";
 

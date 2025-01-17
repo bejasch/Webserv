@@ -31,12 +31,16 @@ void Config::printConfig() {
 }
 
 Route	*Config::getRouteForTarget(std::string &target) {
+	Route	*route = NULL;
 	for (int i = 0; i < routes.size(); i++) {
 		if (routes[i]->containsTarget(target)) {
-			return (routes[i]);
+			if (!route)
+				route = routes[i];
+			else if (routes[i]->getPath().length() > route->getPath().length())
+				route = routes[i];
 		}
 	}
-	return (NULL);
+	return (route);
 }
 
 void Config::setPort(int port) {

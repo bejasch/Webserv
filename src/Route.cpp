@@ -47,9 +47,7 @@ void Route::setRedirectUrl(const std::string &redirect_url) {
 }
 
 bool	Route::containsTarget(const std::string &target) const {
-	if (target.find(path) == 0) // Route matches at the beginning
-		return (true);
-	return (false);
+	return (target.find(path) == 0); // if Route matches at the beginning
 }
 
 bool	Route::allowsMethod(const std::string &method) const {

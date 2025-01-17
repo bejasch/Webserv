@@ -65,12 +65,12 @@ void Server::handleRequest(int client_fd) {
 	// int bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0);	// Is this better???
 
 	if (valread == 0) {	// Client closed connection
-		printf("Connection closed by client.\n");
+		std::cerr << "Connection closed by client.\n";
 		close(client_fd);
 		client_requests.erase(client_fd); // Clean up state
 		return;
 	} else if (valread == -1) {
-		printf("Error reading from socket.\n");
+		std::cerr << "Error reading from socket.\n";
 		close(client_fd);
 		client_requests.erase(client_fd); // Clean up state
 		return;

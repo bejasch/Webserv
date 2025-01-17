@@ -61,8 +61,10 @@ void	HttpRes::generateErrorResponse(int client_fd) {
 	_body = "<html><head><title>" + std::to_string(_httpStatus) + " "
 			+ _statusMessage + "</title></head><body><h1>"
 			+ std::to_string(_httpStatus) + " " + _statusMessage + "</h1>";
+
 	if (statusDescription.find(_httpStatus) != statusDescription.end())
 		_body += "<p>" + statusDescription[_httpStatus] + "</p>";
+	
 	_body += "</body></html>";
 
 
@@ -102,21 +104,19 @@ void	HttpRes::sendResponse(int client_fd, const std::string &response) {
 
 			// If maximum retries reached, log and stop trying
 			if (retry_count >= MAX_RETRY_COUNT) {
-				fprintf(stderr, "Error: Failed to write to socket after %d retries.\n", MAX_RETRY_COUNT);
+				std::cerr << "Error: Failed to write to socket after " << MAX_RETRY_COUNT << " retries.\n";
 				break;
 			}
-
-			// Log a generic error and retry
-			fprintf(stderr, "Warning: Write failed, retrying (%d/%d)...\n", retry_count, MAX_RETRY_COUNT);
+			std::cerr << "Warning: Write failed, retrying (" << retry_count << "/" << MAX_RETRY_COUNT << ")...\n";
 			continue;
 		}
 		retry_count = 0;
 		total_sent += sent;
 	}
 	if (total_sent < size)
-		fprintf(stderr, "Warning: Only %zu out of %zu bytes were sent.\n", total_sent, size);
+		std::cerr << "Warning: Only " << total_sent << " out of " << size << " bytes were sent.\n";
 	else
-		printf("Successfully sent %zu bytes to client.\n", total_sent);
+		std::cout << "Successfully sent " << total_sent << " bytes to client.\n";
 }
 
 // Parse HTTP POST data (application/x-www-form-urlencoded)
@@ -182,11 +182,11 @@ void	HttpRes::saveEntry(const std::string& name, const std::string& message) {
 		return;
 	}
 	if (name.find('|') != std::string::npos || message.find('|') != std::string::npos) {
-		fprintf(stderr, "Warning: Invalid characters in guestbook entry.\n");
+		std::cerr << "Warning: Invalid characters in guestbook entry.\n";
 		return;
 	}
 	if (name.length() > 100 || message.length() > 1000) {
-		fprintf(stderr, "Warning: Guestbook entry too long.\n");
+		std::cerr << "Warning: Guestbook entry too long.\n";
 		return;
 	}
 
@@ -220,19 +220,18 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
     if (_httpStatus >= 400 && _httpStatus < 600) {
 		return;
 	}
+	_method = httpRequest.getMethod();
 	// Check if the method is allowed for the target (in routes)
 	Route *route = server.getConfig()->getRouteForTarget(_target);
 	if (route) {
-		std::vector<std::string> allowed_methods = route->getAllowedMethods();
-		if (std::find(allowed_methods.begin(), allowed_methods.end(), httpRequest.getMethod()) == allowed_methods.end()) {
+		if (!route->allowsMethod(_method)) {
 			_httpStatus = 405;
 			return;
 		}
 	}
-
-
-	// - Response headers:
-    if (httpRequest.getMethod() == "GET") {
+	
+	// --------- GET
+    if (_method == "GET") {
 		if (_target == "/guestbook.html") {
 			_contentType = determineContentType(_target);
 			_body = generateGuestbookHTML();
@@ -252,24 +251,27 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 		_contentType = determineContentType(_target);
 		_body = parseFile(_target);
 		contentLength = _body.length();
-    } else if (httpRequest.getMethod() == "POST" && _target == "/guestbook.html") {
-        // Parse POST data
-        if (httpRequest.getBodySize() > 0) {
-            std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
+    
+	// --------- POST
+	} else if (_method == "POST") {
+        if (_target == "/guestbook.html") {
+			if (httpRequest.getBodySize() > 0) {
+				std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
 
-            if (formData.count("name") && formData.count("message")) {
-                saveEntry(formData["name"], formData["message"]);
-				printf("Saved entry: %s: %s\n", formData["name"].c_str(), formData["message"].c_str());
-            }
-        }
-
-        // Redirect back to guestbook
-		_httpStatus = 303;
-        // response << "HTTP/1.1 303 See Other\r\nLocation: /\r\n\r\n";
-
-    } else {
+				if (formData.count("name") && formData.count("message")) {
+					saveEntry(formData["name"], formData["message"]);
+					std::cout << "Saved entry: " << formData["name"] << ": " << formData["message"] << std::endl;
+				}
+			}
+			_httpStatus = 303;	// Redirect (see other)
+		}
+	
+	// --------- DELETE
+    } else if  (_method == "DELETE") {
         _httpStatus = 405;
-    }
+    } else {	// Unsupported method
+		_httpStatus = 405;
+	}
 }
 
 
