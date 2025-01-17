@@ -239,15 +239,15 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 			contentLength = _body.length();
 			return;
 		}
+		if (_target == "/")
+			_target = server.getConfig()->getDefaultFile();
+
 		if (access((server.getConfig()->getRootDir() + _target).c_str(), F_OK) == -1) {
 			_httpStatus = 404;
 			return;
 		} else if (access((server.getConfig()->getRootDir() + _target).c_str(), R_OK) == -1) {
 			_httpStatus = 403;
 			return;
-		}
-		if (_target == "/") {
-			_target = "/index.html";
 		}
 		_contentType = determineContentType(_target);
 		_body = parseFile(_target, server);
