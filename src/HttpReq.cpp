@@ -95,7 +95,7 @@ std::string	HttpReq::getHeader(std::string key) const { return (_headers.at(key)
 
 size_t		HttpReq::getBodySize(void) const { return (_bodySize); }
 
-std::string	HttpReq::getBody(void) const { return (_body); }
+std::string	&HttpReq::getBody(void) { return (_body); }
 
 int			HttpReq::getHttpStatus(void) const { return (_httpStatus); }
 
