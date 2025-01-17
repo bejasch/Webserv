@@ -18,7 +18,7 @@ private:
 	int			contentLength;
 	std::string	_body;
 
-	std::string parseFile(const std::string &filename);
+	std::string parseFile(const std::string &filename, Server &server);
 	std::string determineContentType(const std::string &filename);
 
 	static std::map<int, std::string>			statusMessages;

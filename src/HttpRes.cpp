@@ -230,6 +230,7 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 		}
 	}
 	
+	
 	// --------- GET
     if (_method == "GET") {
 		if (_target == "/guestbook.html") {
@@ -238,10 +239,10 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 			contentLength = _body.length();
 			return;
 		}
-		if (access(("data/www" + _target).c_str(), F_OK) == -1) {
+		if (access((server.getConfig()->getRootDir() + _target).c_str(), F_OK) == -1) {
 			_httpStatus = 404;
 			return;
-		} else if (access(("data/www" + _target).c_str(), R_OK) == -1) {
+		} else if (access((server.getConfig()->getRootDir() + _target).c_str(), R_OK) == -1) {
 			_httpStatus = 403;
 			return;
 		}
@@ -249,7 +250,7 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 			_target = "/index.html";
 		}
 		_contentType = determineContentType(_target);
-		_body = parseFile(_target);
+		_body = parseFile(_target, server);
 		contentLength = _body.length();
     
 	// --------- POST
@@ -288,10 +289,10 @@ std::string HttpRes::determineContentType(const std::string &filename) {
 	}
 }
 
-std::string HttpRes::parseFile(const std::string &filename) {
-    std::ifstream file(("data/www" + filename).c_str());
+std::string HttpRes::parseFile(const std::string &filename, Server &server) {
+    std::ifstream file((server.getConfig()->getRootDir() + filename).c_str());
     if (!file.is_open()) {
-        return parseFile("/error_404.html");
+        return parseFile("/error_404.html", server);
     }
     std::stringstream buffer;
     buffer << file.rdbuf(); // Read entire file
