@@ -34,8 +34,7 @@ int ServerManager::setServers(const std::string &config_file)
             if (portCheck(config->getPort()) == 1) {
                 delete server;
                 delete config;
-                break;
-                //TODO: this does not work as intended. Once it breaks it wouldnt add any more servers.
+                continue;
             }
             server->setServer(config);
             servers.push_back(server);
