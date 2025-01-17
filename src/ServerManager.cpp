@@ -18,11 +18,11 @@ int ServerManager::setServers(const std::string &config_file)
 
     if (config_file.find(".conf") == std::string::npos) {
         perror("Invalid configuration file format.");
-        return 1; // Return 1 if file is not a .conf file
+        exit(1); // TODO: remember to free
     }
     if (!file.is_open()) {
         perror("Failed to open configuration file");
-        return 1; // Return 1 if file opening fails
+        exit(1); // TODO: remember to free
     }
     while (std::getline(file, line)) {
         if (line.find("server") != std::string::npos) {
@@ -31,16 +31,24 @@ int ServerManager::setServers(const std::string &config_file)
             config = new Config();
             // Call fillConfig to parse and fill the server's configuration
             line = fillConfig(line, file, config);  // Pass the file by reference
+            if (portCheck(config->getPort()) == 1) {
+                delete server;
+                delete config;
+                server = NULL; // Avoid dangling pointer
+                config = NULL; // Avoid dangling pointer
+                continue;
+            }
+            server->setServer(config);
+            servers.push_back(server);
         }
-        if (line.find("location") != std::string::npos) {
+        if (line.find("location") != std::string::npos && server != NULL) {
             route = new Route();
             route->setPath(line.substr(line.find("location") + std::string("location").length() + 1, line.find("{") - line.find(" ") - 2));
             fillRoute(line, file, config, route);
+            config->addRoute(route);
         }
     }
-    //config->printConfig();  // Print the configuration
-    server->setServer(config);  // Set server configuration
-    servers.push_back(server);  // Add to server collection
+    //printConfigAll();  // Print the configuration
     file.close();  // Close the file explicitly (optional since it's auto-closed on scope exit)
     return 0;  // Return 0 to indicate success
 }
@@ -62,9 +70,10 @@ void ServerManager::startServers() {
         if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &ev) == -1) {
             perror("Failed to add server_fd to epoll");
             return;
+            }
+        //std::cout << "Added server_fd: " << server_fd << " to epoll" << std::endl;
     }
     handleEvents();
-    }
 }
 
 // Central event loop that distributes events to the appropriate server
@@ -122,7 +131,7 @@ std::string ServerManager::fillConfig(std::string line, std::ifstream &file, Con
         else if (line.find("client_max_body_size") != std::string::npos)
             config->setMaxBodySize(stringToInt(line.substr(line.find("client_max_body_size") + std::string("client_max_body_size").length() + 1, line.find(";") - line.find(" ") - 1)));
         else if (line.find("index") != std::string::npos)
-            config->setDefaultFile(line.substr(line.find("index") + std::string("index").length() + 1, line.find(";") - line.find(" ") - 1));
+            config->setDefaultFile(line.substr(line.find("index") + std::string("index").length() + 1, line.find(";") - line.find(" ") - 1)); //TODO: currently only supports one index file
         else if (line.find("error_page") != std::string::npos) {
             config->setErrorStatus(stringToInt(line.substr(line.find("error_page") + std::string("error_page").length() + 1, line.find(" ") - line.find("error_page") - 1)));
             config->setErrorFile(line.substr(line.find("error_page") + std::string("error_page").length() + 5, line.find(";") - line.find(" ") - 5));
@@ -134,7 +143,7 @@ std::string ServerManager::fillConfig(std::string line, std::ifstream &file, Con
 int ServerManager::fillRoute(std::string line, std::ifstream &file, Config *config, Route *route) {
     while (std::getline(file, line)) {
         if (line.find("}") != std::string::npos) {
-            config->addRoute(route);
+            //config->addRoute(route);
             break; // Stop if we find the closing brace
         }
         if (line.find("allow_methods") != std::string::npos) {
@@ -158,6 +167,22 @@ int ServerManager::fillRoute(std::string line, std::ifstream &file, Config *conf
             route->setIndexFile(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
         else if (line.find("autoindex") != std::string::npos)
             route->setAutoindex(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
+    }
+    return 0;
+}
+
+void ServerManager::printConfigAll() {
+    for (int i = 0; i < servers.size(); i++) {
+        servers[i]->getConfig()->printConfig();
+    }
+}
+
+int ServerManager::portCheck(int port) {
+    for (int i = 0; i < servers.size(); i++) {
+        if (servers[i]->getConfig()->getPort() == port) {
+            std::cerr << "Port " << port << " already in use" << std::endl;
+            return 1;
+        }
     }
     return 0;
 }

@@ -25,6 +25,7 @@ void Server::setUpServer() {
     // Make server_fd non-blocking
     fcntl(server_fd, F_SETFL, O_NONBLOCK);
     listen(server_fd, 10); // 10 defines how many pending connections can be queued before connections are refused.
+	//std::cout << "Server set up on port " << config->getPort() << " fd: " << server_fd << std::endl;
 }
 
 void Server::acceptConnection(int epoll_fd) {
@@ -52,13 +53,14 @@ void Server::acceptConnection(int epoll_fd) {
 	client_requests[client_fd] = HttpReq();
 	server_manager.clientfd_to_serverfd[client_fd] = this;	
 
-	std::cout << "New client connected: fd " << client_fd << std::endl;
+	std::cout << "New client connected: fd " << client_fd << " linked to server_fd: " << server_fd << std::endl;
 }
 
 void Server::handleRequest(int client_fd) {
 	HttpReq	&request = client_requests[client_fd];
 	HttpRes httpResponse;
 
+	std::cout << "Handling request for client_fd: " << client_fd << std::endl;
 	// Data is available to read from the socket
 	char buffer[30000] = {0};
 	int valread = read(client_fd, buffer, sizeof(buffer));
@@ -75,12 +77,12 @@ void Server::handleRequest(int client_fd) {
 		client_requests.erase(client_fd); // Clean up state
 		return;
 	}
-	printf("\n### Received data ([part of a] HTTP Request): \n%s\n^^^^^^^^^^^^\n\n", buffer);
+	//printf("\n### Received data ([part of a] HTTP Request): \n%s\n^^^^^^^^^^^^\n\n", buffer);
 
 	// Process the incoming data
 	if (request.processData(std::string(buffer, valread))) {
 		int parse_status = request.getHttpStatus();
-		std::cout << "\nDATA READING FINISHED with status: " << parse_status << std::endl;
+		//std::cout << "\nDATA READING FINISHED with status: " << parse_status << std::endl;
 		client_requests[client_fd].print();
 		
 		httpResponse.handleRequest(request, *this);

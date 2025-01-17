@@ -55,7 +55,7 @@ bool	Route::allowsMethod(const std::string &method) const {
 }
 
 void Route::printRoute() {
-    std::cout << "path: " << path << std::endl;
+    std::cout << "\npath: " << path << std::endl;
     for (int i = 0; i < allowed_methods.size(); i++) {
         std::cout << "allowed_methods: " << allowed_methods[i] << std::endl;
     }
