@@ -42,12 +42,10 @@ int ServerManager::setServers(const std::string &config_file)
             servers.push_back(server);
         }
         if (line.find("location") != std::string::npos && server != NULL) {
-            std::cout << "port of config" << config->getPort() << std::endl;
             route = new Route();
             route->setPath(line.substr(line.find("location") + std::string("location").length() + 1, line.find("{") - line.find(" ") - 2));
             fillRoute(line, file, config, route);
             config->addRoute(route);
-            route->printRoute();
         }
     }
     //printConfigAll();  // Print the configuration
