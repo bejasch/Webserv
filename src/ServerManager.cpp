@@ -18,11 +18,11 @@ int ServerManager::setServers(const std::string &config_file)
 
     if (config_file.find(".conf") == std::string::npos) {
         perror("Invalid configuration file format.");
-        return 1; // Return 1 if file is not a .conf file
+        exit(1); // TODO: remember to free
     }
     if (!file.is_open()) {
         perror("Failed to open configuration file");
-        return 1; // Return 1 if file opening fails
+        exit(1); // TODO: remember to free
     }
     while (std::getline(file, line)) {
         if (line.find("server") != std::string::npos) {
