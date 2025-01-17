@@ -238,10 +238,10 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 			contentLength = _body.length();
 			return;
 		}
-		if (access(("data/www" + _target).c_str(), F_OK) == -1) {
+		if (access(("data" + _target).c_str(), F_OK) == -1) {
 			_httpStatus = 404;
 			return;
-		} else if (access(("data/www" + _target).c_str(), R_OK) == -1) {
+		} else if (access(("data" + _target).c_str(), R_OK) == -1) {
 			_httpStatus = 403;
 			return;
 		}
@@ -289,7 +289,7 @@ std::string HttpRes::determineContentType(const std::string &filename) {
 }
 
 std::string HttpRes::parseFile(const std::string &filename) {
-    std::ifstream file(("data/www" + filename).c_str());
+    std::ifstream file(("data" + filename).c_str());
     if (!file.is_open()) {
         return parseFile("/error_404.html");
     }
