@@ -73,7 +73,13 @@ CLF common log format
 ❌ **Missing**: When serving actual files (especially larger files), you'll need to properly set headers like `Content-Length` for dynamic responses. You’re currently hardcoding `Content-Length` for static responses, but this will need to be calculated for real file content.
 
 ### CGI
-❌ **Missing**:
+❌ **Missing**: JK
 
 ### Multiple Servers
 ❌ **Missing**: Handle multiple servers with several different ports. (Choose the port and host of each ’server’)
+
+### Free Allocated Memory
+❌ **Missing**: JK
+
+### Signal Handling
+❌ **Missing**: JK
