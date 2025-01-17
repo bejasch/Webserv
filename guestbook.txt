@@ -4,3 +4,4 @@ Gulcan|It's no nice styling btw -> Try harder!
 Sari|Ooooookay ^^
 POST|I am a request!
 PUT|Me too
+John|Voll nice!

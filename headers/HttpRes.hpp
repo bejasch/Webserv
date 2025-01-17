@@ -40,7 +40,7 @@ public:
 	HttpRes();
 	~HttpRes();
 
-	void		handleRequest(HttpReq &httpRequest);
+	void		handleRequest(HttpReq &httpRequest, Server &server);
 	void		writeResponse(int client_fd);
 
 };

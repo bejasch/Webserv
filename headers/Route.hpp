@@ -37,6 +37,9 @@ class Route {
         int getRedirectStatus() const { return redirect_status; }
         std::string getRedirectUrl() const { return redirect_url; }
 
+		bool	containsTarget(const std::string &target) const;
+		bool	allowsMethod(const std::string &method) const;
+
         //utils
         void printRoute();
 };

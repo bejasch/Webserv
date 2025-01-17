@@ -30,6 +30,15 @@ void Config::printConfig() {
     }
 }
 
+Route	*Config::getRouteForTarget(std::string &target) {
+	for (int i = 0; i < routes.size(); i++) {
+		if (routes[i]->containsTarget(target)) {
+			return (routes[i]);
+		}
+	}
+	return (NULL);
+}
+
 void Config::setPort(int port) {
     this->server_port = port;
 }

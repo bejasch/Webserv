@@ -83,7 +83,7 @@ void Server::handleRequest(int client_fd) {
 		std::cout << "\nDATA READING FINISHED with status: " << parse_status << std::endl;
 		client_requests[client_fd].print();
 		
-		httpResponse.handleRequest(request);
+		httpResponse.handleRequest(request, *this);
 		httpResponse.writeResponse(client_fd);
 
 		// // Full request assembled
@@ -92,6 +92,10 @@ void Server::handleRequest(int client_fd) {
 		client_requests.erase(client_fd);
 		close(client_fd);
 	}
+}
+
+Config *Server::getConfig() {
+	return (config);
 }
 
 int Server::getServerFd() {

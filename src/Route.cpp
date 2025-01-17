@@ -46,6 +46,16 @@ void Route::setRedirectUrl(const std::string &redirect_url) {
     this->redirect_url = redirect_url;
 }
 
+bool	Route::containsTarget(const std::string &target) const {
+	if (target.find(path) == 0) // Route matches at the beginning
+		return (true);
+	return (false);
+}
+
+bool	Route::allowsMethod(const std::string &method) const {
+	return (std::find(allowed_methods.begin(), allowed_methods.end(), method) != allowed_methods.end());
+}
+
 void Route::printRoute() {
     std::cout << "path: " << path << std::endl;
     for (int i = 0; i < allowed_methods.size(); i++) {
