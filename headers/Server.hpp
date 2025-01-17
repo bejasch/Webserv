@@ -22,6 +22,7 @@ class Server {
 		int getServerFd();
 		void acceptConnection(int epoll_fd);
 		void handleRequest(int fd);
+		Config *getConfig() { return config; };
 };
 
 #endif

@@ -16,6 +16,8 @@ public:
     void startServers(); // Runs the central event loop
     int getEpollFd() const { return epoll_fd; }
     std::map<int, Server*> clientfd_to_serverfd;
+    void printConfigAll();
+    int portCheck(int port);
 
 private:
     void handleEvents();
