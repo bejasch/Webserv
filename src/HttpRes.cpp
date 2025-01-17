@@ -212,6 +212,86 @@ void	HttpRes::saveEntry(const std::string& name, const std::string& message) {
 // 	{"/guestbook.html", "POST"}
 // };
 
+
+std::string	HttpRes::generateAutoindexPage(const std::string &path) {
+    std::string html = "<html><head><title>Index of " + _target + "</title></head><body>";
+    html += "<h1>Index of " + _target + "</h1><ul>";
+    
+	DIR	*dir = opendir(path.c_str());
+	if (dir) {
+		struct dirent *entry;
+		while ((entry = readdir(dir)) != NULL) {
+			std::string	entryName(entry->d_name);
+			if (entryName[0] == '.')
+				continue;
+			html += "<li><a href=\"" + _target + "/" + entryName + "\">" + entryName + "</a></li>";
+		}
+		closedir(dir);
+	}
+    html += "</ul></body></html>";
+    
+	return (html);
+}
+
+void	HttpRes::GET(HttpReq &httpRequest, Server &server, Route *route) {
+	if (_target == "/guestbook.html") {
+		_contentType = determineContentType(_target);
+		_body = generateGuestbookHTML();
+		contentLength = _body.length();
+		return;
+	}
+	if (_target == "/")
+		_target = server.getConfig()->getDefaultFile();
+
+	// Check if the target is a directory
+	std::string path = server.getConfig()->getRootDir() + _target;
+	if (isDirectory(path)) {
+		if (route && route->getIndexFile() != "" && access((path + route->getIndexFile()).c_str(), R_OK) != -1) {
+			_target += route->getIndexFile();
+			path = server.getConfig()->getRootDir() + _target;
+		} else {
+			std::cout << "Path: " << path << std::endl;
+			if (route && route->getAutoindex()) {
+				_httpStatus = 200;
+				_contentType = "text/html";
+				_body = generateAutoindexPage(path);
+				contentLength = _body.length();
+			} else
+				_httpStatus = 403;
+			return;
+		}
+	}
+	// Check if the file exists and is readable
+	if (access((path).c_str(), F_OK) == -1) {
+		_httpStatus = 404;
+		return;
+	} else if (access((path).c_str(), R_OK) == -1) {
+		_httpStatus = 403;
+		return;
+	}
+	_contentType = determineContentType(_target);
+	_body = parseFile(_target, server);
+	contentLength = _body.length();
+}
+
+void	HttpRes::POST(HttpReq &httpRequest, Server &server) {
+	if (_target == "/guestbook.html") {
+		if (httpRequest.getBodySize() > 0) {
+			std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
+
+			if (formData.count("name") && formData.count("message")) {
+				saveEntry(formData["name"], formData["message"]);
+				std::cout << "Saved entry: " << formData["name"] << ": " << formData["message"] << std::endl;
+			}
+		}
+		_httpStatus = 303;	// Redirect (see other)
+	}
+}
+
+void	HttpRes::DELETE(HttpReq &httpRequest, Server &server) {
+	_httpStatus = 405;
+}
+
 void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 	_protocol = httpRequest.getProtocol();
 	_httpStatus = httpRequest.getHttpStatus();
@@ -221,6 +301,7 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 		return;
 	}
 	_method = httpRequest.getMethod();
+
 	// Check if the method is allowed for the target (in routes)
 	Route *route = server.getConfig()->getRouteForTarget(_target);
 	if (route) {
@@ -230,49 +311,14 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 		}
 	}
 	
-	
-	// --------- GET
-    if (_method == "GET") {
-		if (_target == "/guestbook.html") {
-			_contentType = determineContentType(_target);
-			_body = generateGuestbookHTML();
-			contentLength = _body.length();
-			return;
-		}
-		if (_target == "/")
-			_target = server.getConfig()->getDefaultFile();
-
-		if (access((server.getConfig()->getRootDir() + _target).c_str(), F_OK) == -1) {
-			_httpStatus = 404;
-			return;
-		} else if (access((server.getConfig()->getRootDir() + _target).c_str(), R_OK) == -1) {
-			_httpStatus = 403;
-			return;
-		}
-		_contentType = determineContentType(_target);
-		_body = parseFile(_target, server);
-		contentLength = _body.length();
-    
-	// --------- POST
-	} else if (_method == "POST") {
-        if (_target == "/guestbook.html") {
-			if (httpRequest.getBodySize() > 0) {
-				std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
-
-				if (formData.count("name") && formData.count("message")) {
-					saveEntry(formData["name"], formData["message"]);
-					std::cout << "Saved entry: " << formData["name"] << ": " << formData["message"] << std::endl;
-				}
-			}
-			_httpStatus = 303;	// Redirect (see other)
-		}
-	
-	// --------- DELETE
-    } else if  (_method == "DELETE") {
-        _httpStatus = 405;
-    } else {	// Unsupported method
+    if (_method == "GET")
+		GET(httpRequest, server, route);
+	else if (_method == "POST")
+		POST(httpRequest, server);
+    else if  (_method == "DELETE")
+		DELETE(httpRequest, server);
+    else	// Unsupported method
 		_httpStatus = 405;
-	}
 }
 
 

@@ -23,8 +23,10 @@ class	ServerManager;
 #include <stdio.h>
 #include <sys/socket.h>
 #include <sys/epoll.h>
+#include <sys/stat.h>
 #include <stdlib.h>
 #include <netinet/in.h>
+#include <dirent.h>
 #include <cstring>
 #include <cstdlib> //probably illegal, used for malloc
 #include <cstdio> //probably illegal, used for sprintf

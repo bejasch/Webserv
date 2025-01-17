@@ -27,7 +27,12 @@ private:
 
 	const std::string	GUESTBOOK_FILE = "guestbook.txt";
 
+	void	GET(HttpReq &httpRequest, Server &server, Route *route);
+	void	POST(HttpReq &httpRequest, Server &server);
+	void	DELETE(HttpReq &httpRequest, Server &server);
+
 	std::map<std::string, std::string>	parsePostData(const std::string& data);
+	std::string	generateAutoindexPage(const std::string &path);
 
 	std::string	generateGuestbookHTML(void);
 	void		saveEntry(const std::string& name, const std::string& message);
