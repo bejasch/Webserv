@@ -31,10 +31,11 @@ void Server::setUpServer() {
 void Server::acceptConnection(int epoll_fd) {
 	int client_fd;
 	epoll_event ev;
-	int addrlen = sizeof(address);
+	//int addrlen = sizeof(address);
 
 	// server_fd is the listening socket, thus we need to create a new socket for the communication with the client. This socket is used for communication.
-	client_fd = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
+	//client_fd = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
+	client_fd = accept(server_fd, NULL, NULL);
 	if (client_fd < 0) {
 		perror("Failed to accept connection");
 		return;

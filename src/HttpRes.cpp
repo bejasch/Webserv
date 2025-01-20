@@ -242,7 +242,14 @@ void	HttpRes::GET(HttpReq &httpRequest, Server &server, Route *route) {
 	}
 	if (_target == "/")
 		_target = server.getConfig()->getDefaultFile();
-
+	if (_target.find("/cgi-bin/") != std::string::npos) {
+		if (_target.substr(_target.find_last_of(".") + 1) == "py")
+			CGI::executeCGI(httpRequest, server);
+		else
+			//TODO: which one is appropriate?
+			_httpStatus = 404;
+		return;
+	}
 	// Check if the target is a directory
 	std::string path = server.getConfig()->getRootDir() + _target;
 	if (isDirectory(path)) {
@@ -286,6 +293,14 @@ void	HttpRes::POST(HttpReq &httpRequest, Server &server) {
 		}
 		_httpStatus = 303;	// Redirect (see other)
 	}
+	if (_target.find("/cgi-bin/") != std::string::npos) {
+		if (_target.substr(_target.find_last_of(".") + 1) == "py")
+			CGI::executeCGI(httpRequest, server);
+		else
+			//TODO: which one is appropriate?
+			_httpStatus = 404;
+		return;
+	}
 }
 
 void	HttpRes::DELETE(HttpReq &httpRequest, Server &server) {
@@ -305,6 +320,7 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 	// Check if the method is allowed for the target (in routes)
 	Route *route = server.getConfig()->getRouteForTarget(_target);
 	if (route) {
+		//TODO: if allowed methos empty, then allow all methods specified in the server
 		if (!route->allowsMethod(_method)) {
 			_httpStatus = 405;
 			return;
@@ -365,4 +381,8 @@ void HttpRes::writeResponse(int client_fd) {
     response_stream << _body;
 
 	sendResponse(client_fd, response_stream.str());
+}
+
+void executeCGI(HttpReq &httpRequest, Server &server) {
+
 }
