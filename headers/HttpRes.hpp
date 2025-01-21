@@ -28,7 +28,7 @@ private:
 	// - Response methods:
 	void				GET(HttpReq &httpRequest, Server &server, Route *route);
 	void				POST(HttpReq &httpRequest, Server &server);
-	void				DELETE(HttpReq &httpRequest, Server &server);
+	void				DELETE(const std::string &path);
 
 	// std::map<std::string, std::string>	parsePostData(const std::string& data);
 	void				generateAutoindexPage(const std::string &path);

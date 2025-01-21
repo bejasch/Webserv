@@ -166,7 +166,6 @@ void	HttpRes::GET(HttpReq &httpRequest, Server &server, Route *route) {
 	if (isDirectory(path)) {
 		if (route && route->getIndexFile() != "" && access((path + route->getIndexFile()).c_str(), R_OK) != -1) {
 			_target += route->getIndexFile();
-			// path = server.getConfig()->getRootDir() + _target;
 		} else {
 			std::cout << "Path: " << path << std::endl;
 			if (route && route->getAutoindex()) {
@@ -193,7 +192,7 @@ void	HttpRes::GET(HttpReq &httpRequest, Server &server, Route *route) {
 
 void	HttpRes::POST(HttpReq &httpRequest, Server &server) {
 	if (_target == "/guestbook.html") {
-		if (httpRequest.getBodySize() > 0) {
+		if (!httpRequest.getBody().empty()) {
 			std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
 
 			if (formData.count("name") && formData.count("message")) {
@@ -205,8 +204,13 @@ void	HttpRes::POST(HttpReq &httpRequest, Server &server) {
 	}
 }
 
-void	HttpRes::DELETE(HttpReq &httpRequest, Server &server) {
-	_httpStatus = 405;
+void	HttpRes::DELETE(const std::string &path) {
+	if (deleteFileDir(path)) {
+		_body = "Resource deleted.\n";
+		_httpStatus = 200;
+	} else {
+		_httpStatus = 404;
+	}
 }
 
 void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
@@ -233,7 +237,7 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 	else if (_method == "POST")
 		POST(httpRequest, server);
     else if  (_method == "DELETE")
-		DELETE(httpRequest, server);
+		DELETE(server.getConfig()->getRootDir() + _target);
     else						// Unsupported method
 		_httpStatus = 405;
 }

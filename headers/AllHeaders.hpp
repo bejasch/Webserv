@@ -25,6 +25,7 @@ class	ServerManager;
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <dirent.h>

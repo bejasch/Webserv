@@ -13,4 +13,6 @@ std::map<std::string, std::string>	parsePostData(const std::string &data);
 void				saveGuestbookEntry(const std::string &name, const std::string &message);
 const std::string	generateGuestbookHTML(void);
 
+bool	deleteFileDir(const std::string &path);
+
 #endif
