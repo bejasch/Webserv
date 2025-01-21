@@ -14,7 +14,6 @@ private:
 	std::string			_target;
 	std::string			_statusMessage;
 	std::string			_contentType;
-	int					_contentLength;
 	std::string			_body;
 	std::map<std::string, std::string>	_headers;
 
@@ -22,23 +21,18 @@ private:
 	static std::map<std::string, std::string>	mimeTypes;
 	static std::map<int, std::string>			statusDescriptions;
 
-	const std::string	GUESTBOOK_FILE = "guestbook.txt";
 
 	bool				parseFile(Server &server);
-	std::string			determineContentType(const std::string &filename);
+	void				determineContentType(void);
 
 	// - Response methods:
 	void				GET(HttpReq &httpRequest, Server &server, Route *route);
 	void				POST(HttpReq &httpRequest, Server &server);
 	void				DELETE(HttpReq &httpRequest, Server &server);
 
-	std::map<std::string, std::string>	parsePostData(const std::string& data);
-	std::string			generateAutoindexPage(const std::string &path);
-
-	std::string			generateGuestbookHTML(void);
-	void				saveEntry(const std::string& name, const std::string& message);
-	
-	void	generateErrorResponse(int client_fd);
+	// std::map<std::string, std::string>	parsePostData(const std::string& data);
+	void				generateAutoindexPage(const std::string &path);
+	void				generateErrorResponse(int client_fd);
 
 	void	sendResponse(int client_fd, const std::string &response);
 

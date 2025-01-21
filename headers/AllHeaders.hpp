@@ -9,6 +9,7 @@
 #define MAX_HEADER_COUNT 100	// Arbitrary limit
 #define MAX_BODY_SIZE 1048576	// 1 MB
 #define MAX_RETRY_COUNT 5
+#define GUESTBOOK_FILE "guestbook.txt"
 
 class	CGI;
 class	Config;

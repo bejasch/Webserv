@@ -26,3 +26,83 @@ bool	isDirectory(const std::string &path) {
 		return false;
 	return S_ISDIR(statbuf.st_mode);
 }
+
+
+// Parse HTTP POST data (application/x-www-form-urlencoded)
+// Example body: "name=Ben&message=This+is+a+test%21"
+std::map<std::string, std::string>	parsePostData(const std::string &data) {
+	std::map<std::string, std::string> postData;
+	std::istringstream	stream(data);
+	std::string			pair;
+
+	while (std::getline(stream, pair, '&')) {
+		size_t pos = pair.find('=');
+		if (pos != std::string::npos) {
+			std::string key = pair.substr(0, pos);
+			std::string value = pair.substr(pos + 1);
+			// Decode URL-encoded values (basic implementation)
+			std::replace(value.begin(), value.end(), '+', ' ');
+			// Decode URL-encoded values (extended implementation)
+			for (size_t i = 0; i < value.length(); ++i) {
+				if (value[i] == '%') {
+					char c;
+					if (sscanf(value.substr(i + 1, 2).c_str(), "%2hhx", &c) == 1) {
+						value[i] = c;
+						value.erase(i + 1, 2);
+					}
+				}
+			}
+			postData[key] = value;
+		}
+	}
+	return (postData);
+}
+
+// Save a new entry to the file located at GUESTBOOK_FILE
+void	saveGuestbookEntry(const std::string &name, const std::string &message) {
+    if (name.empty() || message.empty()) {
+		return;
+	}
+	if (name.find('|') != std::string::npos || message.find('|') != std::string::npos) {
+		std::cerr << "Warning: Invalid characters in guestbook entry.\n";
+		return;
+	}
+	if (name.length() > 100 || message.length() > 1000) {
+		std::cerr << "Warning: Guestbook entry too long.\n";
+		return;
+	}
+
+	std::ofstream file(GUESTBOOK_FILE, std::ios::app); // Append mode
+	if (file) {
+		file << name << "|" << message << "\n";				// Append entry to file	
+	} else {
+		std::cerr << "Error: Could not open file " << GUESTBOOK_FILE << " for writing.\n";
+	}
+}
+
+// Generate HTML for guestbook
+const std::string	generateGuestbookHTML(void) {
+    std::ostringstream html;
+    html << "<!DOCTYPE html><html><head><title>Guestbook</title></head><body>";
+    html << "<h1>Welcome to the Guestbook</h1>";
+    html << "<form method='POST' action='/guestbook.html'>"
+         << "Name: <input type='text' name='name'><br>"
+         << "Message: <textarea name='message'></textarea><br>"
+         << "<button type='submit'>Submit</button></form><hr>";
+    html << "<h2>Messages</h2>";
+
+	// Load guestbook entries from file
+	std::ifstream file(GUESTBOOK_FILE);
+	if (file) {
+		std::string line;
+		while (std::getline(file, line)) {
+			size_t sep = line.find('|');
+			if (sep != std::string::npos) {
+				html << "<p><strong>" << line.substr(0, sep) << ":</strong> " << line.substr(sep + 1) << "</p>";
+			}
+		}
+		file.close();
+	}
+    html << "</body></html>";
+	return (html.str());
+}
