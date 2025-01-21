@@ -237,7 +237,7 @@ void	HttpRes::GET(HttpReq &httpRequest, Server &server, Route *route) {
 	if (_target == "/guestbook.html") {
 		_contentType = determineContentType(_target);
 		_body = generateGuestbookHTML();
-		contentLength = _body.length();
+		_contentLength = _body.length();
 		return;
 	}
 	if (_target == "/")
@@ -255,23 +255,24 @@ void	HttpRes::GET(HttpReq &httpRequest, Server &server, Route *route) {
 				_httpStatus = 200;
 				_contentType = "text/html";
 				_body = generateAutoindexPage(path);
-				contentLength = _body.length();
+				_contentLength = _body.length();
+			} else if (route && route->getRedirectUrl() != "") {	// serve the default file
+				_target = route->getRedirectUrl();
+				_httpStatus = route->getRedirectStatus();
 			} else
 				_httpStatus = 403;
 			return;
 		}
-	}
-	// Check if the file exists and is readable
-	if (access((path).c_str(), F_OK) == -1) {
+	} else if (access((path).c_str(), F_OK) == -1) {	// Check if the file exists ...
 		_httpStatus = 404;
 		return;
-	} else if (access((path).c_str(), R_OK) == -1) {
+	} else if (access((path).c_str(), R_OK) == -1) {	// ...and is readable
 		_httpStatus = 403;
 		return;
 	}
 	_contentType = determineContentType(_target);
-	_body = parseFile(_target, server);
-	contentLength = _body.length();
+	parseFile(server);
+	_contentLength = _body.length();
 }
 
 void	HttpRes::POST(HttpReq &httpRequest, Server &server) {
@@ -317,7 +318,7 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 		POST(httpRequest, server);
     else if  (_method == "DELETE")
 		DELETE(httpRequest, server);
-    else	// Unsupported method
+    else						// Unsupported method
 		_httpStatus = 405;
 }
 
@@ -335,16 +336,18 @@ std::string HttpRes::determineContentType(const std::string &filename) {
 	}
 }
 
-std::string HttpRes::parseFile(const std::string &filename, Server &server) {
-    std::ifstream file((server.getConfig()->getRootDir() + filename).c_str());
+bool	HttpRes::parseFile(Server &server) {
+    std::ifstream file((server.getConfig()->getRootDir() + _target).c_str());
     if (!file.is_open()) {
-        return parseFile("/error_404.html", server);
+		std::cerr << "Error: Could not open file " << _target << std::endl;
+		_httpStatus = 404;
+        return (false);
     }
     std::stringstream buffer;
     buffer << file.rdbuf(); // Read entire file
-    std::string body = buffer.str();
+    _body = buffer.str();
     file.close();
-    return body;
+    return (true);
 }
 
 void HttpRes::writeResponse(int client_fd) {
@@ -358,7 +361,7 @@ void HttpRes::writeResponse(int client_fd) {
     // Add headers
     response_stream << "Content-Type: " << _contentType << "\n";
 	response_stream << "Location: " << _target << "\n";
-    response_stream << "Content-Length: " << contentLength << "\n\n";
+    response_stream << "Content-Length: " << _contentLength << "\n\n";
     // response_stream << "Connection: keep-alive\n\n"; //without this we still be stuck in the loop (still issues here)
 
     // Add body

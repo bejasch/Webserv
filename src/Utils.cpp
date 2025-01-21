@@ -19,7 +19,6 @@ bool isStandaloneWord(const std::string& line, const std::string& word, size_t p
     return true;
 }
 
-
 // Check if a path is a directory
 bool	isDirectory(const std::string &path) {
 	struct stat statbuf;
