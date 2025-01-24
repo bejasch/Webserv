@@ -84,20 +84,20 @@ void	HttpReq::print(void) const {
     std::cout << "Body:\n" << _body << "\n";
 }
 
-std::string	HttpReq::getMethod(void) const { return (_method); }
+const std::string	&HttpReq::getMethod(void) const { return (_method); }
 
-std::string	HttpReq::getTarget(void) const { return (_target); }
+const std::string	&HttpReq::getTarget(void) const { return (_target); }
 
-std::string	HttpReq::getProtocol(void) const { return (_protocol); }
+const std::string	&HttpReq::getProtocol(void) const { return (_protocol); }
 
 // Care for exceptions if key does not exist
-std::string	HttpReq::getHeader(std::string key) const { return (_headers.at(key)); }
+const std::string	&HttpReq::getHeader(const std::string &key) const { return (_headers.at(key)); }
 
-size_t		HttpReq::getBodySize(void) const { return (_bodySize); }
+// size_t				&HttpReq::getBodySize(void) const { return (_bodySize); }
 
-std::string	&HttpReq::getBody(void) { return (_body); }
+const std::string	&HttpReq::getBody(void) { return (_body); }
 
-int			HttpReq::getHttpStatus(void) const { return (_httpStatus); }
+int					HttpReq::getHttpStatus(void) const { return (_httpStatus); }
 
 // TODO: How to react if an error occurs during (previous) parsing ???
 // true means the full request is assembled (incl errors), false means more data is needed
@@ -245,19 +245,14 @@ bool HttpReq::verifyHeaders() {
 }
 
 void	HttpReq::parseBody(void) {
-	size_t		pos;
 	if (_headers.find("content-length") != _headers.end()) {
 		size_t	content_length = std::stoul(_headers["content-length"]);
-		if (_buffer.length() < content_length)	{
-			_httpStatus = 400;
-			return;
-		}
+		if (_buffer.length() < content_length)
+			return (_httpStatus = 400, void());
 		_body = _buffer.substr(0, content_length);
-		_bodySize = content_length;
 		return (_httpStatus = 200, void());
 	}
-	// _httpStatus = 400; // TODO: Check if this is the correct status code
-	_httpStatus = 200; 
+	_httpStatus = 200; 	// No Content-Length header -> empty body (or ignored)
 }
 
 // Reset for a new request - or better destroy and create a new object ?
@@ -268,7 +263,6 @@ void	HttpReq::reset(void) {
 	_target.clear();
 	_protocol.clear();
 	_headers.clear();
-	_bodySize = 0;
 	_body.clear();
 	_startlineParsed = false;
 	_headersParsed = false;

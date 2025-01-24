@@ -1,5 +1,6 @@
 #include "../headers/AllHeaders.hpp"
 
+// TODO: Cant there be many redirect pages?
 Route::Route() {
     this->path = "";
     this->allowed_methods = {""};

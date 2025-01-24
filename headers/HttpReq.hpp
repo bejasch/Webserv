@@ -17,7 +17,6 @@ private:
 
 	std::map<std::string, std::string> _headers;	// Headers are case-insensitive (tolower-ed)
     
-	size_t		_bodySize;
 	std::string _body;
 
 	bool	_startlineParsed = false;	// Whether the start line is fully received
@@ -50,13 +49,12 @@ public:
 	// int	parse(const std::string &buffer);
 
 	// --> Get-methods:
-	std::string	getMethod(void) const;
-	std::string	getTarget(void) const;
-	std::string	getProtocol(void) const;
-	std::string	getHeader(std::string key) const;
-	size_t		getBodySize(void) const;
-	std::string	&getBody(void);
-	int			getHttpStatus(void) const;
+	const std::string	&getMethod(void) const;
+	const std::string	&getTarget(void) const;
+	const std::string	&getProtocol(void) const;
+	const std::string	&getHeader(const std::string &key) const;
+	const std::string	&getBody(void);
+	int					getHttpStatus(void) const;
 
 	bool 	processData(const std::string &data);	// Encapsulates the parsing of the incoming data
 

@@ -97,10 +97,10 @@ void Server::handleRequest(int client_fd) {
 	}
 }
 
-Config *Server::getConfig() {
+Config *Server::getConfig() const{
 	return (config);
 }
 
-int Server::getServerFd() {
+int Server::getServerFd() const {
 	return this->server_fd;
 }
