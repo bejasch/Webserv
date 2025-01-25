@@ -5,7 +5,7 @@ OBJ_DIR		= obj
 CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 
-SRCS = src/main.cpp src/Config.cpp src/HttpReq.cpp src/HttpRes.cpp src/Route.cpp src/Server.cpp src/ServerManager.cpp src/Utils.cpp
+SRCS = src/main.cpp src/Config.cpp src/HttpReq.cpp src/HttpRes.cpp src/Route.cpp src/Server.cpp src/ServerManager.cpp src/Utils.cpp src/CGI.cpp
 OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SRCS))
 
 all: $(NAME)

@@ -74,3 +74,7 @@ void Config::setErrorStatus(int error_status) {
 void Config::addRoute(Route *route) {
     routes.push_back(route);
 }
+
+void Config::addCGI(CGI *cgi) {
+    this->cgi = cgi;
+}

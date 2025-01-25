@@ -50,6 +50,7 @@ class	ServerManager;
 #include "Server.hpp"
 #include "ServerManager.hpp"
 #include "Utils.hpp"
+#include "CGI.hpp"
 
 
 #endif

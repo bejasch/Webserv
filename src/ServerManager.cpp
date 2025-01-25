@@ -15,6 +15,7 @@ int ServerManager::setServers(const std::string &config_file)
     Server *server;
     Config *config;
     Route *route;
+    CGI *cgi;
 
     if (config_file.find(".conf") == std::string::npos) {
         perror("Invalid configuration file format.");
@@ -45,10 +46,14 @@ int ServerManager::setServers(const std::string &config_file)
             route = new Route();
             route->setPath(line.substr(line.find("location") + std::string("location").length() + 1, line.find("{") - line.find(" ") - 2));
             fillRoute(line, file, config, route);
+            if (route->getPath() == ".py") {
+                cgi = new CGI(route);
+                config->addCGI(cgi);
+            }
             config->addRoute(route);
         }
     }
-    //printConfigAll();  // Print the configuration
+    printConfigAll();  // Print the configuration
     file.close();  // Close the file explicitly (optional since it's auto-closed on scope exit)
     return 0;  // Return 0 to indicate success
 }
@@ -157,7 +162,7 @@ int ServerManager::fillRoute(std::string line, std::ifstream &file, Config *conf
             }
             route->setAllowedMethods(allowed_methods);
         }
-        else if (line.find("alias") != std::string::npos)
+        else if (line.find("root") != std::string::npos)
             route->setRootDir(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
         else if (line.find("return") != std::string::npos) {
             route->setRedirectStatus(stringToInt(line.substr(line.find("return") + std::string("return").length() + 1, line.find(" ") - line.find("return") - 1)));
@@ -167,6 +172,8 @@ int ServerManager::fillRoute(std::string line, std::ifstream &file, Config *conf
             route->setIndexFile(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
         else if (line.find("autoindex") != std::string::npos)
             route->setAutoindex(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
+        else if (line.find("cgi_path") != std::string::npos)
+            route->setCGIPath(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
     }
     return 0;
 }

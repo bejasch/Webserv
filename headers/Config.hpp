@@ -15,6 +15,7 @@ class Config {
         std::string error_file;
         int         error_status;
         std::vector<Route *> routes;
+        CGI        *cgi;
 
     public:
         Config();
@@ -29,6 +30,7 @@ class Config {
         void setErrorFile(std::string error_file);
         void setErrorStatus(int error_status);
         void addRoute(Route *route);
+        void addCGI(CGI *cgi);
 
         //getter
         int getPort() const {return this->server_port;};
@@ -38,6 +40,8 @@ class Config {
         std::string getDefaultFile() const {return this->default_file;};
         std::string getErrorFile() const {return this->error_file;};
         int getErrorStatus() const {return this->error_status;};
+        CGI		*getCGI() const { return this->cgi; };
+
 
 		Route	*getRouteForTarget(std::string &target);
 

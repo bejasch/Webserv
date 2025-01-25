@@ -6,15 +6,15 @@
 
 class CGI {
 private:
+    std::string                         cgiPath; //usr/bin/python
+    int                                 pid; //process id
+    Route                               *route;
     std::map<std::string, std::string>  env;
-    std::string                         cgiPath;
-    std::string                         cgiName;
-    std::string                         cgiArgs;
-    int                                 pid;
 
 public:
-    CGI();
+    CGI(Route *route);
     ~CGI();
+    void setAllEnv(HttpReq &httpRequest, Server &server);
     void executeCGI(HttpReq &httpRequest, Server &server);
 };
 

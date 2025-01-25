@@ -96,11 +96,3 @@ void Server::handleRequest(int client_fd) {
 		close(client_fd);
 	}
 }
-
-Config *Server::getConfig() const{
-	return (config);
-}
-
-int Server::getServerFd() const {
-	return this->server_fd;
-}
