@@ -1,6 +1,6 @@
 #pragma once
-#ifndef ROUTE_HPP
-#define ROUTE_HPP
+#ifndef CGI_HPP
+#define CGI_HPP
 
 #include "AllHeaders.hpp"
 
@@ -17,3 +17,5 @@ public:
     ~CGI();
     void executeCGI(HttpReq &httpRequest, Server &server);
 };
+
+#endif
