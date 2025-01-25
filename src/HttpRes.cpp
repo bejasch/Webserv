@@ -119,85 +119,6 @@ void	HttpRes::sendResponse(int client_fd, const std::string &response) {
 		std::cout << "Successfully sent " << total_sent << " bytes to client.\n";
 }
 
-// Parse HTTP POST data (application/x-www-form-urlencoded)
-// Example body: "name=Ben&message=This+is+a+test%21"
-std::map<std::string, std::string> HttpRes::parsePostData(const std::string& data) {
-    std::map<std::string, std::string> postData;
-    std::istringstream stream(data);
-    std::string pair;
-
-    while (std::getline(stream, pair, '&')) {
-        size_t pos = pair.find('=');
-        if (pos != std::string::npos) {
-            std::string key = pair.substr(0, pos);
-            std::string value = pair.substr(pos + 1);
-            // Decode URL-encoded values (basic implementation)
-            std::replace(value.begin(), value.end(), '+', ' ');
-			// Decode URL-encoded values (extended implementation)
-			for (size_t i = 0; i < value.length(); ++i) {
-				if (value[i] == '%') {
-					char c;
-					if (sscanf(value.substr(i + 1, 2).c_str(), "%2hhx", &c) == 1) {
-						value[i] = c;
-						value.erase(i + 1, 2);
-					}
-				}
-			}
-            postData[key] = value;
-        }
-    }
-    return (postData);
-}
-
-// Generate HTML for guestbook
-std::string	HttpRes::generateGuestbookHTML(void) {
-    std::ostringstream html;
-    html << "<!DOCTYPE html><html><head><title>Guestbook</title></head><body>";
-    html << "<h1>Welcome to the Guestbook</h1>";
-    html << "<form method='POST' action='/guestbook.html'>"
-         << "Name: <input type='text' name='name'><br>"
-         << "Message: <textarea name='message'></textarea><br>"
-         << "<button type='submit'>Submit</button></form><hr>";
-    html << "<h2>Messages</h2>";
-
-	// Load guestbook entries from file
-	std::ifstream file(GUESTBOOK_FILE.c_str());
-	if (file) {
-		std::string line;
-		while (std::getline(file, line)) {
-			size_t sep = line.find('|');
-			if (sep != std::string::npos) {
-				html << "<p><strong>" << line.substr(0, sep) << ":</strong> " << line.substr(sep + 1) << "</p>";
-			}
-		}
-	}
-
-    html << "</body></html>";
-    return (html.str());
-}
-
-// Save a new entry to the file
-void	HttpRes::saveEntry(const std::string& name, const std::string& message) {
-    if (name.empty() || message.empty()) {
-		return;
-	}
-	if (name.find('|') != std::string::npos || message.find('|') != std::string::npos) {
-		std::cerr << "Warning: Invalid characters in guestbook entry.\n";
-		return;
-	}
-	if (name.length() > 100 || message.length() > 1000) {
-		std::cerr << "Warning: Guestbook entry too long.\n";
-		return;
-	}
-
-	// Append entry to file	
-	std::ofstream file(GUESTBOOK_FILE.c_str(), std::ios::app); // Append mode
-	if (file) {
-		file << name << "|" << message << "\n";
-	} else {
-		std::cerr << "Error: Could not open file " << GUESTBOOK_FILE << " for writing.\n";
-	}
-}
 
 // routes_expl = {
 // 	{"/", "GET"},
@@ -213,9 +134,9 @@ void	HttpRes::saveEntry(const std::string& name, const std::string& message) {
 // };
 
 
-std::string	HttpRes::generateAutoindexPage(const std::string &path) {
-    std::string html = "<html><head><title>Index of " + _target + "</title></head><body>";
-    html += "<h1>Index of " + _target + "</h1><ul>";
+void	HttpRes::generateAutoindexPage(const std::string &path) {
+    _body = "<html><head><title>Index of " + _target + "</title></head><body>";
+    _body += "<h1>Index of " + _target + "</h1><ul>";
     
 	DIR	*dir = opendir(path.c_str());
 	if (dir) {
@@ -224,20 +145,17 @@ std::string	HttpRes::generateAutoindexPage(const std::string &path) {
 			std::string	entryName(entry->d_name);
 			if (entryName[0] == '.')
 				continue;
-			html += "<li><a href=\"" + _target + "/" + entryName + "\">" + entryName + "</a></li>";
+			_body += "<li><a href=\"" + _target + "/" + entryName + "\">" + entryName + "</a></li>";
 		}
 		closedir(dir);
 	}
-    html += "</ul></body></html>";
-    
-	return (html);
+    _body += "</ul></body></html>";
 }
 
 void	HttpRes::GET(HttpReq &httpRequest, Server &server, Route *route) {
 	if (_target == "/guestbook.html") {
-		_contentType = determineContentType(_target);
+		_contentType = "text/html";
 		_body = generateGuestbookHTML();
-		contentLength = _body.length();
 		return;
 	}
 	if (_target == "/")
@@ -255,39 +173,37 @@ void	HttpRes::GET(HttpReq &httpRequest, Server &server, Route *route) {
 	if (isDirectory(path)) {
 		if (route && route->getIndexFile() != "" && access((path + route->getIndexFile()).c_str(), R_OK) != -1) {
 			_target += route->getIndexFile();
-			path = server.getConfig()->getRootDir() + _target;
 		} else {
 			std::cout << "Path: " << path << std::endl;
 			if (route && route->getAutoindex()) {
 				_httpStatus = 200;
 				_contentType = "text/html";
-				_body = generateAutoindexPage(path);
-				contentLength = _body.length();
+				generateAutoindexPage(path);
+			} else if (route && route->getRedirectUrl() != "") {	// serve the default file
+				_target = route->getRedirectUrl();
+				_httpStatus = route->getRedirectStatus();
 			} else
 				_httpStatus = 403;
 			return;
 		}
-	}
-	// Check if the file exists and is readable
-	if (access((path).c_str(), F_OK) == -1) {
+	} else if (access((path).c_str(), F_OK) == -1) {	// Check if the file exists ...
 		_httpStatus = 404;
 		return;
-	} else if (access((path).c_str(), R_OK) == -1) {
+	} else if (access((path).c_str(), R_OK) == -1) {	// ...and is readable
 		_httpStatus = 403;
 		return;
 	}
-	_contentType = determineContentType(_target);
-	_body = parseFile(_target, server);
-	contentLength = _body.length();
+	determineContentType();
+	parseFile(server);
 }
 
 void	HttpRes::POST(HttpReq &httpRequest, Server &server) {
 	if (_target == "/guestbook.html") {
-		if (httpRequest.getBodySize() > 0) {
+		if (!httpRequest.getBody().empty()) {
 			std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
 
 			if (formData.count("name") && formData.count("message")) {
-				saveEntry(formData["name"], formData["message"]);
+				saveGuestbookEntry(formData["name"], formData["message"]);
 				std::cout << "Saved entry: " << formData["name"] << ": " << formData["message"] << std::endl;
 			}
 		}
@@ -303,8 +219,13 @@ void	HttpRes::POST(HttpReq &httpRequest, Server &server) {
 	}
 }
 
-void	HttpRes::DELETE(HttpReq &httpRequest, Server &server) {
-	_httpStatus = 405;
+void	HttpRes::DELETE(const std::string &path) {
+	if (deleteFileDir(path)) {
+		_body = "Resource deleted.\n";
+		_httpStatus = 200;
+	} else {
+		_httpStatus = 404;
+	}
 }
 
 void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
@@ -332,35 +253,46 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 	else if (_method == "POST")
 		POST(httpRequest, server);
     else if  (_method == "DELETE")
-		DELETE(httpRequest, server);
-    else	// Unsupported method
+		DELETE(server.getConfig()->getRootDir() + _target);
+    else						// Unsupported method
 		_httpStatus = 405;
 }
 
 
-std::string HttpRes::determineContentType(const std::string &filename) {
-	std::string extension = filename.substr(filename.find_last_of(".") + 1);
+void	HttpRes::determineContentType(void) {
+	std::string extension;
+	try
+	{
+		extension = _target.substr(_target.find_last_of(".") + 1);
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+		_contentType = "text/plain";
+		return;
+	}
 
 	// Look up the MIME type in the static map
 	std::map<std::string, std::string>::const_iterator it = mimeTypes.find(extension);
 
-	if (it != mimeTypes.end()) {
-		return it->second;
-	} else {
-		return "text/plain";
-	}
+	if (it != mimeTypes.end())
+		_contentType = it->second;
+	else
+		_contentType = "text/plain";
 }
 
-std::string HttpRes::parseFile(const std::string &filename, Server &server) {
-    std::ifstream file((server.getConfig()->getRootDir() + filename).c_str());
+bool	HttpRes::parseFile(Server &server) {
+    std::ifstream file((server.getConfig()->getRootDir() + _target).c_str());
     if (!file.is_open()) {
-        return parseFile("/error_404.html", server);
+		std::cerr << "Error: Could not open file " << _target << std::endl;
+		_httpStatus = 404;
+        return (false);
     }
     std::stringstream buffer;
     buffer << file.rdbuf(); // Read entire file
-    std::string body = buffer.str();
+    _body = buffer.str();
     file.close();
-    return body;
+    return (true);
 }
 
 void HttpRes::writeResponse(int client_fd) {
@@ -374,7 +306,7 @@ void HttpRes::writeResponse(int client_fd) {
     // Add headers
     response_stream << "Content-Type: " << _contentType << "\n";
 	response_stream << "Location: " << _target << "\n";
-    response_stream << "Content-Length: " << contentLength << "\n\n";
+    response_stream << "Content-Length: " << _body.length() << "\n\n";
     // response_stream << "Connection: keep-alive\n\n"; //without this we still be stuck in the loop (still issues here)
 
     // Add body
