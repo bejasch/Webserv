@@ -172,8 +172,8 @@ int ServerManager::fillRoute(std::string line, std::ifstream &file, Config *conf
             route->setIndexFile(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
         else if (line.find("autoindex") != std::string::npos)
             route->setAutoindex(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
-        else if (line.find("cgi_path") != std::string::npos)
-            route->setCGIPath(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
+        // else if (line.find("cgi_path") != std::string::npos)
+        //     route->setCGIPath(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
     }
     return 0;
 }

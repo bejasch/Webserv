@@ -162,8 +162,9 @@ void	HttpRes::GET(HttpReq &httpRequest, Server &server, Route *route) {
 		_target = server.getConfig()->getDefaultFile();
 	if (_target.find(".py") != std::string::npos) {
 		std::cout << "Executing CGI script: " << _target << std::endl;
-		server.getConfig()->getCGI()->executeCGI(httpRequest, server);
-		//TODO: execute script
+		_body = server.getConfig()->getCGI()->executeCGI(httpRequest, server);
+		_contentType = "text/html";
+		return;
 	}
 	// Check if the target is a directory
 	std::string path = server.getConfig()->getRootDir() + _target;

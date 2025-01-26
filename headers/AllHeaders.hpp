@@ -40,7 +40,7 @@ class	ServerManager;
 #include <sstream>
 #include <algorithm>
 #include <cctype>
-
+#include <csignal>
 
 // #include "
 #include "Config.hpp"

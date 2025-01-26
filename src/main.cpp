@@ -5,7 +5,6 @@ int main(int argc, char **argv) {
         std::cerr << "Usage: ./webserver <config_file>" << std::endl;
         return 1;
     }
-    //config file
     ServerManager serverManager;
     serverManager.setServers(argv[1]);
     serverManager.startServers();

@@ -13,7 +13,7 @@ class Route {
 		bool						autoindex;
 		int						 	redirect_status;
 		std::string				 	redirect_url;
-		std::string				 	cgi_path;
+		// std::string				 	cgi_path;
 
 	public:
 		Route();
@@ -37,7 +37,7 @@ class Route {
 		bool						getAutoindex() const { return autoindex; }
 		int							getRedirectStatus() const { return redirect_status; }
 		std::string					getRedirectUrl() const { return redirect_url; }
-		std::string					getCGIPath() const { return cgi_path; }
+		// std::string					getCGIPath() const { return cgi_path; }
 
 		bool	containsTarget(const std::string &target) const;
 		bool	allowsMethod(const std::string &method) const;
