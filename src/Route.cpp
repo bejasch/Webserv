@@ -1,15 +1,14 @@
 #include "../headers/AllHeaders.hpp"
 
 // TODO: Cant there be many redirect pages?
-Route::Route() {
-    this->path = "";
-    this->allowed_methods = {""};
-    this->root_dir = "";
-    this->index_file = "";
-    this->autoindex = false;
-    this->redirect_status = 000;
-    this->redirect_url = "";
-    // this->cgi_path = "";
+Route::Route() 
+    : path(""),
+      allowed_methods({}),
+      root_dir(""),
+      index_file(""),
+      autoindex(false),
+      redirect_status(0),
+      redirect_url("") {
     std::cout << "Route default constructor called" << std::endl;
 }
 

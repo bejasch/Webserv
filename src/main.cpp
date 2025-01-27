@@ -8,11 +8,5 @@ int main(int argc, char **argv) {
     ServerManager serverManager;
     serverManager.setServers(argv[1]);
     serverManager.startServers();
-
-    //server
-    // Server server;
-    // server.start();
-    // sleep(10);
-    // server.stop();
     return 0;
 }

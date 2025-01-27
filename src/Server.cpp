@@ -96,3 +96,9 @@ void Server::handleRequest(int client_fd) {
 		close(client_fd);
 	}
 }
+
+void	Server::freeServer() {
+	close(server_fd);
+	client_requests.clear();
+	delete config;
+}

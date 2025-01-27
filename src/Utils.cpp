@@ -143,4 +143,3 @@ bool	deleteFileDir(const std::string &path) {
 	}
 	return (false);
 }
-

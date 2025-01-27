@@ -47,6 +47,7 @@ class Config {
 
         //utils
         void printConfig();
+        void freeConfig();
 };
 
 #endif

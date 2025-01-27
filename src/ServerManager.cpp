@@ -1,11 +1,17 @@
 #include "../headers/AllHeaders.hpp"
 
+volatile sig_atomic_t ServerManager::stop_flag = 0;
+
 ServerManager::ServerManager() {
     std::cout << "ServerManager default constructor called" << std::endl;
 }
 
 ServerManager::~ServerManager() {
     std::cout << "ServerManager destructor called" << std::endl;
+    // Ensure resources are freed if the destructor is called
+    freeResources();
+    // Reset the signal handler to default
+    signal(SIGINT, SIG_DFL);
 }
 
 int ServerManager::setServers(const std::string &config_file)
@@ -65,6 +71,10 @@ void ServerManager::startServers() {
         perror("Failed to create epoll instance");
         return;
     }
+    if (signal(SIGINT, ServerManager::signalHandler) == SIG_ERR) {
+        std::perror("signal");
+        std::exit(EXIT_FAILURE);
+    }
     // Add all server_fd to epoll instance to monitor incoming connections
     for (int i = 0; i < servers.size(); ++i) {
         Server *server = servers[i]; // Access the Server object by index
@@ -85,7 +95,7 @@ void ServerManager::startServers() {
 void ServerManager::handleEvents() {
     epoll_event events[MAX_EVENTS];
 
-    while (true) {
+    while (!stop_flag) {
         int n = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
         if (n == -1) {
             perror("epoll_wait failed");
@@ -95,6 +105,7 @@ void ServerManager::handleEvents() {
             dispatchEvent(events[i]);
         }
     }
+    freeResources();
 }
 
 void ServerManager::dispatchEvent(const epoll_event& event) {
@@ -192,4 +203,27 @@ int ServerManager::portCheck(int port) {
         }
     }
     return 0;
+}
+
+int ServerManager::freeResources() {
+    for (int i = 0; i < servers.size(); i++) {
+        servers[i]->getConfig()->freeConfig();
+        servers[i]->freeServer();
+        delete servers[i];
+    }
+    servers.clear();
+    // Close epoll file descriptor
+    if (epoll_fd != -1) {
+        close(epoll_fd);
+        epoll_fd = -1;
+    }
+    // Clear the client-to-server mapping
+    clientfd_to_serverfd.clear();
+    return 0;
+}
+
+void ServerManager::signalHandler(int signum) {
+    if (signum == SIGINT) {
+        stop_flag = 1;
+    }
 }
