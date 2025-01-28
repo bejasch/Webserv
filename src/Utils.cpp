@@ -4,6 +4,12 @@ int stringToInt(const std::string &str) {
     return std::atoi(str.c_str());
 }
 
+std::string intToString(int value) {
+    std::ostringstream oss;
+    oss << value;
+    return oss.str();
+}
+
 bool isStandaloneWord(const std::string& line, const std::string& word, size_t pos) {
     // Check character before the word (if not at the start of the string)
     if (pos > 0 && std::isalnum(line[pos - 1])) {

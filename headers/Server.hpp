@@ -21,8 +21,8 @@ class Server {
 		void setServer(Config *config); //define server configs
 		void setUpServer(); //define socket and bind to server fd
 	
-		Config	*getConfig() const;
-		int		getServerFd() const;
+		Config	*getConfig() const { return this->config; } ;
+		int		getServerFd() const { return this->server_fd; } ;
 		void	acceptConnection(int epoll_fd);
 		void	handleRequest(int fd);
 };
