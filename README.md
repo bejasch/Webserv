@@ -363,7 +363,6 @@ These should be specified in the config, and then served via the response class.
 
 ### 7. Return pages
 
+### 8. MAX_BODY_SIZE
 
-
-
-
+Do we restrain max_body_size?

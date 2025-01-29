@@ -113,7 +113,6 @@ void ServerManager::dispatchEvent(const epoll_event& event) {
         Server *server = servers[i];
         // this implies its a new connection, that needs to be added to epoll instance
         if (event.data.fd == server->getServerFd()) {
-            //server.handleEvent(event.data.fd, event.events, epoll_fd);
             server->acceptConnection(epoll_fd);
             return;
         }
