@@ -81,7 +81,10 @@ void	HttpReq::print(void) const {
     for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
         std::cout << "\t" << it->first << ": " << it->second << "\n";
     }
-    std::cout << "Body:\n" << _body << "\n";
+	if (_body.size() > 100)
+		std::cout << "Body(head):\n" << _body.substr(0, 100) << "...\n";
+	else
+	    std::cout << "Body:\n" << _body << "\n";
 }
 
 const std::string	&HttpReq::getMethod(void) const { return (_method); }
@@ -246,12 +249,13 @@ bool HttpReq::verifyHeaders() {
 
 bool	HttpReq::parseBody(void) {
 	
-	printf("\n\t##### Parsed with status: %d\n", _httpStatus);
+	printf("\n\t##### Parsing body ... with status: %d\n", _httpStatus);
 	if (_headers.find("content-length") != _headers.end()) {
 		size_t	content_length = std::stoul(_headers["content-length"]);
-		printf("\n\t##### Content-Length: %lu\n", content_length);
+		printf("\n\n\t##### Content-Length: %lu\n", content_length);
 		printf("\n\t##### Buffer length: %lu\n", _buffer.length());
 		_body += _buffer;
+		_buffer.clear();
 		if (_body.length() < content_length) {
 			return (false);		// Wait for full body
 		}
