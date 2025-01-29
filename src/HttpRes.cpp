@@ -214,13 +214,29 @@ void	HttpRes::POST(HttpReq &httpRequest, Server &server) {
 }
 
 void	HttpRes::DELETE(const std::string &path) {
-	if (deleteFileDir(path)) {
-		_body = "Resource deleted.\n";
-		_httpStatus = 200;
-	} else {
+	if (access(path.c_str(), F_OK) != 0) {			// Check if the file exists
 		_httpStatus = 404;
+		return;
+	} else if (access(path.c_str(), W_OK) != 0) {	// Check if the file is writable
+		_httpStatus = 403;
+		return;
+	}
+	if (remove(path.c_str()) == 0) {				// Delete the file
+		_httpStatus = 204;
+	} else {
+		std::cerr << "Error deleting file: " << strerror(errno) << std::endl;
+		_httpStatus = 500;
 	}
 }
+
+// void	HttpRes::DELETE(const std::string &path) {
+// 	if (deleteFileDir(path)) {
+// 		_body = "Resource deleted.\n";
+// 		_httpStatus = 200;
+// 	} else {
+// 		_httpStatus = 404;
+// 	}
+// }
 
 void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 	_protocol = httpRequest.getProtocol();

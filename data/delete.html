@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete File</title>
+</head>
+<body>
+    <h2>Delete a File</h2>
+    <input type="text" id="filename" placeholder="Enter filename">
+    <button onclick="deleteFile()">Delete</button>
+    <p id="response"></p>
+
+    <script>
+        function deleteFile() {
+            let filename = document.getElementById("filename").value;
+            if (!filename) {
+                document.getElementById("response").innerText = "Please enter a filename.";
+                return;
+            }
+
+            fetch("/delete/" + encodeURIComponent(filename), {
+                method: "DELETE"
+            })
+            .then(response => {
+                if (response.status === 204) {
+                    document.getElementById("response").innerText = "File deleted successfully!";
+                } else if (response.status === 404) {
+                    document.getElementById("response").innerText = "Error: File not found!";
+                } else if (response.status === 403) {
+                    document.getElementById("response").innerText = "Error: Permission denied!";
+                } else {
+                    document.getElementById("response").innerText = "Error: Something went wrong!";
+                }
+            })
+            .catch(error => {
+                document.getElementById("response").innerText = "Request failed: " + error;
+            });
+        }
+    </script>
+</body>
+</html>

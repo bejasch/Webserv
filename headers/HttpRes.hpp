@@ -36,7 +36,7 @@ private:
 
 	void	sendResponse(int client_fd, const std::string &response);
 
-	void executeCGI(HttpReq &httpRequest, Server &server);
+	void	executeCGI(HttpReq &httpRequest, Server &server);
 
 public:
 	HttpRes();
