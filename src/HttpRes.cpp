@@ -19,17 +19,30 @@ std::map<std::string, std::string> HttpRes::mimeTypes = {
 };
 
 std::map<int, std::string> HttpRes::statusMessages = {
-    {400, "Bad Request"},
-    {401, "Unauthorized"},
-    {403, "Forbidden"},
-    {404, "Not Found"},
-    {405, "Method Not Allowed"},
-    {408, "Request Timeout"},
-    {500, "Internal Server Error"},
-    {501, "Not Implemented"},
-    {502, "Bad Gateway"},
-    {503, "Service Unavailable"},
-    {504, "Gateway Timeout"}
+	{200, "OK"},
+	{201, "Created"},
+	{204, "No Content"},
+	{206, "Partial Content"},
+	{301, "Moved Permanently"},
+	{302, "Found"},
+	{303, "See Other"},
+	{304, "Not Modified"},
+	{307, "Temporary Redirect"},
+	{308, "Permanent Redirect"},
+	{400, "Bad Request"},
+	{401, "Unauthorized"},
+	{403, "Forbidden"},
+	{404, "Not Found"},
+	{405, "Method Not Allowed"},
+	{408, "Request Timeout"},
+	{411, "Length Required"},
+	{413, "Payload Too Large"},
+	{415, "Unsupported Media Type"},
+	{500, "Internal Server Error"},
+	{501, "Not Implemented"},
+	{502, "Bad Gateway"},
+	{503, "Service Unavailable"},
+	{504, "Gateway Timeout"}
 };
 
 std::map<int, std::string> statusDescription = {
@@ -56,36 +69,48 @@ std::map<int, std::string> statusDescription = {
 	{504, "Gateway Timeout"}
 };
 
-void	HttpRes::generateErrorResponse(int client_fd) {
+
+void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
+	// _protocol = httpRequest.getProtocol();
+	_httpStatus = httpRequest.getHttpStatus();
+	_target = httpRequest.getTarget();
+    if (_httpStatus >= 400 && _httpStatus < 600) {
+		return;
+	}
+	_method = httpRequest.getMethod();
+
+	// Check if the method is allowed for the target (in routes)
+	Route *route = server.getConfig()->getRouteForTarget(_target);
+	if (route) {
+		//TODO: if allowed methos empty, then allow all methods specified in the server
+		if (!route->allowsMethod(_method)) {
+			_httpStatus = 405;
+			return;
+		}
+	}
 	
+    if (_method == "GET")
+		GET(httpRequest, server, route);
+	else if (_method == "POST")
+		POST(httpRequest, server);
+    else if  (_method == "DELETE")
+		DELETE(server.getConfig()->getRootDir() + _target);
+    else						// Unsupported method
+		_httpStatus = 405;
+}
+
+void	HttpRes::generateErrorBody(void) {
+	_contentType = "text/html";
+	std::string statusMessage = statusMessages[_httpStatus];
+
 	_body = "<html><head><title>" + std::to_string(_httpStatus) + " "
-			+ _statusMessage + "</title></head><body><h1>"
-			+ std::to_string(_httpStatus) + " " + _statusMessage + "</h1>";
+			+ statusMessage + "</title></head><body><h1>"
+			+ std::to_string(_httpStatus) + " " + statusMessage + "</h1>";
 
 	if (statusDescription.find(_httpStatus) != statusDescription.end())
 		_body += "<p>" + statusDescription[_httpStatus] + "</p>";
 	
 	_body += "</body></html>";
-
-
-	std::ostringstream response;
-
-    // Status line
-    response << "HTTP/1.1 " << _httpStatus << " " << _statusMessage << "\r\n";
-
-    // Headers
-    response << "Content-Type: text/html\r\n";
-    response << "Content-Length: " << _body.size() << "\r\n";
-    response << "Connection: close\r\n";
-
-    // Blank line to separate headers from body
-    response << "\r\n";
-
-    // Body
-    response << _body;
-
-	// TODO: Exception handling ???
-	sendResponse(client_fd, response.str());
 }
 
 void	HttpRes::sendResponse(int client_fd, const std::string &response) {
@@ -213,6 +238,7 @@ void	HttpRes::POST(HttpReq &httpRequest, Server &server) {
 	}
 }
 
+// gets the full path of the file to delete
 void	HttpRes::DELETE(const std::string &path) {
 	if (access(path.c_str(), F_OK) != 0) {			// Check if the file exists
 		_httpStatus = 404;
@@ -238,35 +264,6 @@ void	HttpRes::DELETE(const std::string &path) {
 // 	}
 // }
 
-void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
-	_protocol = httpRequest.getProtocol();
-	_httpStatus = httpRequest.getHttpStatus();
-	_statusMessage = statusMessages[_httpStatus];
-	_target = httpRequest.getTarget();
-    if (_httpStatus >= 400 && _httpStatus < 600) {
-		return;
-	}
-	_method = httpRequest.getMethod();
-
-	// Check if the method is allowed for the target (in routes)
-	Route *route = server.getConfig()->getRouteForTarget(_target);
-	if (route) {
-		//TODO: if allowed methos empty, then allow all methods specified in the server
-		if (!route->allowsMethod(_method)) {
-			_httpStatus = 405;
-			return;
-		}
-	}
-	
-    if (_method == "GET")
-		GET(httpRequest, server, route);
-	else if (_method == "POST")
-		POST(httpRequest, server);
-    else if  (_method == "DELETE")
-		DELETE(server.getConfig()->getRootDir() + _target);
-    else						// Unsupported method
-		_httpStatus = 405;
-}
 
 
 void	HttpRes::determineContentType(void) {
@@ -307,16 +304,17 @@ bool	HttpRes::parseFile(Server &server) {
 
 void HttpRes::writeResponse(int client_fd) {
     if (_httpStatus >= 400 && _httpStatus < 600)
-		return	(generateErrorResponse(client_fd));
+		generateErrorBody();
 	
 	// Build the status line
     std::ostringstream	response_stream;
-    response_stream << _protocol << " " << _httpStatus << " " << _statusMessage << "\n";
-
+    response_stream << "HTTP/1.1 " << _httpStatus << " " << statusMessages[_httpStatus] << "\r\n";
     // Add headers
-    response_stream << "Content-Type: " << _contentType << "\n";
-	response_stream << "Location: " << _target << "\n";
-    response_stream << "Content-Length: " << _body.length() << "\n\n";
+    response_stream << "Content-Type: " << _contentType << "\r\n";
+	response_stream << "Location: " << _target << "\r\n";
+    response_stream << "Content-Length: " << _body.length() << "\r\n";
+	response_stream << "Connection: close\r\n";
+	response_stream << "\r\n";
     // response_stream << "Connection: keep-alive\n\n"; //without this we still be stuck in the loop (still issues here)
 
     // Add body

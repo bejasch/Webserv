@@ -2,40 +2,58 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delete File</title>
+    <title>File Manager</title>
 </head>
 <body>
+    <h2>Upload a File</h2>
+    <input type="file" id="fileInput">
+    <button onclick="uploadFile()">Upload</button>
+    <p id="uploadResponse"></p>
+
     <h2>Delete a File</h2>
     <input type="text" id="filename" placeholder="Enter filename">
     <button onclick="deleteFile()">Delete</button>
-    <p id="response"></p>
+    <p id="deleteResponse"></p>
 
     <script>
-        function deleteFile() {
-            let filename = document.getElementById("filename").value;
-            if (!filename) {
-                document.getElementById("response").innerText = "Please enter a filename.";
+        function uploadFile() {
+            let file = document.getElementById("fileInput").files[0];
+            if (!file) {
+                document.getElementById("uploadResponse").innerText = "Select a file first!";
                 return;
             }
 
-            fetch("/delete/" + encodeURIComponent(filename), {
-                method: "DELETE"
-            })
-            .then(response => {
-                if (response.status === 204) {
-                    document.getElementById("response").innerText = "File deleted successfully!";
-                } else if (response.status === 404) {
-                    document.getElementById("response").innerText = "Error: File not found!";
-                } else if (response.status === 403) {
-                    document.getElementById("response").innerText = "Error: Permission denied!";
-                } else {
-                    document.getElementById("response").innerText = "Error: Something went wrong!";
-                }
-            })
-            .catch(error => {
-                document.getElementById("response").innerText = "Request failed: " + error;
-            });
+            let formData = new FormData();
+            formData.append("file", file);
+
+            fetch("/upload", { method: "POST", body: formData })
+                .then(response => {
+                    if (response.status === 201) {
+                        document.getElementById("uploadResponse").innerText = "File uploaded!";
+                    } else {
+                        document.getElementById("uploadResponse").innerText = "Upload failed!";
+                    }
+                });
+        }
+
+        function deleteFile() {
+            let filename = document.getElementById("filename").value;
+            if (!filename) {
+                document.getElementById("deleteResponse").innerText = "Enter a filename!";
+                return;
+            }
+            fetch("/" + encodeURIComponent(filename).replace(/%2F/g, "/"), { method: "DELETE" })
+                .then(response => {
+                    if (response.status === 204) {
+                        document.getElementById("deleteResponse").innerText = "File deleted!";
+                    } else if (response.status === 404) {
+                        document.getElementById("deleteResponse").innerText = "File not found!";
+                    } else if (response.status === 403) {
+                        document.getElementById("deleteResponse").innerText = "Permission denied!";
+                    } else {
+                        document.getElementById("deleteResponse").innerText = "Delete failed!";
+                    }
+                });
         }
     </script>
 </body>

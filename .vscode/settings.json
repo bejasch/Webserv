@@ -51,6 +51,7 @@
 		"typeinfo": "cpp",
 		"fstream": "cpp",
 		"sstream": "cpp",
-		"cstring": "cpp"
+		"cstring": "cpp",
+		"csignal": "cpp"
 	}
 }

@@ -7,12 +7,10 @@
 
 class HttpRes {
 private:
-	std::string			_protocol;
 	std::string			_method;
 	int					_httpStatus;
 
 	std::string			_target;
-	std::string			_statusMessage;
 	std::string			_contentType;
 	std::string			_body;
 	std::map<std::string, std::string>	_headers;
@@ -32,7 +30,7 @@ private:
 
 	// std::map<std::string, std::string>	parsePostData(const std::string& data);
 	void				generateAutoindexPage(const std::string &path);
-	void				generateErrorResponse(int client_fd);
+	void				generateErrorBody(void);
 
 	void	sendResponse(int client_fd, const std::string &response);
 
