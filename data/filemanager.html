@@ -5,12 +5,13 @@
     <title>File Manager</title>
 </head>
 <body>
-    <h2>Upload a File</h2>
+    <h1>File Manager</h1>
+    <h2> • Upload a File:</h2>
     <input type="file" id="fileInput">
     <button onclick="uploadFile()">Upload</button>
     <p id="uploadResponse"></p>
 
-    <h2>Delete a File</h2>
+    <h2> • Delete a File:</h2>
     <input type="text" id="filename" placeholder="Enter filename">
     <button onclick="deleteFile()">Delete</button>
     <p id="deleteResponse"></p>
@@ -26,7 +27,10 @@
             let formData = new FormData();
             formData.append("file", file);
 
-            fetch("/upload", { method: "POST", body: formData })
+            fetch("/" + file.name, {
+                method: "POST", 
+                headers: { "Content-Type": "application/octet-stream", "X-Filename": file.name },
+                body: file })
                 .then(response => {
                     if (response.status === 201) {
                         document.getElementById("uploadResponse").innerText = "File uploaded!";

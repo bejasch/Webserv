@@ -112,7 +112,7 @@ bool HttpReq::processData(const std::string &data) {
 	if (_isChunked)								// If the request is chunked, process the chunked body
 		return (parseChunkedBody());			// Returns true if the full body is assembled, false otherwise
 	
-	return (parseBody(), true);					// Full request assembled
+	return (parseBody());					// Full request assembled
 }
 
 bool	HttpReq::parseChunkedBody(void) {
@@ -244,15 +244,20 @@ bool HttpReq::verifyHeaders() {
 	return (true);
 }
 
-void	HttpReq::parseBody(void) {
+bool	HttpReq::parseBody(void) {
+	
+	printf("\n\t##### Parsed with status: %d\n", _httpStatus);
 	if (_headers.find("content-length") != _headers.end()) {
 		size_t	content_length = std::stoul(_headers["content-length"]);
-		if (_buffer.length() < content_length)
-			return (_httpStatus = 400, void());
-		_body = _buffer.substr(0, content_length);
-		return (_httpStatus = 200, void());
+		printf("\n\t##### Content-Length: %lu\n", content_length);
+		printf("\n\t##### Buffer length: %lu\n", _buffer.length());
+		_body += _buffer;
+		if (_body.length() < content_length) {
+			return (false);		// Wait for full body
+		}
 	}
-	_httpStatus = 200; 	// No Content-Length header -> empty body (or ignored)
+	_httpStatus = 200; // OK
+	return (true);
 }
 
 // Reset for a new request - or better destroy and create a new object ?

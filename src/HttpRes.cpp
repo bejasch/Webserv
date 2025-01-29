@@ -71,7 +71,6 @@ std::map<int, std::string> statusDescription = {
 
 
 void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
-	// _protocol = httpRequest.getProtocol();
 	_httpStatus = httpRequest.getHttpStatus();
 	_target = httpRequest.getTarget();
     if (_httpStatus >= 400 && _httpStatus < 600) {
@@ -220,6 +219,17 @@ void	HttpRes::GET(HttpReq &httpRequest, Server &server, Route *route) {
 	parseFile(server);
 }
 
+// Function to save the file to disk
+bool saveFile(const std::string &filename, const char* data, size_t size) {
+	std::ofstream file(filename, std::ios::binary);
+	if (!file.is_open())
+		return (false);
+	file.write(data, size);
+	file.close();
+	return (true);
+}
+
+
 void	HttpRes::POST(HttpReq &httpRequest, Server &server) {
 	if (_target == "/guestbook.html") {
 		if (!httpRequest.getBody().empty()) {
@@ -231,11 +241,23 @@ void	HttpRes::POST(HttpReq &httpRequest, Server &server) {
 			}
 		}
 		_httpStatus = 303;	// Redirect (see other)
+		return;
 	}
 	if (_target.find(".py") != std::string::npos) {
 		server.getConfig()->getCGI()->executeCGI(httpRequest, server);
 		//TODO: execute script
 	}
+	// Check if the target exists
+	std::string path = server.getConfig()->getRootDir() + _target;
+	printf("\t-> Path: %s\n", path.c_str());
+	if (access(path.c_str(), F_OK) == 0) {
+		_httpStatus = 404;
+		return;
+	}
+	if (saveFile(path, httpRequest.getBody().c_str(), httpRequest.getBody().size()))
+		_httpStatus = 201;
+	else
+		_httpStatus = 500;
 }
 
 // gets the full path of the file to delete

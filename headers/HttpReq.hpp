@@ -42,7 +42,7 @@ private:
 
 
 	bool	parseHeaders(void);
-	void	parseBody(void);
+	bool	parseBody(void);
 	bool	parseChunkedBody(void);
 
 public:

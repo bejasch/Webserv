@@ -29,8 +29,8 @@ bool isStandaloneWord(const std::string& line, const std::string& word, size_t p
 bool	isDirectory(const std::string &path) {
 	struct stat statbuf;
 	if (stat(path.c_str(), &statbuf) != 0)
-		return false;
-	return S_ISDIR(statbuf.st_mode);
+		return (false);
+	return (S_ISDIR(statbuf.st_mode));
 }
 
 
