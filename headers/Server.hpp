@@ -25,6 +25,7 @@ class Server {
 		int		getServerFd() const { return this->server_fd; } ;
 		void	acceptConnection(int epoll_fd);
 		void	handleRequest(int fd);
+		void	freeServer();
 };
 
 #endif

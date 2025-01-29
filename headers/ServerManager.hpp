@@ -8,6 +8,7 @@ private:
     int epoll_fd;
     std::vector<Server*> servers;
     const static int MAX_EVENTS = 100; // For all servers
+    static volatile sig_atomic_t stop_flag;
 
 public:
     ServerManager();
@@ -25,6 +26,7 @@ private:
     std::string fillConfig(std::string line, std::ifstream &file, Config *config);
     int fillRoute(std::string line, std::ifstream &file, Config *config, Route *route);
     static void signalHandler(int signum);
+    int freeResources();
 };
 
 #endif

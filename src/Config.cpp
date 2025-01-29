@@ -1,13 +1,15 @@
 #include "../headers/AllHeaders.hpp"
 
-Config::Config() {
-    this->server_port = 0;
-    this->server_name = "";
-    this->root_dir = "";
-    this->max_body_size = 0;
-    this->default_file = "";
-    this->error_file = "";
-    this->error_status = 0;
+Config::Config() 
+    : server_port(0),
+      server_name(""),
+      root_dir(""),
+      max_body_size(0),
+      default_file(""),
+      error_file(""),
+      error_status(0),
+      routes({}),
+      cgi(NULL) {
     std::cout << "Config default constructor called" << std::endl;
 }
 
@@ -77,4 +79,15 @@ void Config::addRoute(Route *route) {
 
 void Config::addCGI(CGI *cgi) {
     this->cgi = cgi;
+}
+
+void Config::freeConfig() {
+    if (!routes.empty()) {
+        for (int i = 0; i < routes.size(); i++) {
+            delete routes[i];
+        }
+        routes.clear();
+    }
+    if (cgi)
+        delete cgi;
 }
