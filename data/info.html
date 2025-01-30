@@ -1,36 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Color Page</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            height: 100vh;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            transition: background 0.2s ease;
-        }
-        h1 {
-            color: white;
-            text-shadow: 2px 2px 10px black;
-        }
-    </style>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Interactive Page</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			margin: 0;
+			padding: 0;
+			min-height: 100vh;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: flex-start;
+			text-align: center;
+			transition: background 0.2s ease;
+		}
+		button {
+			margin: 10px;
+			padding: 10px 15px;
+			background-color: #007bff;
+			color: white;
+			border: none;
+			border-radius: 5px;
+			cursor: pointer;
+			font-size: 16px;
+		}
+		button:hover {
+			background-color: #0056b3;
+		}
+		header {
+			margin: 20px 0;
+		}
+		h1 {
+			color: white;
+			text-shadow: 2px 2px 10px black;
+		}
+		main {
+			width: 80%;
+			max-width: 800px;
+		}
+		p {
+			font-size: 18px;
+		}
+		img {
+			width: 100%;
+			max-width: 400px;
+			height: auto;
+			margin: 15px 0;
+			border-radius: 10px;
+			box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+		}
+		footer {
+			margin-top: 20px;
+			padding: 10px;
+			width: 100%;
+			background: rgba(0, 0, 0, 0.1);
+		}
+		#audio-controls {
+			margin-top: 20px;
+			display: flex;
+			gap: 10px;
+		}
+	</style>
 </head>
 <body>
-    <h1>Move your mouse to change the background color! 🎨</h1>
 
-    <script>
-        document.addEventListener("mousemove", (event) => {
-            let x = event.clientX / window.innerWidth * 255;
-            let y = event.clientY / window.innerHeight * 255;
-            let color = `rgb(${Math.round(x)}, ${Math.round(y)}, 150)`;
-            document.body.style.background = color;
-        });
-    </script>
+	<button onclick="window.location.href='index.html'">Back to the Main Page</button>
+
+	<header>
+		<h1>An Interactive page with various elements! 🎨</h1>
+	</header>
+
+	<main>
+		<p>It shows some basic HTML. It needs to request some embedded items (images/audio)!</p>
+		<img src="giphy.gif" alt="Moving Image">
+
+		<h1>Funny !</h1>
+		<img src="image.jpg" alt="Example Image">
+	</main>
+
+	<!-- 🎵 Background Music Controls -->
+	<div id="audio-controls">
+		<button onclick="playMusic()">▶ Play</button>
+		<button onclick="pauseMusic()">⏸ Pause</button>
+	</div>
+	<audio id="bg-music" autoplay loop>
+		<source src="sample.wav" type="audio/wav">
+		Your browser does not support the audio element.
+	</audio>
+
+	<!-- 📢 Click to Play Sound Effect -->
+	<button onclick="playSound()">🔊 Click Me!</button>
+	<audio id="sound">
+		<source src="wood-block.mp3" type="audio/wav">
+	</audio>
+
+	<footer>
+		<p>© 2025 My Website | All Rights Reserved</p>
+	</footer>
+	
+	<script>
+		// 🎨 Background Color Animation
+		document.addEventListener("mousemove", (event) => {
+			let x = event.clientX / window.innerWidth * 255;
+			let y = event.clientY / window.innerHeight * 255;
+			let color = `rgb(${Math.round(x)}, ${Math.round(y)}, 150)`;
+			document.body.style.background = color;
+		});
+
+		// 🎵 Background Music Controls
+		let music = document.getElementById("bg-music");
+
+		function playMusic() {
+			music.play();
+		}
+
+		function pauseMusic() {
+			music.pause();
+		}
+
+		// 🔊 Click Sound Effect
+		function playSound() {
+			let sound = document.getElementById("sound");
+			sound.play();
+		}
+	</script>
+
 </body>
 </html>

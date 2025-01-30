@@ -136,7 +136,7 @@ void	HttpRes::sendResponse(int client_fd, const std::string &response) {
 
 void	HttpRes::generateAutoindexPage(const std::string &path) {
     _body = "<html><head><title>Index of " + _target + "</title></head><body>";
-	_body += "<button onclick=\"window.location.href='index.html'\">Back to Main Page</button>";
+	_body += "<button onclick=\"window.location.href='/index.html'\">Back to Main Page</button>";
     _body += "<h1>Index of " + _target + "</h1><ul>";
     
 	DIR	*dir = opendir(path.c_str());

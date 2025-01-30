@@ -90,7 +90,7 @@ void	saveGuestbookEntry(const std::string &name, const std::string &message) {
 const std::string	generateGuestbookHTML(void) {
 	std::ostringstream html;
 	html << "<!DOCTYPE html><html><head><title>Guestbook</title></head><body>";
-	html << "<button onclick=\"window.location.href='index.html'\">Back to Main Page</button>";
+	html << "<button onclick=\"window.location.href='/index.html'\">Back to Main Page</button>";
 	html << "<h1>Welcome to the Guestbook</h1>";
 	html << "<form method='POST' action='/guestbook.html'>"
 		<< "Name: <input type='text' name='name'><br>"
