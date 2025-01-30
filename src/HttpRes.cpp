@@ -18,9 +18,10 @@ std::map<std::string, std::string> HttpRes::mimeTypes = {
 	{"ico", "image/x-icon"}
 };
 
-std::map<int, std::string> HttpRes::statusMessages = {
+std::map<int, std::string> HttpRes::statusDescription = {
 	{200, "OK"},
 	{201, "Created"},
+	{202, "Accepted"},
 	{204, "No Content"},
 	{206, "Partial Content"},
 	{301, "Moved Permanently"},
@@ -44,31 +45,6 @@ std::map<int, std::string> HttpRes::statusMessages = {
 	{503, "Service Unavailable"},
 	{504, "Gateway Timeout"}
 };
-
-std::map<int, std::string> statusDescription = {
-	{200, "OK"},
-	{201, "Created"},
-	{202, "Accepted"},
-	{204, "No Content"},
-	{301, "Moved Permanently"},
-	{302, "Found"},
-	{303, "See Other"},
-	{304, "Not Modified"},
-	{307, "Temporary Redirect"},
-	{308, "Permanent Redirect"},
-	{400, "The server could not understand the request due to invalid syntax."},
-	{401, "Unauthorized"},
-	{403, "Forbidden"},
-	{404, "Not Found"},
-	{405, "Method Not Allowed"},
-	{408, "Request Timeout"},
-	{500, "Internal Server Error"},
-	{501, "Not Implemented"},
-	{502, "Bad Gateway"},
-	{503, "Service Unavailable"},
-	{504, "Gateway Timeout"}
-};
-
 
 void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 	_httpStatus = httpRequest.getHttpStatus();
@@ -100,7 +76,7 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 
 void	HttpRes::generateErrorBody(void) {
 	_contentType = "text/html";
-	std::string statusMessage = statusMessages[_httpStatus];
+	std::string statusMessage = statusDescription[_httpStatus];
 
 	_body = "<html><head><title>" + std::to_string(_httpStatus) + " "
 			+ statusMessage + "</title></head><body><h1>"
@@ -160,6 +136,7 @@ void	HttpRes::sendResponse(int client_fd, const std::string &response) {
 
 void	HttpRes::generateAutoindexPage(const std::string &path) {
     _body = "<html><head><title>Index of " + _target + "</title></head><body>";
+	_body += "<button onclick=\"window.location.href='index.html'\">Back to Main Page</button>";
     _body += "<h1>Index of " + _target + "</h1><ul>";
     
 	DIR	*dir = opendir(path.c_str());
@@ -330,7 +307,7 @@ void HttpRes::writeResponse(int client_fd) {
 	
 	// Build the status line
     std::ostringstream	response_stream;
-    response_stream << "HTTP/1.1 " << _httpStatus << " " << statusMessages[_httpStatus] << "\r\n";
+    response_stream << "HTTP/1.1 " << _httpStatus << " " << statusDescription[_httpStatus] << "\r\n";
     // Add headers
     response_stream << "Content-Type: " << _contentType << "\r\n";
 	response_stream << "Location: " << _target << "\r\n";

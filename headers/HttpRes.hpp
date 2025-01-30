@@ -15,9 +15,8 @@ private:
 	std::string			_body;
 	std::map<std::string, std::string>	_headers;
 
-	static std::map<int, std::string>			statusMessages;
 	static std::map<std::string, std::string>	mimeTypes;
-	static std::map<int, std::string>			statusDescriptions;
+	static std::map<int, std::string>			statusDescription;
 
 
 	bool				parseFile(Server &server);
