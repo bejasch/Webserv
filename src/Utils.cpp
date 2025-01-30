@@ -25,6 +25,15 @@ bool isStandaloneWord(const std::string& line, const std::string& word, size_t p
     return true;
 }
 
+// Helper function to trim leading and trailing whitespaces
+std::string	trim(const std::string& str) {
+	size_t start = str.find_first_not_of(" \t");
+	if (start == std::string::npos)
+		return ("");
+	size_t end = str.find_last_not_of(" \t");
+	return (str.substr(start, end - start + 1));
+}
+
 // Check if a path is a directory
 bool	isDirectory(const std::string &path) {
 	struct stat statbuf;

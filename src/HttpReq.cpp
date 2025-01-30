@@ -1,17 +1,12 @@
 
 #include "../headers/AllHeaders.hpp"
 
-// HttpReq::HttpReq() {}
+
+HttpReq::HttpReq() : _creationTime(time(0)), _httpStatus(0) {}
+
 // HttpReq::~HttpReq() {}
 
-// Helper function to trim leading and trailing whitespaces
-std::string	HttpReq::trim(const std::string& str) {
-	size_t start = str.find_first_not_of(" \t");
-	if (start == std::string::npos)
-		return ("");
-	size_t end = str.find_last_not_of(" \t");
-	return (str.substr(start, end - start + 1));
-}
+
 
 // false means errors occurred, true means the startline does not contain errors
 bool	HttpReq::parseStartLine(void) {
@@ -73,6 +68,7 @@ bool	HttpReq::isValidProtocol(void) const {
 }
 
 void	HttpReq::print(void) const {
+	std::cout << "Request time: " << std::ctime(&_creationTime);
     std::cout << "Method: " << _method << "\n";
     std::cout << "Target: " << _target << "\n";
     std::cout << "Protocol: " << _protocol << "\n";

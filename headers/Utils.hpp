@@ -6,7 +6,9 @@
 int		    stringToInt(const std::string &str);
 std::string	intToString(int value);
 bool	    isStandaloneWord(const std::string& line, const std::string& word, size_t pos);
+std::string	trim(const std::string& str);
 bool	    isDirectory(const std::string &path);
+
 
 // Guestbook functions
 std::map<std::string, std::string>	parsePostData(const std::string &data);

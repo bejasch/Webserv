@@ -8,6 +8,8 @@
 
 class HttpReq {
 private:
+	const time_t	_creationTime;
+
 	std::string	_buffer;
 	int			_httpStatus;
 
@@ -27,9 +29,8 @@ private:
     size_t	_currentChunkSize = 0;		// Size of the current chunk being read
 	
 	// Helper function to trim leading and trailing whitespaces
-	std::string	trim(const std::string& str);
-	bool		verifyHeaders(void);
-	bool		headersAreParsed(void) const;
+	bool	verifyHeaders(void);
+	bool	headersAreParsed(void) const;
 
 
 	// - Request headers:	*additional context to a request or add extra logic* -> case-insensitive string followed by a colon (:) and a value.
@@ -46,7 +47,7 @@ private:
 	bool	parseChunkedBody(void);
 
 public:
-	// int	parse(const std::string &buffer);
+	HttpReq();
 
 	// --> Get-methods:
 	const std::string	&getMethod(void) const;

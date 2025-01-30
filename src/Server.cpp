@@ -51,7 +51,7 @@ void Server::acceptConnection(int epoll_fd) {
 		return;
 	}	///adds `new_socket` (=client_fd) to epoll instance and watch it for EPOLLIN
 	// Add the new client to the client_requests map
-	client_requests[client_fd] = HttpReq();
+	client_requests.insert(std::make_pair(client_fd, HttpReq()));
 	server_manager.clientfd_to_serverfd[client_fd] = this;	
 
 	std::cout << "New client connected: fd " << client_fd << " linked to server_fd: " << server_fd << std::endl;
