@@ -138,7 +138,8 @@ void	HttpRes::GET(HttpReq &httpRequest, Server &server, Route *route) {
 		_target = server.getConfig()->getDefaultFile();
 	if (_target.find(".py") != std::string::npos) {
 		std::cout << "Executing CGI script: " << _target << std::endl;
-		_body = server.getConfig()->getCGI()->executeCGI(httpRequest, server);
+		std::string emptyArgs = "";
+		_body = server.getConfig()->getCGI()->executeCGI(httpRequest, server, emptyArgs);
 		_contentType = "text/html";
 		return;
 	}
@@ -187,7 +188,9 @@ void	HttpRes::POST(HttpReq &httpRequest, Server &server) {
 		return;
 	}
 	if (_target.find(".py") != std::string::npos) {
-		server.getConfig()->getCGI()->executeCGI(httpRequest, server);
+		std::string args = httpRequest.getBody();
+		std::cout << "Executing CGI script with args" << args << std::endl;
+		server.getConfig()->getCGI()->executeCGI(httpRequest, server, args);
 		//TODO: CGI POST
 	}
 	// Check if the target exists

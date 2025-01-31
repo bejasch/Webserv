@@ -20,7 +20,7 @@ void CGI::setAllEnv(HttpReq &httpRequest, Server &server) {
     env["CONTENT_TYPE"] = route->getPath(); //.py
 }
 
-std::string CGI::executeCGI(HttpReq &httpRequest, Server &server) {
+std::string CGI::executeCGI(HttpReq &httpRequest, Server &server, std::string &args) {
     setAllEnv(httpRequest, server);
     std::string scriptPath = "data/cgi-bin" + env["SCRIPT_NAME"];
     std::cout << "Executing CGI script: " << scriptPath << std::endl;
@@ -70,6 +70,10 @@ std::string CGI::executeCGI(HttpReq &httpRequest, Server &server) {
     } else {
         // Parent process
         close(pipe_fd[1]); // Close the write end of the pipe
+
+        // Send POST data to the CGI script via stdin
+        write(pipe_fd[0], args.c_str(), args.size());
+        close(pipe_fd[0]);
 
         // Read the output from the child process
         char buffer[4096];

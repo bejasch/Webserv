@@ -14,7 +14,7 @@ public:
     CGI(Route *route);
     ~CGI();
     void setAllEnv(HttpReq &httpRequest, Server &server);
-    std::string executeCGI(HttpReq &httpRequest, Server &server);
+    std::string executeCGI(HttpReq &httpRequest, Server &server, std::string &args);
     void printCGI();
 };
 
