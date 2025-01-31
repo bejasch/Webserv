@@ -88,51 +88,6 @@ void	HttpRes::generateErrorBody(void) {
 	_body += "</body></html>";
 }
 
-void	HttpRes::sendResponse(int client_fd, const std::string &response) {
-	const char*	response_cstr = response.c_str();
-	size_t		size = response.size();
-	if (response_cstr == NULL || size == 0)
-		return;
-	
-	size_t	total_sent = 0;
-    int		retry_count = 0;
-
-	while (total_sent < size) {
-		ssize_t sent = write(client_fd, response_cstr + total_sent, size - total_sent);
-		if (sent < 0) {
-			retry_count++;
-
-			// If maximum retries reached, log and stop trying
-			if (retry_count >= MAX_RETRY_COUNT) {
-				std::cerr << "Error: Failed to write to socket after " << MAX_RETRY_COUNT << " retries.\n";
-				break;
-			}
-			std::cerr << "Warning: Write failed, retrying (" << retry_count << "/" << MAX_RETRY_COUNT << ")...\n";
-			continue;
-		}
-		retry_count = 0;
-		total_sent += sent;
-	}
-	if (total_sent < size)
-		std::cerr << "Warning: Only " << total_sent << " out of " << size << " bytes were sent.\n";
-	else
-		std::cout << "Successfully sent " << total_sent << " bytes to client.\n";
-}
-
-
-// routes_expl = {
-// 	{"/", "GET"},
-// 	{"/index.html", "GET"},
-// 	{"/data/", "GET"},
-// 	{"/static/", "POST"}
-// };
-// target_expl = {
-// 	{"/", "GET"},
-// 	{"/index.html", "GET"},
-// 	{"/static/guestbook.html", "GET"},
-// 	{"/guestbook.html", "POST"}
-// };
-
 
 void	HttpRes::generateAutoindexPage(const std::string &path) {
     _body = "<html><head><title>Index of " + _target + "</title></head><body>";
@@ -301,6 +256,28 @@ bool	HttpRes::parseFile(Server &server) {
     return (true);
 }
 
+
+std::string	HttpRes::getResponse(void) {
+    if (_httpStatus >= 400 && _httpStatus < 600)
+		generateErrorBody();
+	
+	std::string response;
+	response = "HTTP/1.1 " + std::to_string(_httpStatus) + " " + statusDescription[_httpStatus] + "\r\n";
+	response += "Content-Type: " + _contentType + "\r\n";
+	response += "Location: " + _target + "\r\n";
+	response += "Content-Length: " + std::to_string(_body.length()) + "\r\n";
+	response += "Connection: close\r\n";
+	response += "\r\n";
+	response += _body;
+
+	_responseSize = response.size();
+	return (response);
+}
+
+size_t	HttpRes::getResponseSize(void) const {
+	return (_responseSize);
+}
+
 void HttpRes::writeResponse(int client_fd) {
     if (_httpStatus >= 400 && _httpStatus < 600)
 		generateErrorBody();
@@ -320,4 +297,36 @@ void HttpRes::writeResponse(int client_fd) {
     response_stream << _body;
 
 	sendResponse(client_fd, response_stream.str());
+}
+
+
+void	HttpRes::sendResponse(int client_fd, const std::string &response) {
+	const char*	response_cstr = response.c_str();
+	size_t		size = response.size();
+	if (response_cstr == NULL || size == 0)
+		return;
+	
+	size_t	total_sent = 0;
+    int		retry_count = 0;
+
+	while (total_sent < size) {
+		ssize_t sent = write(client_fd, response_cstr + total_sent, size - total_sent);
+		if (sent < 0) {
+			retry_count++;
+
+			// If maximum retries reached, log and stop trying
+			if (retry_count >= MAX_RETRY_COUNT) {
+				std::cerr << "Error: Failed to write to socket after " << MAX_RETRY_COUNT << " retries.\n";
+				break;
+			}
+			std::cerr << "Warning: Write failed, retrying (" << retry_count << "/" << MAX_RETRY_COUNT << ")...\n";
+			continue;
+		}
+		retry_count = 0;
+		total_sent += sent;
+	}
+	if (total_sent < size)
+		std::cerr << "Warning: Only " << total_sent << " out of " << size << " bytes were sent.\n";
+	else
+		std::cout << "Successfully sent " << total_sent << " bytes to client.\n";
 }

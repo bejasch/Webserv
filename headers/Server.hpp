@@ -12,6 +12,7 @@ class Server {
         int						server_fd;
         struct sockaddr_in		address;
 		std::map<int, HttpReq>	client_requests;
+		std::map<int, HttpRes>	pending_responses;
 		Config					*config;
 		ServerManager			&server_manager;
 
@@ -25,6 +26,7 @@ class Server {
 		int		getServerFd() const { return this->server_fd; } ;
 		void	acceptConnection(int epoll_fd);
 		void	handleRequest(int fd);
+		void	handleResponse(int fd);
 		void	freeServer();
 };
 

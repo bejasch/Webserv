@@ -9,6 +9,7 @@ class HttpRes {
 private:
 	std::string			_method;
 	int					_httpStatus;
+	size_t				_responseSize;
 
 	std::string			_target;
 	std::string			_contentType;
@@ -40,6 +41,8 @@ public:
 	~HttpRes();
 
 	void		handleRequest(HttpReq &httpRequest, Server &server);
+	std::string	getResponse(void);
+	size_t		getResponseSize(void) const;
 	void		writeResponse(int client_fd);
 
 };
