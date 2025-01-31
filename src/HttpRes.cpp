@@ -140,7 +140,7 @@ void	HttpRes::GET(HttpReq &httpRequest, Route *route) {
 	if (_target.find(".py") != std::string::npos) {
 		std::cout << "Executing CGI script: " << _target << std::endl;
 		std::string emptyArgs = "";
-		_body = server.getConfig()->getCGI()->executeCGI(httpRequest, server, emptyArgs);
+		_body = server->getConfig()->getCGI()->executeCGI(httpRequest, server, emptyArgs);
 		_contentType = "text/html";
 		return;
 	}
