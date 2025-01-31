@@ -7,6 +7,7 @@
 
 class HttpRes {
 private:
+	Server				*_server;
 	std::string			_method;
 	int					_httpStatus;
 	size_t				_responseSize;
@@ -19,12 +20,12 @@ private:
 	static std::map<int, std::string>			statusDescription;
 
 
-	bool				parseFile(Server &server);
+	bool				parseFile(void);
 	void				determineContentType(void);
 
 	// - Response methods:
-	void				GET(HttpReq &httpRequest, Server &server, Route *route);
-	void				POST(HttpReq &httpRequest, Server &server);
+	void				GET(HttpReq &httpRequest, Route *route);
+	void				POST(HttpReq &httpRequest);
 	void				DELETE(const std::string &path);
 
 	void				generateAutoindexPage(const std::string &path);

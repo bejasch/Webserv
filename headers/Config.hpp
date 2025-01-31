@@ -38,7 +38,7 @@ class Config {
         std::string getRootDir() const {return this->root_dir;};
         int getMaxBodySize() const {return this->max_body_size;};
         std::string getDefaultFile() const {return this->default_file;};
-        std::map<int, std::string> getErrorPages() const {return this->error_pages;};
+        const std::map<int, std::string> &getErrorPages() const {return this->error_pages;};
         CGI		*getCGI() const { return this->cgi; };
 
 

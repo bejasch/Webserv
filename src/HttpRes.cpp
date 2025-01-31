@@ -67,6 +67,7 @@ std::map<int, std::string> HttpRes::statusDescription = {
 };
 
 void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
+	_server = &server;
 	_httpStatus = httpRequest.getHttpStatus();
 	_target = httpRequest.getTarget();
     if (_httpStatus >= 400 && _httpStatus < 600) {
@@ -85,9 +86,9 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 	}
 	
     if (_method == "GET")
-		GET(httpRequest, server, route);
+		GET(httpRequest, route);
 	else if (_method == "POST")
-		POST(httpRequest, server);
+		POST(httpRequest);
     else if  (_method == "DELETE")
 		DELETE(server.getConfig()->getRootDir() + _target);
     else						// Unsupported method
@@ -128,14 +129,14 @@ void	HttpRes::generateAutoindexPage(const std::string &path) {
     _body += "</ul></body></html>";
 }
 
-void	HttpRes::GET(HttpReq &httpRequest, Server &server, Route *route) {
+void	HttpRes::GET(HttpReq &httpRequest, Route *route) {
 	if (_target == "/guestbook.html") {
 		_contentType = "text/html";
 		_body = generateGuestbookHTML();
 		return;
 	}
 	if (_target == "/")
-		_target = server.getConfig()->getDefaultFile();
+		_target = _server->getConfig()->getDefaultFile();
 	if (_target.find(".py") != std::string::npos) {
 		std::cout << "Executing CGI script: " << _target << std::endl;
 		std::string emptyArgs = "";
@@ -144,7 +145,7 @@ void	HttpRes::GET(HttpReq &httpRequest, Server &server, Route *route) {
 		return;
 	}
 	// Check if the target is a directory
-	std::string path = server.getConfig()->getRootDir() + _target;
+	std::string path = _server->getConfig()->getRootDir() + _target;
 	if (isDirectory(path)) {
 		if (route && route->getIndexFile() != "" && access((path + route->getIndexFile()).c_str(), R_OK) != -1) {
 			_target += route->getIndexFile();
@@ -169,12 +170,12 @@ void	HttpRes::GET(HttpReq &httpRequest, Server &server, Route *route) {
 		return;
 	}
 	determineContentType();
-	parseFile(server);
+	parseFile();
 }
 
 
 
-void	HttpRes::POST(HttpReq &httpRequest, Server &server) {
+void	HttpRes::POST(HttpReq &httpRequest) {
 	if (_target == "/guestbook.html") {
 		if (!httpRequest.getBody().empty()) {
 			std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
@@ -194,7 +195,7 @@ void	HttpRes::POST(HttpReq &httpRequest, Server &server) {
 		//TODO: CGI POST
 	}
 	// Check if the target exists
-	std::string path = server.getConfig()->getRootDir() + _target;
+	std::string path = _server->getConfig()->getRootDir() + _target;
 	printf("\t-> Path: %s\n", path.c_str());
 	if (access(path.c_str(), F_OK) == 0) {
 		_httpStatus = 404;
@@ -254,8 +255,8 @@ void	HttpRes::determineContentType(void) {
 		_contentType = "text/plain";
 }
 
-bool	HttpRes::parseFile(Server &server) {
-    std::ifstream file((server.getConfig()->getRootDir() + _target).c_str());
+bool	HttpRes::parseFile(void) {
+    std::ifstream file((_server->getConfig()->getRootDir() + _target).c_str());
     if (!file.is_open()) {
 		std::cerr << "Error: Could not open file " << _target << std::endl;
 		_httpStatus = 404;
@@ -269,8 +270,27 @@ bool	HttpRes::parseFile(Server &server) {
 }
 
 std::string	HttpRes::getResponse(void) {
-    if (_httpStatus >= 400 && _httpStatus < 600)
-		generateErrorBody();
+    if (_httpStatus >= 400 && _httpStatus < 600) {
+		// Store a reference to the map
+		const std::map<int, std::string> &errorPages = _server->getConfig()->getErrorPages();
+
+		// Now use the reference for finding the element
+		std::map<int, std::string>::const_iterator it = errorPages.find(_httpStatus);
+		if (it != errorPages.end()) {
+			std::ifstream file((_server->getConfig()->getRootDir() + it->second).c_str());
+			if (!file.is_open()) {
+				generateErrorBody();
+			} else {
+				std::stringstream buffer;
+				buffer << file.rdbuf();
+				_body = buffer.str();
+				file.close();
+				_contentType = "text/html";
+			}
+		} else {
+			generateErrorBody();
+		}
+	}
 	
 	std::string response;
 	response = "HTTP/1.1 " + std::to_string(_httpStatus) + " " + statusDescription[_httpStatus] + "\r\n";
