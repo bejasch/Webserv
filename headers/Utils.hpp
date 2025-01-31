@@ -8,6 +8,7 @@ std::string	intToString(int value);
 bool	    isStandaloneWord(const std::string& line, const std::string& word, size_t pos);
 std::string	trim(const std::string& str);
 bool	    isDirectory(const std::string &path);
+bool		saveFile(const std::string &filename, const char* data, size_t size);
 
 
 // Guestbook functions

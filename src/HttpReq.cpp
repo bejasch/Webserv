@@ -4,9 +4,35 @@
 
 HttpReq::HttpReq() : _creationTime(time(0)), _httpStatus(0) {}
 
-// HttpReq::~HttpReq() {}
+HttpReq::HttpReq(const HttpReq &other) : _creationTime(other._creationTime),
+	_httpStatus(other._httpStatus), _buffer(other._buffer),
+	_method(other._method), _target(other._target), _protocol(other._protocol), 
+	_headers(other._headers), _body(other._body),
+	_startlineParsed(other._startlineParsed), _headersParsed(other._headersParsed),
+	_isChunked(other._isChunked), _bodyComplete(other._bodyComplete),
+	_currentChunkSize(other._currentChunkSize) {}
 
+HttpReq	HttpReq::operator=(const HttpReq &another)	{
+	if (this == &another)
+		return (*this);
+	_creationTime = another._creationTime;
+	_httpStatus = another._httpStatus;
+	_buffer = another._buffer;
+	_method = another._method;
+	_target = another._target;
+	_protocol = another._protocol;
+	_headers = another._headers;
+	_body = another._body;
+	_startlineParsed = another._startlineParsed;
+	_headersParsed = another._headersParsed;
+	_isChunked = another._isChunked;
+	_bodyComplete = another._bodyComplete;
+	_currentChunkSize = another._currentChunkSize;
 
+	return (*this);
+}
+
+HttpReq::~HttpReq()	{}
 
 // false means errors occurred, true means the startline does not contain errors
 bool	HttpReq::parseStartLine(void) {

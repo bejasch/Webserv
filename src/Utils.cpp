@@ -42,6 +42,15 @@ bool	isDirectory(const std::string &path) {
 	return (S_ISDIR(statbuf.st_mode));
 }
 
+// Function to save a file to disk
+bool	saveFile(const std::string &filename, const char* data, size_t size) {
+	std::ofstream file(filename, std::ios::binary);
+	if (!file.is_open())
+		return (false);
+	file.write(data, size);
+	file.close();
+	return (true);
+}
 
 // Parse HTTP POST data (application/x-www-form-urlencoded)
 // Example body: "name=Ben&message=This+is+a+test%21"

@@ -8,7 +8,7 @@
 
 class HttpReq {
 private:
-	const time_t	_creationTime;
+	time_t	_creationTime;
 
 	std::string	_buffer;
 	int			_httpStatus;
@@ -48,6 +48,10 @@ private:
 
 public:
 	HttpReq();
+	HttpReq(const HttpReq &other);
+	HttpReq operator=(const HttpReq &another);
+	~HttpReq();
+
 
 	// --> Get-methods:
 	const std::string	&getMethod(void) const;

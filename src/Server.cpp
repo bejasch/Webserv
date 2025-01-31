@@ -83,27 +83,22 @@ void	Server::handleRequest(int client_fd) {
 	if (request.processData(std::string(buffer, valread))) {
 		// Construct response directly in the map
 		pending_responses[client_fd].handleRequest(request, *this);
-
 		request.print();
+		client_requests.erase(client_fd);
+
 		epoll_event ev;
         ev.events = EPOLLOUT;
         ev.data.fd = client_fd;
 		if (epoll_ctl(server_manager.getEpollFd(), EPOLL_CTL_MOD, client_fd, &ev) == -1) {
 			perror("Failed to add client_fd to epoll for writing");
+			pending_responses.erase(client_fd);
 			close(client_fd); // Clean up if adding to epoll fails. Might want to use EAGAIN or EINTR
-			// closeConnection(client_fd); // have an extra function for it?
 			return;
 		}
-		
-		// httpResponse.writeResponse(client_fd);
-
-		client_requests.erase(client_fd);
-		// close(client_fd);
 	}
 }
 
 void	Server::handleResponse(int client_fd) {
-    // Single write operation per event
     if (pending_responses.find(client_fd) != pending_responses.end()) {
         HttpRes &response = pending_responses[client_fd];
         
@@ -136,7 +131,12 @@ void	Server::handleResponse(int client_fd) {
 			std::cerr << "Warning: Only " << total_sent << " out of " << size << " bytes were sent.\n";
 		else
 			std::cout << "Successfully sent " << total_sent << " bytes to client.\n";
-		close(client_fd);
+
+		// Remove client_fd from epoll instance
+		if (epoll_ctl(server_manager.getEpollFd(), EPOLL_CTL_DEL, client_fd, NULL) == -1) {
+			perror("Failed to remove client_fd from epoll");
+		}
+		close(client_fd);  // Close the connection
 		pending_responses.erase(client_fd);
 	}
 }
