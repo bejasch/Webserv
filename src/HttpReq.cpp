@@ -1,17 +1,38 @@
 
 #include "../headers/AllHeaders.hpp"
 
-// HttpReq::HttpReq() {}
-// HttpReq::~HttpReq() {}
 
-// Helper function to trim leading and trailing whitespaces
-std::string	HttpReq::trim(const std::string& str) {
-	size_t start = str.find_first_not_of(" \t");
-	if (start == std::string::npos)
-		return ("");
-	size_t end = str.find_last_not_of(" \t");
-	return (str.substr(start, end - start + 1));
+HttpReq::HttpReq() : _creationTime(time(0)), _httpStatus(0) {}
+
+HttpReq::HttpReq(const HttpReq &other) : _creationTime(other._creationTime),
+	_httpStatus(other._httpStatus), _buffer(other._buffer),
+	_method(other._method), _target(other._target), _protocol(other._protocol), 
+	_headers(other._headers), _body(other._body),
+	_startlineParsed(other._startlineParsed), _headersParsed(other._headersParsed),
+	_isChunked(other._isChunked), _bodyComplete(other._bodyComplete),
+	_currentChunkSize(other._currentChunkSize) {}
+
+HttpReq	HttpReq::operator=(const HttpReq &another)	{
+	if (this == &another)
+		return (*this);
+	_creationTime = another._creationTime;
+	_httpStatus = another._httpStatus;
+	_buffer = another._buffer;
+	_method = another._method;
+	_target = another._target;
+	_protocol = another._protocol;
+	_headers = another._headers;
+	_body = another._body;
+	_startlineParsed = another._startlineParsed;
+	_headersParsed = another._headersParsed;
+	_isChunked = another._isChunked;
+	_bodyComplete = another._bodyComplete;
+	_currentChunkSize = another._currentChunkSize;
+
+	return (*this);
 }
+
+HttpReq::~HttpReq()	{}
 
 // false means errors occurred, true means the startline does not contain errors
 bool	HttpReq::parseStartLine(void) {
@@ -73,6 +94,7 @@ bool	HttpReq::isValidProtocol(void) const {
 }
 
 void	HttpReq::print(void) const {
+	std::cout << "Request time: " << std::ctime(&_creationTime);
     std::cout << "Method: " << _method << "\n";
     std::cout << "Target: " << _target << "\n";
     std::cout << "Protocol: " << _protocol << "\n";

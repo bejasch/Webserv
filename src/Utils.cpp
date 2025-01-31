@@ -25,6 +25,15 @@ bool isStandaloneWord(const std::string& line, const std::string& word, size_t p
     return true;
 }
 
+// Helper function to trim leading and trailing whitespaces
+std::string	trim(const std::string& str) {
+	size_t start = str.find_first_not_of(" \t");
+	if (start == std::string::npos)
+		return ("");
+	size_t end = str.find_last_not_of(" \t");
+	return (str.substr(start, end - start + 1));
+}
+
 // Check if a path is a directory
 bool	isDirectory(const std::string &path) {
 	struct stat statbuf;
@@ -33,6 +42,15 @@ bool	isDirectory(const std::string &path) {
 	return (S_ISDIR(statbuf.st_mode));
 }
 
+// Function to save a file to disk
+bool	saveFile(const std::string &filename, const char* data, size_t size) {
+	std::ofstream file(filename, std::ios::binary);
+	if (!file.is_open())
+		return (false);
+	file.write(data, size);
+	file.close();
+	return (true);
+}
 
 // Parse HTTP POST data (application/x-www-form-urlencoded)
 // Example body: "name=Ben&message=This+is+a+test%21"
@@ -88,14 +106,15 @@ void	saveGuestbookEntry(const std::string &name, const std::string &message) {
 
 // Generate HTML for guestbook
 const std::string	generateGuestbookHTML(void) {
-    std::ostringstream html;
-    html << "<!DOCTYPE html><html><head><title>Guestbook</title></head><body>";
-    html << "<h1>Welcome to the Guestbook</h1>";
-    html << "<form method='POST' action='/guestbook.html'>"
-         << "Name: <input type='text' name='name'><br>"
-         << "Message: <textarea name='message'></textarea><br>"
-         << "<button type='submit'>Submit</button></form><hr>";
-    html << "<h2>Messages</h2>";
+	std::ostringstream html;
+	html << "<!DOCTYPE html><html><head><title>Guestbook</title></head><body>";
+	html << "<button onclick=\"window.location.href='/index.html'\">Back to Main Page</button>";
+	html << "<h1>Welcome to the Guestbook</h1>";
+	html << "<form method='POST' action='/guestbook.html'>"
+		<< "Name: <input type='text' name='name'><br>"
+		<< "Message: <textarea name='message'></textarea><br>"
+		<< "<button type='submit'>Submit</button></form><hr>";
+	html << "<h2>Messages</h2>";
 
 	// Load guestbook entries from file
 	std::ifstream file(GUESTBOOK_FILE);
@@ -109,7 +128,7 @@ const std::string	generateGuestbookHTML(void) {
 		}
 		file.close();
 	}
-    html << "</body></html>";
+	html << "</body></html>";
 	return (html.str());
 }
 

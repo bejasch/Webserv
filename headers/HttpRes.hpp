@@ -9,15 +9,14 @@ class HttpRes {
 private:
 	std::string			_method;
 	int					_httpStatus;
+	size_t				_responseSize;
 
 	std::string			_target;
 	std::string			_contentType;
 	std::string			_body;
-	std::map<std::string, std::string>	_headers;
 
-	static std::map<int, std::string>			statusMessages;
 	static std::map<std::string, std::string>	mimeTypes;
-	static std::map<int, std::string>			statusDescriptions;
+	static std::map<int, std::string>			statusDescription;
 
 
 	bool				parseFile(Server &server);
@@ -28,18 +27,20 @@ private:
 	void				POST(HttpReq &httpRequest, Server &server);
 	void				DELETE(const std::string &path);
 
-	// std::map<std::string, std::string>	parsePostData(const std::string& data);
 	void				generateAutoindexPage(const std::string &path);
 	void				generateErrorBody(void);
 
-	void	sendResponse(int client_fd, const std::string &response);
+	void				executeCGI(HttpReq &httpRequest, Server &server);
 
 public:
 	HttpRes();
+	HttpRes(const HttpRes &other);
+	HttpRes operator=(const HttpRes &another);
 	~HttpRes();
 
 	void		handleRequest(HttpReq &httpRequest, Server &server);
-	void		writeResponse(int client_fd);
+	std::string	getResponse(void);
+	size_t		getResponseSize(void) const;
 
 };
 

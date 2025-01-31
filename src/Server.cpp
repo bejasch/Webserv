@@ -43,7 +43,7 @@ void Server::acceptConnection(int epoll_fd) {
 	// Make the new socket non-blocking
 	fcntl(client_fd, F_SETFL, O_NONBLOCK);
 	// Add new_socket (=client_fd) to epoll instance to monitor read events
-	ev.events = EPOLLIN; // Event for reading data
+	ev.events = EPOLLIN | EPOLLOUT; // Event for reading data
 	ev.data.fd = client_fd;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1) {
 		perror("Failed to add client_fd to epoll");
@@ -51,15 +51,14 @@ void Server::acceptConnection(int epoll_fd) {
 		return;
 	}	///adds `new_socket` (=client_fd) to epoll instance and watch it for EPOLLIN
 	// Add the new client to the client_requests map
-	client_requests[client_fd] = HttpReq();
+	client_requests.insert(std::make_pair(client_fd, HttpReq()));
 	server_manager.clientfd_to_serverfd[client_fd] = this;	
 
 	std::cout << "New client connected: fd " << client_fd << " linked to server_fd: " << server_fd << std::endl;
 }
 
-void Server::handleRequest(int client_fd) {
+void	Server::handleRequest(int client_fd) {
 	HttpReq	&request = client_requests[client_fd];
-	HttpRes httpResponse;
 
 	std::cout << "Handling request for client_fd: " << client_fd << std::endl;
 	// Data is available to read from the socket
@@ -82,20 +81,67 @@ void Server::handleRequest(int client_fd) {
 
 	// Process the incoming data
 	if (request.processData(std::string(buffer, valread))) {
-		int parse_status = request.getHttpStatus();
-		//std::cout << "\nDATA READING FINISHED with status: " << parse_status << std::endl;
-		client_requests[client_fd].print();
-		
-		httpResponse.handleRequest(request, *this);
-		httpResponse.writeResponse(client_fd);
-
-		// // Full request assembled
-		// handleFullRequest(client_fd, request);
-		// request.reset(); // Reset for a new request
+		// Construct response directly in the map
+		pending_responses[client_fd].handleRequest(request, *this);
+		request.print();
 		client_requests.erase(client_fd);
-		close(client_fd);
+
+		epoll_event ev;
+        ev.events = EPOLLOUT;
+        ev.data.fd = client_fd;
+		if (epoll_ctl(server_manager.getEpollFd(), EPOLL_CTL_MOD, client_fd, &ev) == -1) {
+			perror("Failed to add client_fd to epoll for writing");
+			pending_responses.erase(client_fd);
+			close(client_fd); // Clean up if adding to epoll fails. Might want to use EAGAIN or EINTR
+			return;
+		}
 	}
 }
+
+void	Server::handleResponse(int client_fd) {
+    if (pending_responses.find(client_fd) != pending_responses.end()) {
+        HttpRes &response = pending_responses[client_fd];
+        
+        std::string response_str = response.getResponse();
+		const char* response_cstr = response_str.c_str();
+		size_t		size = response.getResponseSize();
+		if (response_cstr == NULL || size == 0)
+			return;
+		
+		size_t	total_sent = 0;
+		int		retry_count = 0;
+
+		while (total_sent < size) {
+			ssize_t sent = write(client_fd, response_cstr + total_sent, size - total_sent);
+			if (sent < 0) {
+				retry_count++;
+
+				// If maximum retries reached, log and stop trying
+				if (retry_count >= MAX_RETRY_COUNT) {
+					std::cerr << "Error: Failed to write to socket after " << MAX_RETRY_COUNT << " retries.\n";
+					break;
+				}
+				std::cerr << "Warning: Write failed, retrying (" << retry_count << "/" << MAX_RETRY_COUNT << ")...\n";
+				continue;
+			}
+			retry_count = 0;
+			total_sent += sent;
+		}
+		if (total_sent < size)
+			std::cerr << "Warning: Only " << total_sent << " out of " << size << " bytes were sent.\n";
+		else
+			std::cout << "Successfully sent " << total_sent << " bytes to client.\n";
+
+		// Remove client_fd from epoll instance
+		if (epoll_ctl(server_manager.getEpollFd(), EPOLL_CTL_DEL, client_fd, NULL) == -1) {
+			perror("Failed to remove client_fd from epoll");
+		}
+		close(client_fd);  // Close the connection
+		pending_responses.erase(client_fd);
+	}
+}
+
+
 
 void	Server::freeServer() {
 	close(server_fd);

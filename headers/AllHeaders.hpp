@@ -41,6 +41,7 @@ class	ServerManager;
 #include <algorithm>
 #include <cctype>
 #include <csignal>
+#include <ctime>
 
 // #include "
 #include "Config.hpp"

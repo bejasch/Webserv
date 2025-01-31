@@ -1,8 +1,28 @@
 #include "../headers/AllHeaders.hpp"
 
-HttpRes::HttpRes() {
+
+HttpRes::HttpRes() : _httpStatus(0), _responseSize(0) {
     std::cout << "HttpRes default constructor called" << std::endl;
 }
+
+HttpRes::HttpRes(const HttpRes &other) : _method(other._method),
+	_httpStatus(other._httpStatus),	_responseSize(other._responseSize),
+	_target(other._target), _contentType(other._contentType),
+	_body(other._body) {}
+
+HttpRes HttpRes::operator=(const HttpRes &another) {
+	if (this == &another)
+		return (*this);
+	_method = another._method;
+	_httpStatus = another._httpStatus;
+	_responseSize = another._responseSize;
+	_target = another._target;
+	_contentType = another._contentType;
+	_body = another._body;
+
+	return (*this);
+}
+
 HttpRes::~HttpRes() {
     std::cout << "HttpRes destructor called" << std::endl;
 }
@@ -18,9 +38,10 @@ std::map<std::string, std::string> HttpRes::mimeTypes = {
 	{"ico", "image/x-icon"}
 };
 
-std::map<int, std::string> HttpRes::statusMessages = {
+std::map<int, std::string> HttpRes::statusDescription = {
 	{200, "OK"},
 	{201, "Created"},
+	{202, "Accepted"},
 	{204, "No Content"},
 	{206, "Partial Content"},
 	{301, "Moved Permanently"},
@@ -44,31 +65,6 @@ std::map<int, std::string> HttpRes::statusMessages = {
 	{503, "Service Unavailable"},
 	{504, "Gateway Timeout"}
 };
-
-std::map<int, std::string> statusDescription = {
-	{200, "OK"},
-	{201, "Created"},
-	{202, "Accepted"},
-	{204, "No Content"},
-	{301, "Moved Permanently"},
-	{302, "Found"},
-	{303, "See Other"},
-	{304, "Not Modified"},
-	{307, "Temporary Redirect"},
-	{308, "Permanent Redirect"},
-	{400, "The server could not understand the request due to invalid syntax."},
-	{401, "Unauthorized"},
-	{403, "Forbidden"},
-	{404, "Not Found"},
-	{405, "Method Not Allowed"},
-	{408, "Request Timeout"},
-	{500, "Internal Server Error"},
-	{501, "Not Implemented"},
-	{502, "Bad Gateway"},
-	{503, "Service Unavailable"},
-	{504, "Gateway Timeout"}
-};
-
 
 void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 	_httpStatus = httpRequest.getHttpStatus();
@@ -100,7 +96,7 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 
 void	HttpRes::generateErrorBody(void) {
 	_contentType = "text/html";
-	std::string statusMessage = statusMessages[_httpStatus];
+	std::string statusMessage = statusDescription[_httpStatus];
 
 	_body = "<html><head><title>" + std::to_string(_httpStatus) + " "
 			+ statusMessage + "</title></head><body><h1>"
@@ -112,54 +108,10 @@ void	HttpRes::generateErrorBody(void) {
 	_body += "</body></html>";
 }
 
-void	HttpRes::sendResponse(int client_fd, const std::string &response) {
-	const char*	response_cstr = response.c_str();
-	size_t		size = response.size();
-	if (response_cstr == NULL || size == 0)
-		return;
-	
-	size_t	total_sent = 0;
-    int		retry_count = 0;
-
-	while (total_sent < size) {
-		ssize_t sent = write(client_fd, response_cstr + total_sent, size - total_sent);
-		if (sent < 0) {
-			retry_count++;
-
-			// If maximum retries reached, log and stop trying
-			if (retry_count >= MAX_RETRY_COUNT) {
-				std::cerr << "Error: Failed to write to socket after " << MAX_RETRY_COUNT << " retries.\n";
-				break;
-			}
-			std::cerr << "Warning: Write failed, retrying (" << retry_count << "/" << MAX_RETRY_COUNT << ")...\n";
-			continue;
-		}
-		retry_count = 0;
-		total_sent += sent;
-	}
-	if (total_sent < size)
-		std::cerr << "Warning: Only " << total_sent << " out of " << size << " bytes were sent.\n";
-	else
-		std::cout << "Successfully sent " << total_sent << " bytes to client.\n";
-}
-
-
-// routes_expl = {
-// 	{"/", "GET"},
-// 	{"/index.html", "GET"},
-// 	{"/data/", "GET"},
-// 	{"/static/", "POST"}
-// };
-// target_expl = {
-// 	{"/", "GET"},
-// 	{"/index.html", "GET"},
-// 	{"/static/guestbook.html", "GET"},
-// 	{"/guestbook.html", "POST"}
-// };
-
 
 void	HttpRes::generateAutoindexPage(const std::string &path) {
     _body = "<html><head><title>Index of " + _target + "</title></head><body>";
+	_body += "<button onclick=\"window.location.href='/index.html'\">Back to Main Page</button>";
     _body += "<h1>Index of " + _target + "</h1><ul>";
     
 	DIR	*dir = opendir(path.c_str());
@@ -219,15 +171,6 @@ void	HttpRes::GET(HttpReq &httpRequest, Server &server, Route *route) {
 	parseFile(server);
 }
 
-// Function to save the file to disk
-bool saveFile(const std::string &filename, const char* data, size_t size) {
-	std::ofstream file(filename, std::ios::binary);
-	if (!file.is_open())
-		return (false);
-	file.write(data, size);
-	file.close();
-	return (true);
-}
 
 
 void	HttpRes::POST(HttpReq &httpRequest, Server &server) {
@@ -286,8 +229,6 @@ void	HttpRes::DELETE(const std::string &path) {
 // 	}
 // }
 
-
-
 void	HttpRes::determineContentType(void) {
 	std::string extension;
 	try
@@ -324,23 +265,23 @@ bool	HttpRes::parseFile(Server &server) {
     return (true);
 }
 
-void HttpRes::writeResponse(int client_fd) {
+std::string	HttpRes::getResponse(void) {
     if (_httpStatus >= 400 && _httpStatus < 600)
 		generateErrorBody();
 	
-	// Build the status line
-    std::ostringstream	response_stream;
-    response_stream << "HTTP/1.1 " << _httpStatus << " " << statusMessages[_httpStatus] << "\r\n";
-    // Add headers
-    response_stream << "Content-Type: " << _contentType << "\r\n";
-	response_stream << "Location: " << _target << "\r\n";
-    response_stream << "Content-Length: " << _body.length() << "\r\n";
-	response_stream << "Connection: close\r\n";
-	response_stream << "\r\n";
-    // response_stream << "Connection: keep-alive\n\n"; //without this we still be stuck in the loop (still issues here)
+	std::string response;
+	response = "HTTP/1.1 " + std::to_string(_httpStatus) + " " + statusDescription[_httpStatus] + "\r\n";
+	response += "Content-Type: " + _contentType + "\r\n";
+	response += "Location: " + _target + "\r\n";
+	response += "Content-Length: " + std::to_string(_body.length()) + "\r\n";
+	response += "Connection: close\r\n";
+	response += "\r\n";
+	response += _body;
 
-    // Add body
-    response_stream << _body;
+	_responseSize = response.size();
+	return (response);
+}
 
-	sendResponse(client_fd, response_stream.str());
+size_t	HttpRes::getResponseSize(void) const {
+	return (_responseSize);
 }

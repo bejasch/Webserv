@@ -134,7 +134,12 @@ void ServerManager::dispatchEvent(const epoll_event& event) {
         if (event.data.fd == it->first) {
             std::cout << "Existing connection" << std::endl;
             Server *server = it->second;
-            server->handleRequest(event.data.fd);
+			if (event.events & EPOLLIN) {
+            	server->handleRequest(event.data.fd);
+			} else if (event.events & EPOLLOUT) {
+				std::cout << "####### EPOLLOUT -> Handling response for client_fd: " << event.data.fd << std::endl;
+				server->handleResponse(event.data.fd);
+			}
             return;
         }
     }
