@@ -141,6 +141,14 @@ std::string	extract_cookie(HttpReq &httpRequest) {
 	return value.substr(11, pos - 11);
 }
 
+// Function to generate a random session ID
+std::string generate_session_id() {
+    srand(time(NULL));
+    std::stringstream ss;
+    ss << rand() % 1000000;  // Simple random number as session ID
+    return ss.str();
+}
+
 void	HttpRes::GET(HttpReq &httpRequest, Route *route) {
 	if (_target == "/guestbook.html") {
 		_contentType = "text/html";
@@ -301,6 +309,33 @@ std::string	HttpRes::getSessionResponse(void) {
 	}
 	body += "</form></body></html>";
 	return (body);
+}
+
+// Function to handle HTTP requests and manage sessions
+std::string handle_request(const std::string& request) {
+    std::string session_id = extract_cookie(request, "session_id");
+    std::string response;
+
+    if (session_id.empty() || session_store.find(session_id) == session_store.end()) {
+        // Create a new session
+        session_id = generate_session_id();
+        session_store[session_id] = "Hello, new user!";
+
+        response = "HTTP/1.1 200 OK\r\n"
+                   "Set-Cookie: session_id=" + session_id + "; Path=/; HttpOnly\r\n"
+                   "Content-Type: text/html\r\n\r\n"
+                   "<html><body>New session created! Your session ID: " + session_id + "</body></html>";
+    } else {
+        // Retrieve session data
+        std::string user_data = session_store[session_id];
+
+        response = "HTTP/1.1 200 OK\r\n"
+                   "Content-Type: text/html\r\n\r\n"
+                   "<html><body>Welcome back! Your session ID: " + session_id + "<br>"
+                   "Your session data: " + user_data + "</body></html>";
+    }
+
+    return response;
 }
 
 std::string	HttpRes::getResponse(void) {
