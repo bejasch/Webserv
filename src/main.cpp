@@ -6,7 +6,8 @@ int main(int argc, char **argv) {
         return 1;
     }
     ServerManager serverManager;
-    serverManager.setServers(argv[1]);
+    if (serverManager.setServers(argv[1]) == 1)
+        return 1;
     serverManager.startServers();
     return 0;
 }

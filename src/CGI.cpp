@@ -58,7 +58,7 @@ std::string CGI::executeCGI(HttpReq &httpRequest, Server &server) {
         }
         envp[i] = NULL;
 
-        // Prepare the arguments (argv)
+        //Prepare the arguments (argv)
         //TODO: handle args
         const char *argv[] = {scriptPath.c_str(), NULL}; // No additional arguments
 
@@ -96,4 +96,12 @@ std::string CGI::executeCGI(HttpReq &httpRequest, Server &server) {
         }
     }
     return ("404");
+}
+
+void CGI::printCGI() {
+    std::cout << "CGI path: " << route->getPath() << std::endl;
+    std::cout << "CGI env:" << std::endl;
+    for (std::map<std::string, std::string>::iterator it = env.begin(); it != env.end(); ++it) {
+        std::cout << it->first << ": " << it->second << std::endl;
+    }
 }

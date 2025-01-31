@@ -8,10 +8,8 @@ ServerManager::ServerManager() {
 
 ServerManager::~ServerManager() {
     std::cout << "ServerManager destructor called" << std::endl;
-    // Ensure resources are freed if the destructor is called
+    // TODO: this is fine but not if there is an earlier error.
     freeResources();
-    // Reset the signal handler to default
-    signal(SIGINT, SIG_DFL);
 }
 
 int ServerManager::setServers(const std::string &config_file)
@@ -25,11 +23,11 @@ int ServerManager::setServers(const std::string &config_file)
 
     if (config_file.find(".conf") == std::string::npos) {
         perror("Invalid configuration file format.");
-        exit(1); // TODO: remember to free
+        return (1); // TODO: remember to free (no need to free here, goes out of scope)
     }
     if (!file.is_open()) {
         perror("Failed to open configuration file");
-        exit(1); // TODO: remember to free
+        return (1); // TODO: remember to free (no need to free here, goes out of scope)
     }
     while (std::getline(file, line)) {
         if (line.find("server") != std::string::npos) {
@@ -38,11 +36,11 @@ int ServerManager::setServers(const std::string &config_file)
             config = new Config();
             // Call fillConfig to parse and fill the server's configuration
             line = fillConfig(line, file, config);  // Pass the file by reference
-            if (portCheck(config->getPort()) == 1) {
+            if (checkConfig(config) == 1) {
                 delete server;
                 delete config;
-                server = NULL; // Avoid dangling pointer
-                config = NULL; // Avoid dangling pointer
+                server = NULL;
+                config = NULL;
                 continue;
             }
             server->setServer(config);
@@ -51,13 +49,28 @@ int ServerManager::setServers(const std::string &config_file)
         if (line.find("location") != std::string::npos && server != NULL) {
             route = new Route();
             route->setPath(line.substr(line.find("location") + std::string("location").length() + 1, line.find("{") - line.find(" ") - 2));
-            fillRoute(line, file, config, route);
-            if (route->getPath() == ".py") {
+            line = fillRoute(line, file, config, route);
+            if (line.empty()) {
+                std::cerr << "Discarding unfinished route: " << route->getPath() << std::endl;
+                delete route;
+                route = NULL;
+                continue; // Skip to the next line in the config
+            }
+            if (route->checkRoute(route) == 1) {
+                delete route;
+                route = NULL; // Avoid dangling pointer
+                continue;
+            }
+            if (route->getPath() == ".py" && checkCGI(route) == 0) {
                 cgi = new CGI(route);
                 config->addCGI(cgi);
             }
             config->addRoute(route);
         }
+    }
+    if (servers.size() == 0) {
+        std::cerr << "No correctly initialised servers found in configuration file" << std::endl;
+        return 1;
     }
     printConfigAll();  // Print the configuration
     file.close();  // Close the file explicitly (optional since it's auto-closed on scope exit)
@@ -134,9 +147,8 @@ void ServerManager::dispatchEvent(const epoll_event& event) {
 std::string ServerManager::fillConfig(std::string line, std::ifstream &file, Config *config) {
     // std::string line;
     while (std::getline(file, line)) {
-        if (line.find("{") != std::string::npos)
+        if (line.find("{") != std::string::npos || line.find("}") != std::string::npos)
             return(line); // Stop if we find the closing brace
-        // Parse each line and assign values to the config object
         if (line.find("listen") != std::string::npos)
             config->setPort(stringToInt(line.substr(line.find("listen") + std::string("listen").length() + 1, line.find(";") - line.find(" ") - 1)));
         else if (line.find("server_name") != std::string::npos)
@@ -148,29 +160,44 @@ std::string ServerManager::fillConfig(std::string line, std::ifstream &file, Con
         else if (line.find("index") != std::string::npos)
             config->setDefaultFile(line.substr(line.find("index") + std::string("index").length() + 1, line.find(";") - line.find(" ") - 1)); //TODO: currently only supports one index file
         else if (line.find("error_page") != std::string::npos) {
-            config->setErrorStatus(stringToInt(line.substr(line.find("error_page") + std::string("error_page").length() + 1, line.find(" ") - line.find("error_page") - 1)));
-            config->setErrorFile(line.substr(line.find("error_page") + std::string("error_page").length() + 5, line.find(";") - line.find(" ") - 5));
+            int error_status = stringToInt(line.substr(line.find("error_page") + std::string("error_page").length() + 1, line.find(" ") - line.find("error_page") - 1));
+            std::string error_page = line.substr(line.find("error_page") + std::string("error_page").length() + 5, line.find(";") - line.find(" ") - 5);
+            config->setErrorPage(error_status, error_page);
         }
+        else if (line.find("allow_methods") != std::string::npos) {
+            // Parse the allowed methods and set them to the route
+            std::string methods = line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1);
+            config->setAllowedMethods(splitString(methods, ' '));
+        }
+        else if (!line.empty())
+            std::cerr << "Unknown directive in Server Configs: " << line << std::endl;
     }
-    return ""; // Return 0 to indicate successful parsing
+    return NULL; // Return 0 to indicate successful parsing
 }
 
-int ServerManager::fillRoute(std::string line, std::ifstream &file, Config *config, Route *route) {
+std::string ServerManager::fillRoute(std::string line, std::ifstream &file, Config *config, Route *route) {
+    int braceCount = 1;  // Track number of open braces
     while (std::getline(file, line)) {
+        if (line.find("{") != std::string::npos)
+            braceCount++;
         if (line.find("}") != std::string::npos) {
-            //config->addRoute(route);
-            break; // Stop if we find the closing brace
+            braceCount--;
+            if (braceCount == 0)
+                return line;
+        }
+        if (braceCount < 0) {
+            std::cerr << "Error: Mismatched braces in config file!" << std::endl;
+            return ""; // Indicate an error
+        }
+        if (line.find("location") != std::string::npos && braceCount == 2)
+        {
+            route->setPath(line.substr(line.find("location") + std::string("location").length() + 1, line.find("{") - line.find(" ") - 2));
+            route->cleanRoute(route);
         }
         if (line.find("allow_methods") != std::string::npos) {
             // Parse the allowed methods and set them to the route
             std::string methods = line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1);
-            std::vector<std::string> allowed_methods;
-            std::string method;
-            std::istringstream iss(methods);
-            while (std::getline(iss, method, ' ')) {
-                allowed_methods.push_back(method);
-            }
-            route->setAllowedMethods(allowed_methods);
+            route->setAllowedMethods(splitString(methods, ' '));
         }
         else if (line.find("root") != std::string::npos)
             route->setRootDir(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
@@ -182,10 +209,11 @@ int ServerManager::fillRoute(std::string line, std::ifstream &file, Config *conf
             route->setIndexFile(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
         else if (line.find("autoindex") != std::string::npos)
             route->setAutoindex(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
-        // else if (line.find("cgi_path") != std::string::npos)
-        //     route->setCGIPath(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
+        else if (!line.empty())
+            std::cerr << "Unknown directive: " << line << std::endl;
     }
-    return 0;
+    std::cerr << "Error: Unclosed route block detected." << std::endl;
+    return "";
 }
 
 void ServerManager::printConfigAll() {
@@ -204,13 +232,27 @@ int ServerManager::portCheck(int port) {
     return 0;
 }
 
-int ServerManager::freeResources() {
-    for (int i = 0; i < servers.size(); i++) {
-        servers[i]->getConfig()->freeConfig();
-        servers[i]->freeServer();
-        delete servers[i];
+int ServerManager::checkConfig(Config *config) {
+    if (portCheck(config->getPort()) == 1) {
+        return 1;
     }
-    servers.clear();
+    if (config->initialisedCheck() == 1) {
+        return 1;
+    }
+    return 0;
+}
+
+int ServerManager::freeResources() {
+    if (!servers.empty()) {
+        for (int i = 0; i < servers.size(); i++) {
+            servers[i]->getConfig()->freeConfig();
+            servers[i]->freeServer();
+            delete servers[i];
+        }
+        servers.clear();
+    }
+    else
+        return 0;
     // Close epoll file descriptor
     if (epoll_fd != -1) {
         close(epoll_fd);
@@ -225,4 +267,9 @@ void ServerManager::signalHandler(int signum) {
     if (signum == SIGINT) {
         stop_flag = 1;
     }
+}
+
+//TODO: implement this if needed
+int ServerManager::checkCGI(Route *route) {
+    return 0;
 }

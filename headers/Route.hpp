@@ -7,13 +7,12 @@
 class Route {
 	private:
 		std::string				 	path;
-		std::vector<std::string>	allowed_methods; //{"GET", "POST", "DELETE", "PUT"};
+		std::vector<std::string>	allowed_methods;
 		std::string				 	root_dir;
 		std::string				 	index_file;
 		bool						autoindex;
 		int						 	redirect_status;
 		std::string				 	redirect_url;
-		// std::string				 	cgi_path;
 
 	public:
 		Route();
@@ -27,7 +26,6 @@ class Route {
 		void		setAutoindex(std::string autoindex);
 		void		setRedirectStatus(int redirect_status);
 		void		setRedirectUrl(const std::string &redirect_url);
-		void		setCGIPath(const std::string &cgi_path);
 
 		//getter functions
 		std::string					getPath() const { return path; }
@@ -37,10 +35,11 @@ class Route {
 		bool						getAutoindex() const { return autoindex; }
 		int							getRedirectStatus() const { return redirect_status; }
 		std::string					getRedirectUrl() const { return redirect_url; }
-		// std::string					getCGIPath() const { return cgi_path; }
 
 		bool	containsTarget(const std::string &target) const;
 		bool	allowsMethod(const std::string &method) const;
+		int		checkRoute(Route *route);
+		void	cleanRoute(Route *route);
 
 		//utils
 		void printRoute();

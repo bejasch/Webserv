@@ -25,6 +25,15 @@ Here is a breakdown of the requirements in your project, organized into what you
 ### Non-blocking File Descriptors for I/O
 ✅ You’re using non-blocking I/O in your `epoll` loop, which allows the server to handle multiple connections concurrently and respond quickly to requests.
 
+### Multiple Servers
+✅ **Done**: Handle multiple servers with several different ports. (Choose the port and host of each ’server’)
+
+### Free Allocated Memory
+✅ **Done**: JK
+
+### Signal Handling
+✅ **Done**: JK
+
 ---
 
 ## Missing / Pending Implementation
@@ -74,16 +83,7 @@ CLF common log format
 
 ### CGI
 ❌ **Missing**: JK
-
-### Multiple Servers
-❌ **Missing**: Handle multiple servers with several different ports. (Choose the port and host of each ’server’)
-
-### Free Allocated Memory
-❌ **Missing**: JK
-
-### Signal Handling
-❌ **Missing**: JK
-
+- GET request done, POST WIP
 
 
 ## Eval Checks
@@ -105,7 +105,6 @@ void Server::acceptConnection(int epoll_fd) {
 
 void ServerManager::startServers() {
     // ... existing code ...
-
     for (int i = 0; i < servers.size(); ++i) {
         Server *server = servers[i];
         int server_fd = server->getServerFd();

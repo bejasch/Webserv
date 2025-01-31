@@ -143,3 +143,13 @@ bool	deleteFileDir(const std::string &path) {
 	}
 	return (false);
 }
+
+std::vector<std::string> splitString(const std::string &str, const char delimiter) {
+	std::vector<std::string> allowed_methods;
+	std::string method;
+	std::istringstream iss(str);
+	while (std::getline(iss, method, delimiter)) {
+		allowed_methods.push_back(method);
+	}
+	return (allowed_methods);
+}

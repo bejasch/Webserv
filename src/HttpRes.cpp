@@ -245,7 +245,7 @@ void	HttpRes::POST(HttpReq &httpRequest, Server &server) {
 	}
 	if (_target.find(".py") != std::string::npos) {
 		server.getConfig()->getCGI()->executeCGI(httpRequest, server);
-		//TODO: execute script
+		//TODO: CGI POST
 	}
 	// Check if the target exists
 	std::string path = server.getConfig()->getRootDir() + _target;

@@ -6,8 +6,7 @@ Config::Config()
       root_dir(""),
       max_body_size(0),
       default_file(""),
-      error_file(""),
-      error_status(0),
+      error_pages({}),
       routes({}),
       cgi(NULL) {
     std::cout << "Config default constructor called" << std::endl;
@@ -24,8 +23,14 @@ void Config::printConfig() {
     std::cout << "root_dir: " << root_dir << std::endl;
     std::cout << "max_body_size: " << max_body_size << std::endl;
     std::cout << "default_file: " << default_file << std::endl;
-    std::cout << "error_file: " << error_file << std::endl;
-    std::cout << "error_status: " << error_status << std::endl;
+    for (std::map<int, std::string>::iterator it = error_pages.begin(); it != error_pages.end(); ++it) {
+        std::cout << "error_status: " << it->first << " error_file: " << it->second << std::endl;
+    }
+    for (int i = 0; i < allowed_methods.size(); i++) {
+        std::cout << "allowed_methods: " << allowed_methods[i] << std::endl;
+    }
+    if (cgi)
+        cgi->printCGI();
     for (int i = 0; i < routes.size(); i++) {
         std::cout << "\nRoute " << i << std::endl;
         routes[i]->printRoute();
@@ -65,12 +70,12 @@ void Config::setDefaultFile(std::string default_file) {
     this->default_file = default_file;
 }
 
-void Config::setErrorFile(std::string error_file) {
-    this->error_file = error_file;
+void Config::setErrorPage(int error_status, std::string error_file) {
+    this->error_pages[error_status] = error_file;
 }
 
-void Config::setErrorStatus(int error_status) {
-    this->error_status = error_status;
+void Config::setAllowedMethods(const std::vector<std::string> &allowed_methods) {
+    this->allowed_methods = allowed_methods;
 }
 
 void Config::addRoute(Route *route) {
@@ -90,4 +95,36 @@ void Config::freeConfig() {
     }
     if (cgi)
         delete cgi;
+}
+
+int Config::initialisedCheck() {
+    if (server_port == 0) {
+        std::cerr << "Server port not set" << std::endl;
+        return (1);
+    }
+    if (server_name == "") {
+        std::cerr << "Server name not set" << std::endl;
+        return (1);
+    }
+    if (root_dir == "") {
+        std::cerr << "Root directory not set" << std::endl;
+        return (1);
+    }
+    if (max_body_size == 0) {
+        std::cerr << "Max body size not set" << std::endl;
+        return (1);
+    }
+    if (default_file == "") {
+        std::cerr << "Default file not set" << std::endl;
+        return (1);
+    }
+    if (error_pages.empty()) {
+        std::cerr << "Error pages not set" << std::endl;
+        return (1);
+    }
+    if (allowed_methods.empty()) {
+        std::cerr << "Allowed methods not set" << std::endl;
+        return (1);
+    }
+    return (0);
 }

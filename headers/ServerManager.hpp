@@ -19,14 +19,16 @@ public:
     std::map<int, Server*> clientfd_to_serverfd;
     void printConfigAll();
     int portCheck(int port);
+    int checkConfig(Config *config);
 
 private:
     void handleEvents();
     void dispatchEvent(const epoll_event& event);
     std::string fillConfig(std::string line, std::ifstream &file, Config *config);
-    int fillRoute(std::string line, std::ifstream &file, Config *config, Route *route);
+    std::string fillRoute(std::string line, std::ifstream &file, Config *config, Route *route);
     static void signalHandler(int signum);
     int freeResources();
+    int checkCGI(Route *route);
 };
 
 #endif

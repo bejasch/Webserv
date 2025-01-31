@@ -47,10 +47,6 @@ void Route::setRedirectUrl(const std::string &redirect_url) {
     this->redirect_url = redirect_url;
 }
 
-// void Route::setCGIPath(const std::string &cgi_path) {
-//     this->cgi_path = cgi_path;
-// }
-
 bool	Route::containsTarget(const std::string &target) const {
 	return (target.find(path) == 0); // if Route matches at the beginning
 }
@@ -70,4 +66,19 @@ void Route::printRoute() {
     std::cout << "redirect_status: " << redirect_status << std::endl;
     std::cout << "redirect_url: " << redirect_url << std::endl;
     // std::cout << "cgi_path: " << cgi_path << std::endl;
+}
+
+void Route::cleanRoute(Route *route) {
+    route->setAllowedMethods({});
+    route->setRootDir("");
+    route->setIndexFile("");
+    route->setAutoindex("");
+    route->setRedirectStatus(0);
+    route->setRedirectUrl("");    
+}
+
+//TODO: implement this if needed
+int Route::checkRoute(Route *route)
+{
+    return 0;
 }
