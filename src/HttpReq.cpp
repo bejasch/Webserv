@@ -118,6 +118,8 @@ const std::string	&HttpReq::getProtocol(void) const { return (_protocol); }
 // Care for exceptions if key does not exist
 const std::string	&HttpReq::getHeader(const std::string &key) const { return (_headers.at(key)); }
 
+const std::map<std::string, std::string>	&HttpReq::getHeaders(void) const { return (_headers); }
+
 // size_t				&HttpReq::getBodySize(void) const { return (_bodySize); }
 
 const std::string	&HttpReq::getBody(void) { return (_body); }

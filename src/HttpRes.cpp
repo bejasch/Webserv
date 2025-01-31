@@ -129,6 +129,18 @@ void	HttpRes::generateAutoindexPage(const std::string &path) {
     _body += "</ul></body></html>";
 }
 
+std::string	extract_cookie(HttpReq &httpRequest) {
+	std::map<std::string, std::string>::const_iterator it = httpRequest.getHeaders().find("Cookie");
+	if (it == httpRequest.getHeaders().end()) return "";
+	std::string value = it->second;
+	if (value.substr(11) != "session_id=")
+		return "";
+	size_t pos = value.find(";");
+	if (pos == std::string::npos)
+		return "";
+	return value.substr(11, pos - 11);
+}
+
 void	HttpRes::GET(HttpReq &httpRequest, Route *route) {
 	if (_target == "/guestbook.html") {
 		_contentType = "text/html";
@@ -141,6 +153,11 @@ void	HttpRes::GET(HttpReq &httpRequest, Route *route) {
 		std::cout << "Executing CGI script: " << _target << std::endl;
 		_body = _server->getConfig()->getCGI()->executeCGI(httpRequest, *_server);
 		_contentType = "text/html";
+		return;
+	}
+	if (_target == "/session.html") {
+		_contentType = "text/html";
+		_body = generateSessionHTML(httpRequest);
 		return;
 	}
 	// Check if the target is a directory
@@ -266,6 +283,26 @@ bool	HttpRes::parseFile(void) {
     return (true);
 }
 
+std::string	HttpRes::getSessionResponse(void) {
+	std::string cookie = extract_cookie(_server->getHttpReq());
+	std::string session_id = _server->getConfig()->getSession()->getSessionId(cookie);
+	std::string username = _server->getConfig()->getSession()->getUsername(session_id);
+	std::string body = "<html><head><title>Session</title></head><body>";
+	if (username.empty()) {
+		body += "<h1>Session</h1><form action=\"/session.html\" method=\"post\">";
+		body += "<label for=\"username\">Username:</label><br>";
+		body += "<input type=\"text\" id=\"username\" name=\"username\"><br>";
+		body += "<input type=\"submit\" value=\"Submit\">";
+	} else {
+		body += "<h1>Welcome, " + username + "!</h1>";
+		body += "<form action=\"/session.html\" method=\"post\">";
+		body += "<input type=\"hidden\" name=\"logout\" value=\"true\">";
+		body += "<input type=\"submit\" value=\"Logout\">";
+	}
+	body += "</form></body></html>";
+	return (body);
+}
+
 std::string	HttpRes::getResponse(void) {
     if (_httpStatus >= 400 && _httpStatus < 600) {
 		// Store a reference to the map
@@ -288,7 +325,9 @@ std::string	HttpRes::getResponse(void) {
 			generateErrorBody();
 		}
 	}
-	
+	if (_target == "/session.html")
+		return (getSessionResponse());
+
 	std::string response;
 	response = "HTTP/1.1 " + std::to_string(_httpStatus) + " " + statusDescription[_httpStatus] + "\r\n";
 	response += "Content-Type: " + _contentType + "\r\n";
