@@ -68,64 +68,75 @@ std::string CGI::executeCGI_GET(HttpReq &httpRequest) {
 
 std::string CGI::executeCGI_POST(HttpReq &httpRequest, const std::map<std::string, std::string> &formData) {
     setAllEnv(httpRequest);
+       // Prepare the POST data
 
     std::string scriptPath = "data/cgi-bin/modify_comments.py";
     std::cout << "Executing CGI script (POST): " << scriptPath << std::endl;
-
-    int pipe_fd[2], stdin_pipe[2];
-    if (pipe(pipe_fd) == -1 || pipe(stdin_pipe) == -1) {
-        perror("Failed to create pipes");
-        return "500";
-    }
-
-    pid = fork();
-    if (pid == -1) {
-        perror("Failed to fork");
-        return "500";
-    }
-
-    if (pid == 0) {  // Child process
-        close(pipe_fd[0]);
-        close(stdin_pipe[1]);
-
-        dup2(stdin_pipe[0], STDIN_FILENO);
-        dup2(pipe_fd[1], STDOUT_FILENO);
-        
-        close(stdin_pipe[0]);
-        close(pipe_fd[1]);
-
-        char *const args[] = {(char *)scriptPath.c_str(), NULL};
-        execve(scriptPath.c_str(), args, NULL);
-        perror("Failed to execute script");
-        exit(EXIT_FAILURE);
-    }
-
-    // Parent process
-    close(pipe_fd[1]);
-    close(stdin_pipe[0]);
-
-    // Write form data to the script's stdin
+    // Prepare the POST data
     std::string postData;
-    for (const auto &pair : formData) {
-        if (!postData.empty()) postData += "&";
-        postData += pair.first + "=" + pair.second;
+    if (formData.count("name") && formData.count("message")) {
+        postData = "name=" + formData.at("name") + "&message=" + formData.at("message");
+    } else {
+        return "500"; // Return an error if required fields are missing
     }
-    write(stdin_pipe[1], postData.c_str(), postData.length());
-    close(stdin_pipe[1]);
 
-    // Read the script's output
-    std::string output;
-    char buffer[4096];
-    int bytes_read;
-    while ((bytes_read = read(pipe_fd[0], buffer, sizeof(buffer))) > 0) {
-        output.append(buffer, bytes_read);
+    // Set the CONTENT_LENGTH environment variable
+    setenv("CONTENT_LENGTH", std::to_string(postData.length()).c_str(), 1);
+
+    // Create pipes for communication with the CGI script
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("pipe");
+        return "500";
     }
-    close(pipe_fd[0]);
 
-    int status;
-    waitpid(pid, &status, 0);
+    // Fork to execute the CGI script
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("fork");
+        return "500";
+    } else if (pid == 0) {
+        // Child process: execute the CGI script
+        close(pipefd[1]); // Close the write end of the pipe
+        dup2(pipefd[0], STDIN_FILENO); // Redirect stdin to read from the pipe
+        close(pipefd[0]);
 
-    return (WIFEXITED(status) && WEXITSTATUS(status) == 0) ? output : "500";
+        // Prepare arguments for execve
+        std::vector<char*> argv;
+        argv.push_back(const_cast<char*>(scriptPath.c_str())); // Script path
+        argv.push_back(nullptr); // Null-terminate the argument list
+
+        // Prepare environment variables for execve
+        std::vector<char*> envp;
+        for (auto& env_var : env) {
+            std::string env_entry = env_var.first + "=" + env_var.second;
+            envp.push_back(const_cast<char*>(env_entry.c_str()));
+        }
+        envp.push_back(nullptr); // Null-terminate the environment list
+
+        // Execute the CGI script using execve
+        execve(scriptPath.c_str(), argv.data(), envp.data());
+        perror("execve"); // If execve fails
+        exit(1);
+    } else {
+        // Parent process: write the POST data to the CGI script
+        close(pipefd[0]); // Close the read end of the pipe
+        write(pipefd[1], postData.c_str(), postData.length());
+        close(pipefd[1]);
+
+        // Wait for the CGI script to finish
+        int status;
+        waitpid(pid, &status, 0);
+
+        // Read the output of the CGI script
+        char buffer[1024];
+        ssize_t bytesRead = read(pipefd[0], buffer, sizeof(buffer));
+        if (bytesRead > 0) {
+            return std::string(buffer, bytesRead);
+        } else {
+            return "500";
+        }
+    }
 }
 
 

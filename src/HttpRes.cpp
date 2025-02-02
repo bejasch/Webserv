@@ -133,6 +133,7 @@ void	HttpRes::GET(HttpReq &httpRequest, Route *route) {
 	if (_target == "/guestbook.html") {
 		_contentType = "text/html";
 		_body = generateGuestbookHTML();
+		std::cout << "Generated guestbook page in GET" << std::endl;
 		return;
 	}
 	if (_target == "/")
@@ -175,55 +176,42 @@ void	HttpRes::GET(HttpReq &httpRequest, Route *route) {
 
 
 
-void	HttpRes::POST(HttpReq &httpRequest) {
-	if (_target == "/guestbook.html") {
-		if (!httpRequest.getBody().empty()) {
-			std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
-
-			if (formData.count("name") && formData.count("message")) {
-				// Check if this is a jokify request
-				if (formData.count("action") && formData["action"] == "Jokify") {
-					CGI cgi;
-					std::string jokifiedMessage = cgi.executeCGI_POST(httpRequest, formData);
-					if (jokifiedMessage != "500") {
-						saveGuestbookEntry(formData["name"], jokifiedMessage);
-					}
-				} else {
-					// Regular submission
-					saveGuestbookEntry(formData["name"], formData["message"]);
-				}
-				std::cout << "Saved entry: " << formData["name"] << ": " << formData["message"] << std::endl;
-			}
-		}
-		_httpStatus = 303;  // Redirect after POST
-		_target = "/guestbook.html";  // Redirect back to guestbook
-		return;
-	}
-	std::cout << "POST target: " << _target << std::endl;
-	// if (_target.find(".py") != std::string::npos) {
-	// 	if (!httpRequest.getBody().empty()) {
-	// 		std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
-	// 		if (formData.count("name") && formData.count("message")) {
-	// 			CGI cgi;
-	// 			cgi.executeCGI_POST(httpRequest, formData);
-	// 			saveGuestbookEntry(formData["name"], formData["message"]);
-	// 			std::cout << "Jokified entry: " << formData["name"] << ": " << formData["message"] << std::endl;
-	// 		}
-	// 	}
-	// 	_httpStatus = 303;	// Redirect (see other)
-	// 	return;
-	// }
-	// Check if the target exists
-	std::string path = _server->getConfig()->getRootDir() + _target;
-	printf("\t-> Path: %s\n", path.c_str());
-	if (access(path.c_str(), F_OK) == 0) {
-		_httpStatus = 404;
-		return;
-	}
-	if (saveFile(path, httpRequest.getBody().c_str(), httpRequest.getBody().size()))
-		_httpStatus = 201;
-	else
-		_httpStatus = 500;
+void HttpRes::POST(HttpReq &httpRequest) {
+    std::cout << "POST request" << std::endl;
+    if (_target == "/guestbook.html") {
+        if (!httpRequest.getBody().empty()) {
+            std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
+            std::cout << "POST data: " << httpRequest.getBody() << std::endl;
+            if (formData.count("name") && formData.count("message")) {
+                // Check if this is a jokify request
+                if (formData.count("action") && formData["action"] == "Jokify") {
+                    CGI cgi;
+                    std::string jokifiedMessage = cgi.executeCGI_POST(httpRequest, formData);
+                    if (jokifiedMessage != "500") {
+                        saveGuestbookEntry(formData["name"], jokifiedMessage);
+                    }
+                } else {
+                    // Regular submission
+                    saveGuestbookEntry(formData["name"], formData["message"]);
+                }
+                std::cout << "Saved entry: " << formData["name"] << ": " << formData["message"] << std::endl;
+            }
+        }
+        _httpStatus = 303;  // Redirect after POST
+        _target = "/guestbook.html";  // Redirect back to guestbook
+        return;
+    }
+    std::cout << "POST target: " << _target << std::endl;
+    std::string path = _server->getConfig()->getRootDir() + _target;
+    printf("\t-> Path: %s\n", path.c_str());
+    if (access(path.c_str(), F_OK) == 0) {
+        _httpStatus = 404;
+        return;
+    }
+    if (saveFile(path, httpRequest.getBody().c_str(), httpRequest.getBody().size()))
+        _httpStatus = 201;
+    else
+        _httpStatus = 500;
 }
 
 // gets the full path of the file to delete
