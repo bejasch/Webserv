@@ -138,9 +138,9 @@ void	HttpRes::GET(HttpReq &httpRequest, Route *route) {
 	if (_target == "/")
 		_target = _server->getConfig()->getDefaultFile();
 	if (_target.find(".py") != std::string::npos) {
+		CGI cgi;
 		std::cout << "Executing CGI script: " << _target << std::endl;
-		std::string emptyArgs = "";
-		_body = server->getConfig()->getCGI()->executeCGI(httpRequest, server, emptyArgs);
+		_body = cgi.executeCGI_GET(httpRequest);
 		_contentType = "text/html";
 		return;
 	}
@@ -188,11 +188,19 @@ void	HttpRes::POST(HttpReq &httpRequest) {
 		_httpStatus = 303;	// Redirect (see other)
 		return;
 	}
+	std::cout << "POST target: " << _target << std::endl;
 	if (_target.find(".py") != std::string::npos) {
-		std::string args = httpRequest.getBody();
-		std::cout << "Executing CGI script with args" << args << std::endl;
-		server.getConfig()->getCGI()->executeCGI(httpRequest, server, args);
-		//TODO: CGI POST
+		if (!httpRequest.getBody().empty()) {
+			std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
+			if (formData.count("name") && formData.count("message")) {
+				CGI cgi;
+				cgi.executeCGI_POST(httpRequest, formData);
+				saveGuestbookEntry(formData["name"], formData["message"]);
+				std::cout << "Jokified entry: " << formData["name"] << ": " << formData["message"] << std::endl;
+			}
+		}
+		_httpStatus = 303;	// Redirect (see other)
+		return;
 	}
 	// Check if the target exists
 	std::string path = _server->getConfig()->getRootDir() + _target;

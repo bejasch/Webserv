@@ -7,8 +7,9 @@ Config::Config()
       max_body_size(0),
       default_file(""),
       error_pages({}),
-      routes({}),
-      cgi(NULL) {
+    allowed_methods({}),
+      routes({})
+    {
     std::cout << "Config default constructor called" << std::endl;
 }
 
@@ -29,8 +30,6 @@ void Config::printConfig() {
     for (int i = 0; i < allowed_methods.size(); i++) {
         std::cout << "allowed_methods: " << allowed_methods[i] << std::endl;
     }
-    if (cgi)
-        cgi->printCGI();
     for (int i = 0; i < routes.size(); i++) {
         std::cout << "\nRoute " << i << std::endl;
         routes[i]->printRoute();
@@ -82,10 +81,6 @@ void Config::addRoute(Route *route) {
     routes.push_back(route);
 }
 
-void Config::addCGI(CGI *cgi) {
-    this->cgi = cgi;
-}
-
 void Config::freeConfig() {
     if (!routes.empty()) {
         for (int i = 0; i < routes.size(); i++) {
@@ -93,8 +88,6 @@ void Config::freeConfig() {
         }
         routes.clear();
     }
-    if (cgi)
-        delete cgi;
 }
 
 int Config::initialisedCheck() {

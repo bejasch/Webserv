@@ -19,7 +19,6 @@ int ServerManager::setServers(const std::string &config_file)
     Server *server;
     Config *config;
     Route *route;
-    CGI *cgi;
 
     if (config_file.find(".conf") == std::string::npos) {
         perror("Invalid configuration file format.");
@@ -60,10 +59,6 @@ int ServerManager::setServers(const std::string &config_file)
                 delete route;
                 route = NULL; // Avoid dangling pointer
                 continue;
-            }
-            if (route->getPath() == ".py" && checkCGI(route) == 0) {
-                cgi = new CGI(route);
-                config->addCGI(cgi);
             }
             config->addRoute(route);
         }
@@ -272,9 +267,4 @@ void ServerManager::signalHandler(int signum) {
     if (signum == SIGINT) {
         stop_flag = 1;
     }
-}
-
-//TODO: implement this if needed
-int ServerManager::checkCGI(Route *route) {
-    return 0;
 }

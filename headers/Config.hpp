@@ -15,7 +15,6 @@ class Config {
         std::map<int, std::string> error_pages;
         std::vector<std::string> allowed_methods;
         std::vector<Route *> routes;
-        CGI        *cgi;
 
     public:
         Config();
@@ -30,7 +29,6 @@ class Config {
         void setErrorPage(int error_status, std::string error_page);
         void setAllowedMethods(const std::vector<std::string> &allowed_methods);
         void addRoute(Route *route);
-        void addCGI(CGI *cgi);
 
         //getter
         int getPort() const {return this->server_port;};
@@ -39,8 +37,6 @@ class Config {
         int getMaxBodySize() const {return this->max_body_size;};
         std::string getDefaultFile() const {return this->default_file;};
         const std::map<int, std::string> &getErrorPages() const {return this->error_pages;};
-        CGI		*getCGI() const { return this->cgi; };
-
 
 		Route	*getRouteForTarget(std::string &target);
 

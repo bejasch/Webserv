@@ -7,14 +7,14 @@
 class CGI {
 private:
     int                                 pid;
-    Route                               *route;
     std::map<std::string, std::string>  env;
 
 public:
-    CGI(Route *route);
+    CGI();
     ~CGI();
-    void setAllEnv(HttpReq &httpRequest, Server &server);
-    std::string executeCGI(HttpReq &httpRequest, Server &server, std::string &args);
+    void setAllEnv(HttpReq &httpRequest);
+    std::string executeCGI_GET(HttpReq &httpRequest);
+    std::string executeCGI_POST(HttpReq &httpRequest, const std::map<std::string, std::string> &formData);
     void printCGI();
 };
 

@@ -65,7 +65,6 @@ void Route::printRoute() {
     std::cout << "autoindex: " << autoindex << std::endl;
     std::cout << "redirect_status: " << redirect_status << std::endl;
     std::cout << "redirect_url: " << redirect_url << std::endl;
-    // std::cout << "cgi_path: " << cgi_path << std::endl;
 }
 
 void Route::cleanRoute(Route *route) {

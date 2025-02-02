@@ -30,9 +30,7 @@ private:
 
 	void				generateAutoindexPage(const std::string &path);
 	void				generateErrorBody(void);
-
-	void				executeCGI(HttpReq &httpRequest, Server &server);
-
+	
 public:
 	HttpRes();
 	HttpRes(const HttpRes &other);
