@@ -1,15 +1,18 @@
-!/usr/bin/env python3
+#!/usr/bin/env python3
 
-import os
-import cgi
+import sys
+import urllib.parse
 
-# Get the form data from the environment variables
-form_data = cgi.FieldStorage()
+# Read the POST data from stdin
+post_data = sys.stdin.read()
+form_data = urllib.parse.parse_qs(post_data)
 
-# Get 'name' and 'comment' from the form data
-name = form_data.getvalue("name", "")
-comment = form_data.getvalue("comment", "")
+# Get name and message from form data
+name = form_data.get('name', [''])[0]
+message = form_data.get('message', [''])[0]
 
-# Apply something "funny" to the comment (e.g., reverse the comment and add a silly message)
-funny_comment = comment[::-1]  # Reverse the comment
-funny_comment += " 😂😂😂 This is your hilarious comment!"
+# Modify the message (example modification)
+modified_message = message.upper() + " 😂 JOKIFIED!"
+
+# Print the modified message
+print(modified_message)

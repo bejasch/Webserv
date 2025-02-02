@@ -181,27 +181,38 @@ void	HttpRes::POST(HttpReq &httpRequest) {
 			std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
 
 			if (formData.count("name") && formData.count("message")) {
-				saveGuestbookEntry(formData["name"], formData["message"]);
+				// Check if this is a jokify request
+				if (formData.count("action") && formData["action"] == "Jokify") {
+					CGI cgi;
+					std::string jokifiedMessage = cgi.executeCGI_POST(httpRequest, formData);
+					if (jokifiedMessage != "500") {
+						saveGuestbookEntry(formData["name"], jokifiedMessage);
+					}
+				} else {
+					// Regular submission
+					saveGuestbookEntry(formData["name"], formData["message"]);
+				}
 				std::cout << "Saved entry: " << formData["name"] << ": " << formData["message"] << std::endl;
 			}
 		}
-		_httpStatus = 303;	// Redirect (see other)
+		_httpStatus = 303;  // Redirect after POST
+		_target = "/guestbook.html";  // Redirect back to guestbook
 		return;
 	}
 	std::cout << "POST target: " << _target << std::endl;
-	if (_target.find(".py") != std::string::npos) {
-		if (!httpRequest.getBody().empty()) {
-			std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
-			if (formData.count("name") && formData.count("message")) {
-				CGI cgi;
-				cgi.executeCGI_POST(httpRequest, formData);
-				saveGuestbookEntry(formData["name"], formData["message"]);
-				std::cout << "Jokified entry: " << formData["name"] << ": " << formData["message"] << std::endl;
-			}
-		}
-		_httpStatus = 303;	// Redirect (see other)
-		return;
-	}
+	// if (_target.find(".py") != std::string::npos) {
+	// 	if (!httpRequest.getBody().empty()) {
+	// 		std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
+	// 		if (formData.count("name") && formData.count("message")) {
+	// 			CGI cgi;
+	// 			cgi.executeCGI_POST(httpRequest, formData);
+	// 			saveGuestbookEntry(formData["name"], formData["message"]);
+	// 			std::cout << "Jokified entry: " << formData["name"] << ": " << formData["message"] << std::endl;
+	// 		}
+	// 	}
+	// 	_httpStatus = 303;	// Redirect (see other)
+	// 	return;
+	// }
 	// Check if the target exists
 	std::string path = _server->getConfig()->getRootDir() + _target;
 	printf("\t-> Path: %s\n", path.c_str());

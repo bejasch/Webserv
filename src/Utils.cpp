@@ -113,8 +113,9 @@ const std::string	generateGuestbookHTML(void) {
 	html << "<form method='POST' action='/guestbook.html'>"
 		<< "Name: <input type='text' name='name'><br>"
 		<< "Message: <textarea name='message'></textarea><br>"
-		<< "<button type='submit'>Submit</button></form><hr>"
-		<< "<button type='submit'>Jokify</button></form><hr>";
+		<< "<input type='submit' name='action' value='Submit'>"
+		<< "<input type='submit' name='action' value='Jokify'>"
+		<< "</form><hr>";
 	html << "<h2>Messages</h2>";
 
 	// Load guestbook entries from file

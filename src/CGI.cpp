@@ -67,9 +67,9 @@ std::string CGI::executeCGI_GET(HttpReq &httpRequest) {
 }
 
 std::string CGI::executeCGI_POST(HttpReq &httpRequest, const std::map<std::string, std::string> &formData) {
-    setAllEnv(httpRequest);  // Set environment variables
+    setAllEnv(httpRequest);
 
-    std::string scriptPath = "data/cgi-bin/funny_comment.py";  // Path to the Python script
+    std::string scriptPath = "data/cgi-bin/modify_comments.py";
     std::cout << "Executing CGI script (POST): " << scriptPath << std::endl;
 
     int pipe_fd[2], stdin_pipe[2];
@@ -78,55 +78,48 @@ std::string CGI::executeCGI_POST(HttpReq &httpRequest, const std::map<std::strin
         return "500";
     }
 
-    pid_t pid = fork();
+    pid = fork();
     if (pid == -1) {
         perror("Failed to fork");
         return "500";
     }
 
     if (pid == 0) {  // Child process
-        close(pipe_fd[0]);  // Close read end of stdout pipe
-        close(stdin_pipe[1]);  // Close write end of stdin pipe
+        close(pipe_fd[0]);
+        close(stdin_pipe[1]);
 
-        // Redirect stdin, stdout, and stderr
-        dup2(stdin_pipe[0], STDIN_FILENO);  // Redirect stdin
-        dup2(pipe_fd[1], STDOUT_FILENO);    // Redirect stdout
-        dup2(pipe_fd[1], STDERR_FILENO);    // Redirect stderr
-
+        dup2(stdin_pipe[0], STDIN_FILENO);
+        dup2(pipe_fd[1], STDOUT_FILENO);
+        
         close(stdin_pipe[0]);
         close(pipe_fd[1]);
 
-        // Prepare environment variables for the form data (if needed)
-        std::vector<char *> argv;
-        argv.push_back(const_cast<char *>(scriptPath.c_str()));
-
-        // Prepare form data as input for the Python script
-        std::string args;
-        for (const auto &entry : formData) {
-            args += entry.first + "=" + entry.second + "&";
-        }
-        if (!args.empty()) args.pop_back();  // Remove trailing "&"
-        write(stdin_pipe[1], args.c_str(), args.size());
-        close(stdin_pipe[1]);  // Close after writing data
-
-        // Execute the Python script
-        execve(scriptPath.c_str(), argv.data(), nullptr);
+        char *const args[] = {(char *)scriptPath.c_str(), NULL};
+        execve(scriptPath.c_str(), args, NULL);
         perror("Failed to execute script");
         exit(EXIT_FAILURE);
     }
 
-    // Parent process: Close the appropriate ends of the pipes
+    // Parent process
     close(pipe_fd[1]);
     close(stdin_pipe[0]);
 
-    // Read output from the Python script
-    char buffer[4096];
+    // Write form data to the script's stdin
+    std::string postData;
+    for (const auto &pair : formData) {
+        if (!postData.empty()) postData += "&";
+        postData += pair.first + "=" + pair.second;
+    }
+    write(stdin_pipe[1], postData.c_str(), postData.length());
+    close(stdin_pipe[1]);
+
+    // Read the script's output
     std::string output;
+    char buffer[4096];
     int bytes_read;
     while ((bytes_read = read(pipe_fd[0], buffer, sizeof(buffer))) > 0) {
         output.append(buffer, bytes_read);
     }
-    std::cout << "Output from CGI script: " << output << std::endl;
     close(pipe_fd[0]);
 
     int status;
