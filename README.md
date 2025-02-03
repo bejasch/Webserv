@@ -134,8 +134,5 @@ echo "source ~/.zshrc"
 2. Install siege package
 `brew install siege`
 
-### google api
-1. Install google translate api
-- python3 -m pip install googletrans==4.0.0-rc1 
-
-### ensure py. scripts are executable
+### ensure .py scripts are executable
+1. permissions

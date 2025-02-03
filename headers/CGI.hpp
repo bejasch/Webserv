@@ -6,7 +6,7 @@
 
 class CGI {
 private:
-    int                                 pid;
+    pid_t                               pid;
     std::map<std::string, std::string>  env;
 
 public:
