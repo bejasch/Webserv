@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Cookie Test</title>
+	<script>
+		function getCookie(name) {
+			let cookies = document.cookie.split("; ");
+			for (let i = 0; i < cookies.length; i++) {
+				let parts = cookies[i].split("=");
+				if (parts[0] === name) return parts[1];
+			}
+			return "";
+		}
+
+		function setName() {
+			let name = document.getElementById("name").value;
+			if (name) {
+				document.cookie = "user_name=" + encodeURIComponent(name) + "; path=/";
+				location.reload(); // Refresh to apply changes
+			}
+		}
+
+		function deleteCookie() {
+			document.cookie = "user_name=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
+			location.reload(); // Refresh to apply changes
+		}
+
+		window.onload = function() {
+			let user = getCookie("user_name");
+			if (user) {
+				document.getElementById("greeting").innerHTML = "Hello, " + decodeURIComponent(user) + "!";
+				document.getElementById("nameInput").style.display = "none";
+			} else {
+				document.getElementById("greeting").innerHTML = "Enter your name:";
+			}
+		};
+	</script>
+</head>
+<body>
+	<h1 id="greeting"></h1>
+	<div id="nameInput">
+		<input type="text" id="name" placeholder="Your name">
+		<button onclick="setName()">Set Name</button>
+	</div>
+	<button onclick="deleteCookie()">Delete Cookie</button>
+</body>
+</html>
