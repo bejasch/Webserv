@@ -103,3 +103,39 @@ These should be specified in the config, and then served via the response class.
 ### 8. MAX_BODY_SIZE
 
 Do we restrain max_body_size?
+
+
+## prepare eval
+
+### homebrew
+1. Set up homebrew, direct packages to sgoingfre
+```bash
+#!/bin/zsh
+# https://docs.brew.sh/Installation
+set -e
+
+git clone https://github.com/Homebrew/brew /sgoinfre/goinfre/Perso/$USER/homebrew --depth=1
+
+echo 'export PATH=$PATH:/sgoinfre/goinfre/Perso/$USER/homebrew/bin' >> ~/.zshrc
+
+cd /sgoinfre/goinfre/Perso/$USER
+
+
+eval "$(homebrew/bin/brew shellenv)"
+brew update --force --quiet
+chmod -R go-w "$(brew --prefix)/share/zsh"
+
+echo "Brew installed in /sgoinfre/goinfre/Perso/$USER/homebrew"
+echo "Don't forget to source your .zshrc"
+echo " "
+echo "source ~/.zshrc"
+```
+
+2. Install siege package
+`brew install siege`
+
+### google api
+1. Install google translate api
+- python3 -m pip install googletrans==4.0.0-rc1 
+
+### ensure py. scripts are executable

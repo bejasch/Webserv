@@ -114,7 +114,7 @@ const std::string	generateGuestbookHTML(void) {
 		<< "Name: <input type='text' name='name'><br>"
 		<< "Message: <textarea name='message'></textarea><br>"
 		<< "<input type='submit' name='action' value='Submit'>"
-		<< "<input type='submit' name='action' value='Jokify'>"
+		<< "<input type='submit' name='action' value='Frenchify'>"
 		<< "</form><hr>";
 	html << "<h2>Messages</h2>";
 

@@ -68,10 +68,10 @@ std::string CGI::executeCGI_GET(HttpReq &httpRequest) {
 
 std::string CGI::executeCGI_POST(HttpReq &httpRequest, const std::map<std::string, std::string> &formData) {
     setAllEnv(httpRequest);
-       // Prepare the POST data
-
+    
     std::string scriptPath = "data/cgi-bin/modify_comments.py";
     std::cout << "Executing CGI script (POST): " << scriptPath << std::endl;
+
     // Prepare the POST data
     std::string postData;
     if (formData.count("name") && formData.count("message")) {
@@ -80,12 +80,9 @@ std::string CGI::executeCGI_POST(HttpReq &httpRequest, const std::map<std::strin
         return "500"; // Return an error if required fields are missing
     }
 
-    // Set the CONTENT_LENGTH environment variable
-    setenv("CONTENT_LENGTH", std::to_string(postData.length()).c_str(), 1);
-
-    // Create pipes for communication with the CGI script
-    int pipefd[2];
-    if (pipe(pipefd) == -1) {
+    // Create two pipes: one for input (stdin) and one for output (stdout)
+    int inputPipe[2], outputPipe[2];
+    if (pipe(inputPipe) == -1 || pipe(outputPipe) == -1) {
         perror("pipe");
         return "500";
     }
@@ -96,10 +93,17 @@ std::string CGI::executeCGI_POST(HttpReq &httpRequest, const std::map<std::strin
         perror("fork");
         return "500";
     } else if (pid == 0) {
-        // Child process: execute the CGI script
-        close(pipefd[1]); // Close the write end of the pipe
-        dup2(pipefd[0], STDIN_FILENO); // Redirect stdin to read from the pipe
-        close(pipefd[0]);
+        // Child process
+
+        // Redirect stdin to read from the input pipe
+        dup2(inputPipe[0], STDIN_FILENO);
+        close(inputPipe[0]);
+        close(inputPipe[1]); // Close unused write end
+
+        // Redirect stdout to write to the output pipe
+        dup2(outputPipe[1], STDOUT_FILENO);
+        close(outputPipe[1]);
+        close(outputPipe[0]); // Close unused read end
 
         // Prepare arguments for execve
         std::vector<char*> argv;
@@ -119,10 +123,15 @@ std::string CGI::executeCGI_POST(HttpReq &httpRequest, const std::map<std::strin
         perror("execve"); // If execve fails
         exit(1);
     } else {
-        // Parent process: write the POST data to the CGI script
-        close(pipefd[0]); // Close the read end of the pipe
-        write(pipefd[1], postData.c_str(), postData.length());
-        close(pipefd[1]);
+        // Parent process
+
+        // Close unused ends of pipes
+        close(inputPipe[0]);  // Parent doesn't read from input pipe
+        close(outputPipe[1]); // Parent doesn't write to output pipe
+
+        // Write the POST data to the CGI script's stdin
+        write(inputPipe[1], postData.c_str(), postData.length());
+        close(inputPipe[1]); // Close write end after writing
 
         // Wait for the CGI script to finish
         int status;
@@ -130,15 +139,18 @@ std::string CGI::executeCGI_POST(HttpReq &httpRequest, const std::map<std::strin
 
         // Read the output of the CGI script
         char buffer[1024];
-        ssize_t bytesRead = read(pipefd[0], buffer, sizeof(buffer));
+        ssize_t bytesRead = read(outputPipe[0], buffer, sizeof(buffer));
+        close(outputPipe[0]); // Close read end after reading
+
         if (bytesRead > 0) {
+            std::cout << "Read " << bytesRead << " bytes from CGI script" << std::endl;
             return std::string(buffer, bytesRead);
         } else {
+            std::cerr << "Failed to read from CGI script" << std::endl;
             return "500";
         }
     }
 }
-
 
 void CGI::printCGI() {
     std::cout << "CGI pid: " << this->pid << std::endl;

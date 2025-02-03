@@ -2,6 +2,7 @@
 
 import sys
 import urllib.parse
+from googletrans import Translator
 
 # Read the POST data from stdin
 post_data = sys.stdin.read()
@@ -11,8 +12,9 @@ form_data = urllib.parse.parse_qs(post_data)
 name = form_data.get('name', [''])[0]
 message = form_data.get('message', [''])[0]
 
-# Modify the message (example modification)
-modified_message = message.upper() + " 😂 JOKIFIED!"
+# Translate the message
+translator = Translator()
+translated_message = translator.translate(message, dest='fr').text
 
-# Print the modified message
-print(modified_message)
+# Print the translated message
+print(translated_message)

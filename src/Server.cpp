@@ -64,6 +64,7 @@ void	Server::handleRequest(int client_fd) {
 	// Data is available to read from the socket
 	char buffer[30000] = {0};
 	int valread = read(client_fd, buffer, sizeof(buffer));
+	std::cout << "Received " << valread << " bytes from client_fd: " << client_fd << std::endl;
 	// int bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0);	// Is this better???
 
 	if (valread == 0) {	// Client closed connection
@@ -99,6 +100,7 @@ void	Server::handleRequest(int client_fd) {
 }
 
 void	Server::handleResponse(int client_fd) {
+	std::cout << "Entered handleResponse function in server for clientfd: " << client_fd << std::endl;
     if (pending_responses.find(client_fd) != pending_responses.end()) {
         HttpRes &response = pending_responses[client_fd];
         
@@ -135,13 +137,13 @@ void	Server::handleResponse(int client_fd) {
 		// Remove client_fd from epoll instance
 		if (epoll_ctl(server_manager.getEpollFd(), EPOLL_CTL_DEL, client_fd, NULL) == -1) {
 			perror("Failed to remove client_fd from epoll");
+		} else {
+			std::cout << "Successfully removed client_fd from epoll\n";
 		}
 		close(client_fd);  // Close the connection
 		pending_responses.erase(client_fd);
 	}
 }
-
-
 
 void	Server::freeServer() {
 	close(server_fd);

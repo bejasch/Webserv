@@ -177,14 +177,14 @@ void	HttpRes::GET(HttpReq &httpRequest, Route *route) {
 
 
 void HttpRes::POST(HttpReq &httpRequest) {
-    std::cout << "POST request" << std::endl;
+    std::cout << "POST DATA" << httpRequest.getBody() << std::endl;
     if (_target == "/guestbook.html") {
         if (!httpRequest.getBody().empty()) {
             std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
-            std::cout << "POST data: " << httpRequest.getBody() << std::endl;
             if (formData.count("name") && formData.count("message")) {
-                // Check if this is a jokify request
-                if (formData.count("action") && formData["action"] == "Jokify") {
+                // Check if this is a Frenchify request
+                if (formData.count("action") && formData["action"] == "Frenchify") {
+					std::cout << "Frenchify request" << std::endl;
                     CGI cgi;
                     std::string jokifiedMessage = cgi.executeCGI_POST(httpRequest, formData);
                     if (jokifiedMessage != "500") {

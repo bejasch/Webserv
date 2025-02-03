@@ -22,15 +22,6 @@ for key, value in os.environ.items():
     print(f"<li>{key}: {value}</li>")
 print("</ul>")
 
-# Get and display CGI form data if it's a POST request
-form = cgi.FieldStorage()
-if form.getvalue("name"):
-    name = form.getvalue("name")
-    print(f"<h2>Form Data</h2>")
-    print(f"<p>Hello, {name}!</p>")
-else:
-    print("<p>No form data received.</p>")
-
 # End HTML
 print("</body>")
 print("</html>")
