@@ -1,20 +1,30 @@
 #!/usr/bin/env python3
 
 import sys
-import urllib.parse
-from googletrans import Translator
+import random
 
 # Read the POST data from stdin
 post_data = sys.stdin.read()
-form_data = urllib.parse.parse_qs(post_data)
 
-# Get name and message from form data
-name = form_data.get('name', [''])[0]
-message = form_data.get('message', [''])[0]
+# Basic parsing of form data
+data = {}
+for item in post_data.split("&"):
+    key, value = item.split("=")
+    data[key] = value
 
-# Translate the message
-translator = Translator()
-translated_message = translator.translate(message, dest='fr').text
+name = data.get("name", "")
+message = data.get("message", "")
 
-# Print the translated message
-print(translated_message)
+# Function to scramble words
+def scramble_word(word):
+    if len(word) <= 1:
+        return word
+    word_list = list(word)
+    random.shuffle(word_list)
+    return ''.join(word_list)
+
+# Scramble each word in the message
+scrambled_message = " ".join([scramble_word(word) for word in message.split()])
+
+# Print the scrambled message
+print(scrambled_message)

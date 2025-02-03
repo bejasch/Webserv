@@ -182,13 +182,13 @@ void HttpRes::POST(HttpReq &httpRequest) {
         if (!httpRequest.getBody().empty()) {
             std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
             if (formData.count("name") && formData.count("message")) {
-                // Check if this is a Frenchify request
-                if (formData.count("action") && formData["action"] == "Frenchify") {
-					std::cout << "Frenchify request" << std::endl;
+                // Check if this is a Scramble request
+                if (formData.count("action") && formData["action"] == "Scramble") {
+					std::cout << "Scramble request" << std::endl;
                     CGI cgi;
-                    std::string jokifiedMessage = cgi.executeCGI_POST(httpRequest, formData);
-                    if (jokifiedMessage != "500") {
-                        saveGuestbookEntry(formData["name"], jokifiedMessage);
+                    std::string Message = cgi.executeCGI_POST(httpRequest, formData);
+                    if (Message != "500") {
+                        saveGuestbookEntry(formData["name"], Message);
                     }
                 } else {
                     // Regular submission
