@@ -43,7 +43,7 @@ void Server::acceptConnection(int epoll_fd) {
 	// Make the new socket non-blocking
 	fcntl(client_fd, F_SETFL, O_NONBLOCK);
 	// Add new_socket (=client_fd) to epoll instance to monitor read events
-	ev.events = EPOLLIN | EPOLLOUT; // Event for reading data
+	ev.events = EPOLLIN; // Event for reading data
 	ev.data.fd = client_fd;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1) {
 		perror("Failed to add client_fd to epoll");
@@ -107,8 +107,10 @@ void	Server::handleResponse(int client_fd) {
         std::string response_str = response.getResponse();
 		const char* response_cstr = response_str.c_str();
 		size_t		size = response.getResponseSize();
-		if (response_cstr == NULL || size == 0)
+		if (response_cstr == NULL || size == 0) {
+			std::cerr << "Error: Response is empty.\n";
 			return;
+		}
 		
 		size_t	total_sent = 0;
 		int		retry_count = 0;
@@ -142,6 +144,10 @@ void	Server::handleResponse(int client_fd) {
 		}
 		close(client_fd);  // Close the connection
 		pending_responses.erase(client_fd);
+	} else {
+		close(client_fd);  // Close the connection
+		pending_responses.erase(client_fd);
+		std::cerr << "Error: No response found for client_fd: " << client_fd << std::endl;
 	}
 }
 
