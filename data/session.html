@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Session Setup</title>
+	<script>
+		function getCookie(name) {
+			let match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+			return match ? match[2] : null;
+		}
+
+		function setCookie(name, value, days) {
+			let expires = "";
+			if (days) {
+				let date = new Date();
+				date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+				expires = "; expires=" + date.toUTCString();
+			}
+			document.cookie = name + "=" + value + "; path=/" + expires;
+		}
+
+		function deleteCookie(name) {
+			document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+			location.reload(); // Refresh the page after clearing the cookie
+		}
+
+		function checkSession() {
+			let username = getCookie("username");
+			if (username) {
+				document.body.innerHTML = "<h2>Welcome back, " + username + "!</h2>" +
+										"<button onclick='deleteCookie(\"username\")'>Logout</button>";
+			} else {
+				document.getElementById("sessionForm").style.display = "block";
+			}
+		}
+
+		function submitForm() {
+			let username = document.getElementById("name").value;
+			setCookie("username", username, 7);
+			document.getElementById("sessionForm").submit();
+		}
+	</script>
+</head>
+<body onload="checkSession()">
+	<div id="sessionForm" style="display: none;">
+		<h2>Enter Your Name</h2>
+		<form action="/set_session" method="POST">
+			<input type="text" id="name" name="name" required>
+			<button type="button" onclick="submitForm()">Submit</button>
+		</form>
+	</div>
+</body>
+</html>

@@ -149,6 +149,32 @@ std::string generate_session_id() {
     return ss.str();
 }
 
+
+std::string generateSessionResponse(const std::string &name, bool setCookie) {
+	std::ostringstream response;
+	
+	response << "HTTP/1.1 200 OK\r\n";
+	response << "Content-Type: text/html\r\n";
+	if (setCookie) {
+		response << "Set-Cookie: username=" << name << "; Path=/\r\n";
+	}
+	response << "Connection: close\r\n\r\n";
+
+	response << "<html><body>";
+	if (!name.empty()) {
+		response << "<h2>Welcome back, " << name << "!</h2>";
+	} else {
+		response << "<h2>Enter Your Name</h2>";
+		response << "<form action='/set_session' method='POST'>";
+		response << "<input type='text' name='name' required>";
+		response << "<button type='submit'>Submit</button>";
+		response << "</form>";
+	}
+	response << "</body></html>";
+
+	return response.str();
+}
+
 void	HttpRes::GET(HttpReq &httpRequest, Route *route) {
 	if (_target == "/guestbook.html") {
 		_contentType = "text/html";
@@ -157,17 +183,53 @@ void	HttpRes::GET(HttpReq &httpRequest, Route *route) {
 	}
 	if (_target == "/")
 		_target = _server->getConfig()->getDefaultFile();
+
+	if (_target == "/set_session") {
+		std::string cookieValue;
+		try
+		{
+			cookieValue = httpRequest.getHeader("cookie");
+			size_t start = cookieValue.find("username=");
+			if (start != std::string::npos) {
+				start += 9;
+				size_t end = cookieValue.find(";", start);
+				if (end == std::string::npos)
+					end = cookieValue.length();
+				cookieValue = cookieValue.substr(start, end - start);
+			} else {
+				cookieValue = "";
+			}
+		}
+		catch(const std::exception &e)
+		{
+			cookieValue = "";
+		}
+		std::string name;
+		bool setCookie = true;
+
+		std::string data = httpRequest.getBody();
+		size_t pos = data.find("name=");
+		if (pos != std::string::npos) {
+			name = data.substr(pos + 5);
+		}
+
+		if (!cookieValue.empty()) {
+			name = cookieValue;
+		}
+
+		_body = generateSessionResponse(name, setCookie);
+		_contentType = "text/html";
+		_httpStatus = 200;
+		return;
+	}
+	
 	if (_target.find(".py") != std::string::npos) {
 		std::cout << "Executing CGI script: " << _target << std::endl;
 		_body = _server->getConfig()->getCGI()->executeCGI(httpRequest, *_server);
 		_contentType = "text/html";
 		return;
 	}
-	if (_target == "/session.html") {
-		_contentType = "text/html";
-		_body = generateSessionHTML(httpRequest);
-		return;
-	}
+
 	// Check if the target is a directory
 	std::string path = _server->getConfig()->getRootDir() + _target;
 	if (isDirectory(path)) {
@@ -212,6 +274,47 @@ void	HttpRes::POST(HttpReq &httpRequest) {
 		_httpStatus = 303;	// Redirect (see other)
 		return;
 	}
+
+	else if (_target == "/set_session") {
+		std::string cookieValue;
+		try
+		{
+			cookieValue = httpRequest.getHeader("cookie");
+			size_t start = cookieValue.find("username=");
+			if (start != std::string::npos) {
+				start += 9;
+				size_t end = cookieValue.find(";", start);
+				if (end == std::string::npos)
+					end = cookieValue.length();
+				cookieValue = cookieValue.substr(start, end - start);
+			} else {
+				cookieValue = "";
+			}
+		}
+		catch(const std::exception &e)
+		{
+			cookieValue = "";
+		}
+		std::string name;
+		bool setCookie = true;
+
+		std::string data = httpRequest.getBody();
+		size_t pos = data.find("name=");
+		if (pos != std::string::npos) {
+			name = data.substr(pos + 5);
+		}
+
+		if (!cookieValue.empty()) {
+			name = cookieValue;
+		}
+
+		_body = generateSessionResponse(name, setCookie);
+		_contentType = "text/html";
+		_httpStatus = 200;
+		return;
+	}
+
+
 	if (_target.find(".py") != std::string::npos) {
 		_server->getConfig()->getCGI()->executeCGI(httpRequest, *_server);
 		//TODO: CGI POST
@@ -291,52 +394,58 @@ bool	HttpRes::parseFile(void) {
     return (true);
 }
 
-std::string	HttpRes::getSessionResponse(void) {
-	std::string cookie = extract_cookie(_server->getHttpReq());
-	std::string session_id = _server->getConfig()->getSession()->getSessionId(cookie);
-	std::string username = _server->getConfig()->getSession()->getUsername(session_id);
-	std::string body = "<html><head><title>Session</title></head><body>";
-	if (username.empty()) {
-		body += "<h1>Session</h1><form action=\"/session.html\" method=\"post\">";
-		body += "<label for=\"username\">Username:</label><br>";
-		body += "<input type=\"text\" id=\"username\" name=\"username\"><br>";
-		body += "<input type=\"submit\" value=\"Submit\">";
-	} else {
-		body += "<h1>Welcome, " + username + "!</h1>";
-		body += "<form action=\"/session.html\" method=\"post\">";
-		body += "<input type=\"hidden\" name=\"logout\" value=\"true\">";
-		body += "<input type=\"submit\" value=\"Logout\">";
-	}
-	body += "</form></body></html>";
-	return (body);
-}
 
-// Function to handle HTTP requests and manage sessions
-std::string handle_request(const std::string& request) {
-    std::string session_id = extract_cookie(request, "session_id");
-    std::string response;
+// std::string	HttpRes::getSessionResponse(void) {
+// 	std::string cookie = extract_cookie(_server->getHttpReq());
+// 	std::string session_id = _server->getConfig()->getSession()->getSessionId(cookie);
+// 	std::string username = _server->getConfig()->getSession()->getUsername(session_id);
+// 	std::string body = "<html><head><title>Session</title></head><body>";
+// 	if (username.empty()) {
+// 		body += "<h1>Session</h1><form action=\"/session.html\" method=\"post\">";
+// 		body += "<label for=\"username\">Username:</label><br>";
+// 		body += "<input type=\"text\" id=\"username\" name=\"username\"><br>";
+// 		body += "<input type=\"submit\" value=\"Submit\">";
+// 	} else {
+// 		body += "<h1>Welcome, " + username + "!</h1>";
+// 		body += "<form action=\"/session.html\" method=\"post\">";
+// 		body += "<input type=\"hidden\" name=\"logout\" value=\"true\">";
+// 		body += "<input type=\"submit\" value=\"Logout\">";
+// 	}
+// 	body += "</form></body></html>";
+// 	return (body);
+// }
 
-    if (session_id.empty() || session_store.find(session_id) == session_store.end()) {
-        // Create a new session
-        session_id = generate_session_id();
-        session_store[session_id] = "Hello, new user!";
+// // Function to handle HTTP requests and manage sessions
+// std::string handle_request(const std::string& request) {
+//     std::string session_id = extract_cookie(request, "session_id");
+//     std::string response;
 
-        response = "HTTP/1.1 200 OK\r\n"
-                   "Set-Cookie: session_id=" + session_id + "; Path=/; HttpOnly\r\n"
-                   "Content-Type: text/html\r\n\r\n"
-                   "<html><body>New session created! Your session ID: " + session_id + "</body></html>";
-    } else {
-        // Retrieve session data
-        std::string user_data = session_store[session_id];
+//     if (session_id.empty() || session_store.find(session_id) == session_store.end()) {
+//         // Create a new session
+//         session_id = generate_session_id();
+//         session_store[session_id] = "Hello, new user!";
 
-        response = "HTTP/1.1 200 OK\r\n"
-                   "Content-Type: text/html\r\n\r\n"
-                   "<html><body>Welcome back! Your session ID: " + session_id + "<br>"
-                   "Your session data: " + user_data + "</body></html>";
-    }
+//         response = "HTTP/1.1 200 OK\r\n"
+//                    "Set-Cookie: session_id=" + session_id + "; Path=/; HttpOnly\r\n"
+//                    "Content-Type: text/html\r\n\r\n"
+//                    "<html><body>New session created! Your session ID: " + session_id + "</body></html>";
+//     } else {
+//         // Retrieve session data
+//         std::string user_data = session_store[session_id];
 
-    return response;
-}
+//         response = "HTTP/1.1 200 OK\r\n"
+//                    "Content-Type: text/html\r\n\r\n"
+//                    "<html><body>Welcome back! Your session ID: " + session_id + "<br>"
+//                    "Your session data: " + user_data + "</body></html>";
+//     }
+
+//     return response;
+// }
+
+
+
+
+// ----------------------------
 
 std::string	HttpRes::getResponse(void) {
     if (_httpStatus >= 400 && _httpStatus < 600) {
@@ -361,7 +470,7 @@ std::string	HttpRes::getResponse(void) {
 		}
 	}
 	if (_target == "/session.html")
-		return (getSessionResponse());
+		return (_body);
 
 	std::string response;
 	response = "HTTP/1.1 " + std::to_string(_httpStatus) + " " + statusDescription[_httpStatus] + "\r\n";

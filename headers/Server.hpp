@@ -13,6 +13,7 @@ class Server {
         struct sockaddr_in		address;
 		std::map<int, HttpReq>	client_requests;
 		std::map<int, HttpRes>	pending_responses;
+		std::map<std::string, std::string>	sessions;
 		Config					*config;
 		ServerManager			&server_manager;
 
