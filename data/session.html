@@ -1,7 +1,105 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Session-Cookie</title>
+	<style>
+		body {
+			font-family: 'Arial', sans-serif;
+			background: linear-gradient(135deg, #eba567, #7faedd);
+			color: #8b6c6c;
+			margin: 0;
+			padding: 0;
+			text-align: center;
+		}
+
+		#login_status {
+			position: fixed;
+			top: 10px;
+			right: 10px;
+			background-color: red; /* Default (Not logged in) */
+			color: white;
+			padding: 12px 18px;
+			border-radius: 20px;
+			font-size: 16px;
+			box-shadow: 3px 3px 12px rgba(0, 0, 0, 0.3);
+			font-weight: bold;
+		}
+
+		h1 {
+			font-size: 36px;
+			color: #2a3d66;
+			margin-top: 80px;
+		}
+
+		/* Button styles */
+		.set-name-button {
+			background-color: #4CAF50; /* Green */
+			color: white;
+			border: none;
+			padding: 10px 20px;
+			font-size: 16px;
+			cursor: pointer;
+			border-radius: 5px;
+			margin: 10px;
+			transition: background-color 0.3s ease;
+		}
+
+		.set-name-button:hover {
+			background-color: #2e6a31;
+		}
+
+		.delete-button {
+			background-color: #f44336; /* Red */
+			color: white;
+			border: none;
+			padding: 10px 20px;
+			font-size: 16px;
+			cursor: pointer;
+			border-radius: 5px;
+			margin: 10px;
+			transition: background-color 0.3s ease;
+		}
+
+		.delete-button:hover {
+			background-color: #ae0300;
+		}
+
+		.back-button {
+			background-color: #9c27b0; /* Purple */
+			color: white;
+			border: none;
+			padding: 10px 20px;
+			font-size: 16px;
+			cursor: pointer;
+			border-radius: 5px;
+			margin: 10px;
+			transition: background-color 0.3s ease;
+		}
+
+		.back-button:hover {
+			background-color: #b16cc4;
+		}
+
+		#nameInput input {
+			padding: 10px;
+			font-size: 16px;
+			border-radius: 5px;
+			border: 1px solid #ccc;
+			width: 200px;
+		}
+
+		#nameInput {
+			margin-top: 20px;
+		}
+
+		footer {
+			margin-top: 50px;
+			font-size: 14px;
+			color: #666;
+		}
+	</style>
 	<script>
 		function getCookie(name) {
 			let cookies = document.cookie.split("; ");
@@ -27,24 +125,33 @@
 
 		window.onload = function() {
 			let user = getCookie("user_name");
+			let statusElement = document.getElementById("login_status");
 			if (user) {
-				document.getElementById("greeting").innerHTML = "Welcome back, " + decodeURIComponent(user) + "!";
-				document.getElementById("nameInput").style.display = "none";
+				statusElement.innerHTML = "Logged in as " + user;
+				statusElement.style.backgroundColor = "green"; // Set green when logged in
 			} else {
-				document.getElementById("greeting").innerHTML = "You are unknown! Enter your name to set a session-cookie:";
+				statusElement.innerHTML = "Not logged in";
+				statusElement.style.backgroundColor = "red"; // Set red when not logged in
 			}
 		};
 	</script>
 </head>
 <body>
-	
-	<button onclick="window.location.href='index.html'">Back to the Main Page</button>
 
-	<h1 id="greeting"></h1>
+	<div id="login_status">Not logged in</div>
+
+	<button class="back-button" onclick="window.location.href='index.html'">Back to the Main Page</button>
+
+	<h1 id="greeting">Welcome to the Cookie Session Page!</h1>
 	<div id="nameInput">
-		<input type="text" id="name" placeholder="Your name">
-		<button onclick="setName()">Set Name-Cookie</button>
+		<input type="text" id="name" placeholder="Enter your name">
+		<button class="set-name-button" onclick="setName()">Set Name-Cookie</button>
 	</div>
-	<button onclick="deleteCookie()">Delete Name-Cookie</button>
+	<button class="delete-button" onclick="deleteCookie()">Delete Name-Cookie</button>
+
+	<footer>
+		<p>Made with ❤️ by your friendly web server</p>
+	</footer>
+
 </body>
 </html>

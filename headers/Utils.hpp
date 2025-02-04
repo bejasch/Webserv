@@ -16,7 +16,7 @@ std::vector<std::string> splitString(const std::string &str, const char delimite
 std::map<std::string, std::string>	parsePostData(const std::string &data);
 
 void				saveGuestbookEntry(const std::string &name, const std::string &message);
-const std::string	generateGuestbookHTML(void);
+const std::string	generateGuestbookHTML(const std::string &userName);
 
 bool	deleteFileDir(const std::string &path);
 

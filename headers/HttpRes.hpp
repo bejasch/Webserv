@@ -11,6 +11,7 @@ private:
 	std::string			_method;
 	int					_httpStatus;
 	size_t				_responseSize;
+	std::string			_userName;
 
 	std::string			_target;
 	std::string			_contentType;

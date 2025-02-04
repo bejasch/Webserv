@@ -74,6 +74,11 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 		return;
 	}
 	_method = httpRequest.getMethod();
+	if (httpRequest.getHeaders().find("cookie") != httpRequest.getHeaders().end()) {
+		std::string cookie = httpRequest.getHeader("cookie");
+		if (cookie.substr(0, 10) == "user_name=")
+			_userName = cookie.substr(10);
+	}
 
 	// Check if the method is allowed for the target (in routes)
 	Route *route = server.getConfig()->getRouteForTarget(_target);
@@ -109,12 +114,34 @@ void	HttpRes::generateErrorBody(void) {
 	_body += "</body></html>";
 }
 
-
 void	HttpRes::generateAutoindexPage(const std::string &path) {
-    _body = "<html><head><title>Index of " + _target + "</title></head><body>";
+	// _body = "<html><head><title>Index of " + _target + "</title></head><body>";
+	// _body += "<button onclick=\"window.location.href='/index.html'\">Back to Main Page</button>";
+	// _body += "<h1>Index of " + _target + "</h1><ul>";
+	_body = "<html><head><title>Index of " + _target + "</title>";
+	_body += "<style>";
+	_body += "body { font-family: Arial, sans-serif; background-color: #ffffcc; padding: 20px; }";
+	_body += "h1 { color:rgb(255, 98, 0); }"; // "Index of" in orange
+	_body += "ul { list-style-type: disc; padding-left: 20px; }";
+	_body += "li { margin: 5px 0; }";
+	_body += "a { text-decoration: none; color:rgb(17, 0, 255); font-weight: bold; }";
+	_body += "a:hover { text-decoration: underline; }";
+	_body += "button { background-color:rgb(49, 146, 250); color: white; border: none; padding: 8px 12px;";
+	_body += "border-radius: 5px; cursor: pointer; font-size: 14px; }";
+	_body += "#login_status { position: fixed; top: 10px; right: 10px; color: white; padding: 12px 18px;";
+	_body += "border-radius: 20px; font-size: 16px; box-shadow: 3px 3px 12px rgba(0, 0, 0, 0.3); font-weight: bold; }";
+	_body += "</style></head><body>";
+
+	// Login status box
+	if (!_userName.empty()) {
+		_body += "<div id='login_status' style='background-color: green;'>Logged in as " + _userName + "</div>";
+	} else {
+		_body += "<div id='login_status' style='background-color: red;'>Not logged in</div>";
+	}
+
 	_body += "<button onclick=\"window.location.href='/index.html'\">Back to Main Page</button>";
-    _body += "<h1>Index of " + _target + "</h1><ul>";
-    
+	_body += "<h1>Index of " + _target + "</h1><ul>";
+	
 	DIR	*dir = opendir(path.c_str());
 	if (dir) {
 		struct dirent *entry;
@@ -126,13 +153,13 @@ void	HttpRes::generateAutoindexPage(const std::string &path) {
 		}
 		closedir(dir);
 	}
-    _body += "</ul></body></html>";
+	_body += "</ul></body></html>";
 }
 
 void	HttpRes::GET(HttpReq &httpRequest, Route *route) {
 	if (_target == "/guestbook.html") {
 		_contentType = "text/html";
-		_body = generateGuestbookHTML();
+		_body = generateGuestbookHTML(_userName);
 		std::cout << "Generated guestbook page in GET" << std::endl;
 		return;
 	}
@@ -173,8 +200,6 @@ void	HttpRes::GET(HttpReq &httpRequest, Route *route) {
 	determineContentType();
 	parseFile();
 }
-
-
 
 void HttpRes::POST(HttpReq &httpRequest) {
     std::cout << "POST DATA" << httpRequest.getBody() << std::endl;

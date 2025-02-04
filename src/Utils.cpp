@@ -105,21 +105,57 @@ void	saveGuestbookEntry(const std::string &name, const std::string &message) {
 }
 
 // Generate HTML for guestbook
-const std::string	generateGuestbookHTML(void) {
+const std::string	generateGuestbookHTML(const std::string &userName) {
 	std::ostringstream html;
-	html << "<!DOCTYPE html><html><head><title>Guestbook</title></head><body>";
+
+	html << "<html><head><title>Guestbook</title>";
+	html << "<style>";
+	html << "body { font-family: Arial, sans-serif; background-color:rgb(65, 157, 141); padding: 20px; }";
+	html << "h1 { color: rgb(122, 29, 252); }"; // Header color orange
+	html << "ul { list-style-type: disc; padding-left: 20px; }";
+	html << "li { margin: 5px 0; }";
+	html << "a { text-decoration: none; color: rgb(17, 0, 255); font-weight: bold; }";
+	html << "a:hover { text-decoration: underline; }";
+	html << "button { background-color: rgb(49, 146, 250); color: white; border: none; padding: 8px 12px;";
+	html << "border-radius: 5px; cursor: pointer; font-size: 14px; }";
+	html << "#login_status { position: fixed; top: 10px; right: 10px; color: white; padding: 12px 18px;";
+	html << "border-radius: 20px; font-size: 16px; box-shadow: 3px 3px 12px rgba(0, 0, 0, 0.3); font-weight: bold; }";
+	html << "</style></head><body>";
+
+	// Login status box
+	if (!userName.empty()) {
+		html << "<div id='login_status' style='background-color: green;'>Logged in as " + userName + "</div>";
+	} else {
+		html << "<div id='login_status' style='background-color: red;'>Not logged in</div>";
+	}
+
 	html << "<button onclick=\"window.location.href='/index.html'\">Back to Main Page</button>";
-	html << "<h1>Welcome to the Guestbook</h1>";
-	html << "<form method='POST' action='/guestbook.html'>"
-		<< "Name: <input type='text' name='name'><br>"
-		<< "Message: <textarea name='message'></textarea><br>"
-		<< "<input type='submit' name='action' value='Submit'>"
-		<< "<input type='submit' name='action' value='Scramble'>"
-		<< "</form><hr>";
+	
+	if (!userName.empty())
+		html << "<h1>Hello " + userName + ", welcome to the Guestbook</h1>";
+	else
+		html << "<h1>Guestbook</h1>";
+
+	html << "<form method='POST' action='/guestbook.html'>";
+	html << "Name: <input type='text' name='name' id='nameField'><br>";
+	html << "Message: <textarea name='message'></textarea><br>";
+	html << "<input type='submit' name='action' value='Submit'>";
+	html << "<input type='submit' name='action' value='Scramble'>";
+	html << "</form><hr>";
+
+	// Displaying existing messages
 	html << "<h2>Messages</h2>";
 
-	// Load guestbook entries from file
-	std::ifstream file(GUESTBOOK_FILE);
+	html << "<script>";				// JavaScript to autofill the name if userName is set
+	html << "window.onload = function() {";
+	html << "    var userName = '" + userName + "';";
+	html << "    if (userName) {";
+	html << "        document.getElementById('nameField').value = userName;";
+	html << "    }";
+	html << "};";
+	html << "</script>";
+
+	std::ifstream file(GUESTBOOK_FILE); 	// Load guestbook entries from file
 	if (file) {
 		std::string line;
 		while (std::getline(file, line)) {

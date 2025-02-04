@@ -35,7 +35,10 @@ Your executable will be run as follows:
   #include <dirent.h>
   ```
 - **Explanations**:  
-  - **`int access(const char *pathname, int mode)`**: Checks the file's accessibility (e.g., read/write permissions).
+  - **`int access(const char *pathname, int mode)`**: Checks the file's accessibility (e.g., read/write permissions). The mode specifies the accessibility check(s) to be performed, and is either the value F_OK,
+       or a mask consisting of the bitwise OR of one or more of R_OK, W_OK, and X_OK.   F_OK  tests
+       for the existence of the file.  R_OK, W_OK, and X_OK test whether the file exists and grants
+       read, write, and execute permissions, respectively.
   - **`stat`**: Retrieves file information like size, modification time, etc.
   - **`open`**: Opens a file for reading/writing. Returns a file descriptor.
   - **`opendir`**, **`readdir`**, **`closedir`**: Work with directories. For example, `opendir` opens a directory, `readdir` reads entries, and `closedir` closes the directory.

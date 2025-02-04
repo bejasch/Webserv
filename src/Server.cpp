@@ -15,12 +15,26 @@ void Server::setServer(Config *config) {
 
 void Server::setUpServer() {
 	// Creating the file descriptor of the program running the server
-    server_fd = socket(AF_INET, SOCK_STREAM, 0); //
+    server_fd = socket(AF_INET, SOCK_STREAM, 0); // TODO: Here was missing something - shielding and setsockopt
+	if (server_fd == 0 || server_fd == -1) {
+		perror("Socket creation failed");
+		exit(EXIT_FAILURE);
+	}
+
+	// Set SO_REUSEADDR to reuse the port immediately
+	int opt = 1;
+	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, (char*)&opt, sizeof(opt)) < 0) {
+		perror("setsockopt failed");
+		exit(EXIT_FAILURE);
+	}
 
     address.sin_family = AF_INET; // address family used previously
     address.sin_addr.s_addr = INADDR_ANY; // this is my IP address
     address.sin_port = htons( config->getPort() ); // the port I would like to expose
-    bind(server_fd, (struct sockaddr *)&address, sizeof(address)); // bind server file descriptor to socket address
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) { // bind server file descriptor to socket address
+		perror("Bind failed");
+		exit(EXIT_FAILURE);
+	}
 
     // Make server_fd non-blocking
     fcntl(server_fd, F_SETFL, O_NONBLOCK);
