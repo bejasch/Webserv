@@ -166,6 +166,7 @@ void	Server::handleResponse(int client_fd) {
 }
 
 void	Server::freeServer() {
+	//TODO: is shutdown() allowed?
 	shutdown(server_fd, SHUT_RDWR);
 	close(server_fd);
 	client_requests.clear();

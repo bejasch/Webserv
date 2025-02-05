@@ -8,7 +8,6 @@ ServerManager::ServerManager() {
 
 ServerManager::~ServerManager() {
     std::cout << "ServerManager destructor called" << std::endl;
-    // TODO: this is fine but not if there is an earlier error.
     freeResources();
 }
 
@@ -156,7 +155,7 @@ std::string ServerManager::fillConfig(std::string line, std::ifstream &file, Con
         else if (line.find("server_name") != std::string::npos)
             config->setName(line.substr(line.find("server_name") + std::string("server_name").length() + 1, line.find(";") - line.find(" ") - 1));
         else if (line.find("root") != std::string::npos)
-            config->setRootDir(line.substr(line.find("root") + std::string("root").length() + 1, line.find(";") - line.find(" ") - 1));
+            config->setRootDirConfig(line.substr(line.find("root") + std::string("root").length() + 1, line.find(";") - line.find(" ") - 1));
         else if (line.find("client_max_body_size") != std::string::npos)
             config->setMaxBodySize(stringToInt(line.substr(line.find("client_max_body_size") + std::string("client_max_body_size").length() + 1, line.find(";") - line.find(" ") - 1)));
         else if (line.find("index") != std::string::npos)
@@ -202,7 +201,7 @@ std::string ServerManager::fillRoute(std::string line, std::ifstream &file, Conf
             route->setAllowedMethods(splitString(methods, ' '));
         }
         else if (line.find("root") != std::string::npos)
-            route->setRootDir(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
+            route->setRootDirRoute(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
         else if (line.find("return") != std::string::npos) {
             route->setRedirectStatus(stringToInt(line.substr(line.find("return") + std::string("return").length() + 1, line.find(" ") - line.find("return") - 1)));
             route->setRedirectUrl(line.substr(line.find("return") + std::string("return").length() + 5, line.find(";") - line.find(" ") - 5));

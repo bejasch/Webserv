@@ -7,7 +7,7 @@ HttpReq::HttpReq() : _creationTime(time(0)), _httpStatus(0) {}
 HttpReq::HttpReq(const HttpReq &other) : _creationTime(other._creationTime),
 	_httpStatus(other._httpStatus), _buffer(other._buffer),
 	_method(other._method), _target(other._target), _protocol(other._protocol), 
-	_headers(other._headers), _body(other._body),
+	_headers(other._headers), _body(other._body), _root(other._root),
 	_startlineParsed(other._startlineParsed), _headersParsed(other._headersParsed),
 	_isChunked(other._isChunked), _bodyComplete(other._bodyComplete),
 	_currentChunkSize(other._currentChunkSize) {}
@@ -23,6 +23,7 @@ HttpReq	HttpReq::operator=(const HttpReq &another)	{
 	_protocol = another._protocol;
 	_headers = another._headers;
 	_body = another._body;
+	_root = another._root;
 	_startlineParsed = another._startlineParsed;
 	_headersParsed = another._headersParsed;
 	_isChunked = another._isChunked;
@@ -302,4 +303,13 @@ void	HttpReq::reset(void) {
 	_isChunked = false;
 	_bodyComplete = false;
 	_currentChunkSize = 0;
+}
+
+void	HttpReq::setRootDirReq(const std::string &root) {
+	_root = root;
+	std::cout << "Root dir set to: " << _root << std::endl;
+}
+
+const std::string	&HttpReq::getRootDirReq(void) const {
+	return (_root);
 }

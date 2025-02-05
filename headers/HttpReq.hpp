@@ -21,6 +21,8 @@ private:
     
 	std::string _body;
 
+	std::string _root;
+
 	bool	_startlineParsed = false;	// Whether the start line is fully received
 	bool	_headersParsed = false;		// Whether the headers are fully received
 	bool	_isChunked = false;     	// Whether the body uses chunked transfer
@@ -52,6 +54,8 @@ public:
 	HttpReq operator=(const HttpReq &another);
 	~HttpReq();
 
+	// --> Set-methods:
+	void	setRootDirReq(const std::string &root);
 
 	// --> Get-methods:
 	const std::string	&getMethod(void) const;
@@ -61,6 +65,7 @@ public:
 	const std::map<std::string, std::string>	&getHeaders(void) const;
 	const std::string	&getBody(void);
 	int					getHttpStatus(void) const;
+	const std::string	&getRootDirReq(void) const;
 
 	bool 	processData(const std::string &data);	// Encapsulates the parsing of the incoming data
 

@@ -83,6 +83,10 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 	// Check if the method is allowed for the target (in routes)
 	Route *route = server.getConfig()->getRouteForTarget(_target);
 	if (route) {
+		std::cout << "Route found for target: " << _target << " with RootDir" << route->getRootDirRoute() << std::endl;
+		if (route->getRootDirRoute() != "") {
+			httpRequest.setRootDirReq(route->getRootDirRoute());
+		}
 		//TODO: if allowed methos empty, then allow all methods specified in the server
 		if (!route->allowsMethod(_method)) {
 			_httpStatus = 405;
@@ -95,7 +99,7 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 	else if (_method == "POST")
 		POST(httpRequest);
     else if  (_method == "DELETE")
-		DELETE(server.getConfig()->getRootDir() + _target);
+		DELETE(server.getConfig()->getRootDirConfig() + _target);
     else						// Unsupported method
 		_httpStatus = 405;
 }
@@ -165,7 +169,7 @@ void	HttpRes::GET(HttpReq &httpRequest, Route *route) {
 	}
 	if (_target == "/")
 		_target = _server->getConfig()->getDefaultFile();
-	if (_target.find(".py") != std::string::npos) {
+	if (_target.find(".py") != std::string::npos || _target.find(".php") != std::string::npos) {
 		CGI cgi;
 		std::cout << "Executing CGI script: " << _target << std::endl;
 		_body = cgi.executeCGI_GET(httpRequest);
@@ -173,7 +177,7 @@ void	HttpRes::GET(HttpReq &httpRequest, Route *route) {
 		return;
 	}
 	// Check if the target is a directory
-	std::string path = _server->getConfig()->getRootDir() + _target;
+	std::string path = _server->getConfig()->getRootDirConfig() + _target;
 	if (isDirectory(path)) {
 		if (route && route->getIndexFile() != "" && access((path + route->getIndexFile()).c_str(), R_OK) != -1) {
 			_target += route->getIndexFile();
@@ -208,8 +212,8 @@ void HttpRes::POST(HttpReq &httpRequest) {
             std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
             if (formData.count("name") && formData.count("message")) {
                 // Check if this is a Scramble request
-                if (formData.count("action") && formData["action"] == "Scramble") {
-					std::cout << "Scramble request" << std::endl;
+                if (formData.count("action") && (formData["action"] == "Scramble" || formData["action"] == "Capitalize")) {
+					std::cout << "CGI POST request" << std::endl;
                     CGI cgi;
                     std::string Message = cgi.executeCGI_POST(httpRequest, formData);
                     if (Message != "500") {
@@ -227,7 +231,7 @@ void HttpRes::POST(HttpReq &httpRequest) {
         return;
     }
     std::cout << "POST target: " << _target << std::endl;
-    std::string path = _server->getConfig()->getRootDir() + _target;
+    std::string path = _server->getConfig()->getRootDirConfig() + _target;
     printf("\t-> Path: %s\n", path.c_str());
     if (access(path.c_str(), F_OK) == 0) {
         _httpStatus = 404;
@@ -288,7 +292,7 @@ void	HttpRes::determineContentType(void) {
 }
 
 bool	HttpRes::parseFile(void) {
-    std::ifstream file((_server->getConfig()->getRootDir() + _target).c_str());
+    std::ifstream file((_server->getConfig()->getRootDirConfig() + _target).c_str());
     if (!file.is_open()) {
 		std::cerr << "Error: Could not open file " << _target << std::endl;
 		_httpStatus = 404;
@@ -309,7 +313,7 @@ std::string	HttpRes::getResponse(void) {
 		// Now use the reference for finding the element
 		std::map<int, std::string>::const_iterator it = errorPages.find(_httpStatus);
 		if (it != errorPages.end()) {
-			std::ifstream file((_server->getConfig()->getRootDir() + it->second).c_str());
+			std::ifstream file((_server->getConfig()->getRootDirConfig() + it->second).c_str());
 			if (!file.is_open()) {
 				generateErrorBody();
 			} else {

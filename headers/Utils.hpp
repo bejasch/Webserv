@@ -9,6 +9,7 @@ bool	    isStandaloneWord(const std::string& line, const std::string& word, size
 std::string	trim(const std::string& str);
 bool	    isDirectory(const std::string &path);
 bool		saveFile(const std::string &filename, const char* data, size_t size);
+std::string getFileExtension(const std::string &target);
 
 std::vector<std::string> splitString(const std::string &str, const char delimiter);
 

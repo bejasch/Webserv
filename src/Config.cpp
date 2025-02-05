@@ -45,6 +45,9 @@ Route	*Config::getRouteForTarget(std::string &target) {
 			else if (routes[i]->getPath().length() > route->getPath().length())
 				route = routes[i];
 		}
+        else if (routes[i]->getPath() == getFileExtension(target)) {
+            route = routes[i];
+        }
 	}
 	return (route);
 }
@@ -57,7 +60,7 @@ void Config::setName(std::string name) {
     this->server_name = name;
 }
 
-void Config::setRootDir(std::string root_dir) {
+void Config::setRootDirConfig(std::string root_dir) {
     this->root_dir = root_dir;
 }
 

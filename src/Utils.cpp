@@ -141,6 +141,7 @@ const std::string	generateGuestbookHTML(const std::string &userName) {
 	html << "Message: <textarea name='message'></textarea><br>";
 	html << "<input type='submit' name='action' value='Submit'>";
 	html << "<input type='submit' name='action' value='Scramble'>";
+	html << "<input type='submit' name='action' value='Capitalize'>";
 	html << "</form><hr>";
 
 	// Displaying existing messages
@@ -209,4 +210,12 @@ std::vector<std::string> splitString(const std::string &str, const char delimite
 		allowed_methods.push_back(method);
 	}
 	return (allowed_methods);
+}
+
+std::string getFileExtension(const std::string &target) {
+    size_t dotPos = target.find_last_of('.');  // Find the last dot
+    if (dotPos != std::string::npos) {
+        return target.substr(dotPos);  // Extract the substring after the last dot
+    }
+    return "";  // No extension found
 }

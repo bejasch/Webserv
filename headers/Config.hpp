@@ -23,7 +23,7 @@ class Config {
         //setter
         void setPort(int port);
         void setName(std::string name);
-        void setRootDir(std::string root_dir);
+        void setRootDirConfig(std::string root_dir);
         void setMaxBodySize(int max_body_size);
         void setDefaultFile(std::string default_file);
         void setErrorPage(int error_status, std::string error_page);
@@ -33,7 +33,7 @@ class Config {
         //getter
         int getPort() const {return this->server_port;};
         std::string getName() const {return this->server_name;};
-        std::string getRootDir() const {return this->root_dir;};
+        std::string getRootDirConfig() const {return this->root_dir;};
         int getMaxBodySize() const {return this->max_body_size;};
         std::string getDefaultFile() const {return this->default_file;};
         const std::map<int, std::string> &getErrorPages() const {return this->error_pages;};

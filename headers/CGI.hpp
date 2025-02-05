@@ -8,6 +8,8 @@ class CGI {
 private:
     pid_t                               pid;
     std::map<std::string, std::string>  env;
+    char                                **envp;
+    char								**argv;
 
 public:
     CGI();
@@ -15,6 +17,7 @@ public:
     void setAllEnv(HttpReq &httpRequest);
     std::string executeCGI_GET(HttpReq &httpRequest);
     std::string executeCGI_POST(HttpReq &httpRequest, const std::map<std::string, std::string> &formData);
+    void freeEnvironment();
     void printCGI();
 };
 

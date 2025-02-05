@@ -24,7 +24,7 @@ void Route::setAllowedMethods(const std::vector<std::string> &allowed_methods) {
     this->allowed_methods = allowed_methods;
 }
 
-void Route::setRootDir(const std::string &root_dir) {
+void Route::setRootDirRoute(const std::string &root_dir) {
     this->root_dir = root_dir;
 }
 
@@ -69,7 +69,7 @@ void Route::printRoute() {
 
 void Route::cleanRoute(Route *route) {
     route->setAllowedMethods({});
-    route->setRootDir("");
+    route->setRootDirRoute("");
     route->setIndexFile("");
     route->setAutoindex("");
     route->setRedirectStatus(0);
