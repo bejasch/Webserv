@@ -2,22 +2,30 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>File Manager</title>
-</head>
-<body>
-	<button onclick="window.location.href='index.html'">Back to Main Page</button>
+    <style>
+		#login_status {
+			position: fixed;
+			top: 10px;
+			right: 10px;
+			background-color: red; /* Default (Not logged in) */
+			color: white;
+			padding: 12px 18px;
+			border-radius: 20px;
+			font-size: 16px;
+			box-shadow: 3px 3px 12px rgba(0, 0, 0, 0.3);
+			font-weight: bold;
+		}
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 10px;
+            background-color: #a4a4ff;
+            color: #333;
+        }
 
-    <h1>File Manager</h1>
-    <h2> • Upload a File:</h2>
-    <input type="file" id="fileInput">
-    <button onclick="uploadFile()">Upload</button>
-    <p id="uploadResponse"></p>
-
-    <h2> • Delete a File:</h2>
-    <input type="text" id="filename" placeholder="Enter filename">
-    <button onclick="deleteFile()">Delete</button>
-    <p id="deleteResponse"></p>
-
+	</style>
     <script>
         function uploadFile() {
             let file = document.getElementById("fileInput").files[0];
@@ -61,6 +69,43 @@
                     }
                 });
         }
+
+        function getCookie(name) {
+            let cookies = document.cookie.split("; ");
+            for (let i = 0; i < cookies.length; i++) {
+                let parts = cookies[i].split("=");
+                if (parts[0] === name) return parts[1];
+            }
+            return "";
+        }
+
+        window.onload = function() {
+			let user = getCookie("user_name");
+			let statusElement = document.getElementById("login_status");
+			if (user) {
+				statusElement.innerHTML = "Logged in as " + user;
+				statusElement.style.backgroundColor = "green"; // Set green when logged in
+			} else {
+				statusElement.innerHTML = "Not logged in";
+				statusElement.style.backgroundColor = "red"; // Set red when not logged in
+			}
+		};
     </script>
+</head>
+<body>
+	<div id="login_status">Not logged in</div>
+
+	<button onclick="window.location.href='index.html'">Back to Main Page</button>
+
+    <h1>File Manager</h1>
+    <h2> • Upload a File:</h2>
+    <input type="file" id="fileInput">
+    <button onclick="uploadFile()">Upload</button>
+    <p id="uploadResponse"></p>
+
+    <h2> • Delete a File:</h2>
+    <input type="text" id="filename" placeholder="Enter filename">
+    <button onclick="deleteFile()">Delete</button>
+    <p id="deleteResponse"></p>
 </body>
 </html>

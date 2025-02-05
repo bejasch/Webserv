@@ -5,11 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Webserv</title>
     <style>
+        #login_status {
+			position: fixed;
+			top: 10px;
+			right: 10px;
+			background-color: red; /* Default (Not logged in) */
+			color: white;
+			padding: 12px 18px;
+			border-radius: 20px;
+			font-size: 16px;
+			box-shadow: 3px 3px 12px rgba(0, 0, 0, 0.3);
+			font-weight: bold;
+		}
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f4f4f9;
+            background-color: #ffabf5;
             color: #333;
         }
         header {
@@ -64,8 +76,32 @@
             width: 100%;
         }
     </style>
+    <script>
+        function getCookie(name) {
+			let cookies = document.cookie.split("; ");
+			for (let i = 0; i < cookies.length; i++) {
+				let parts = cookies[i].split("=");
+				if (parts[0] === name) return parts[1];
+			}
+			return "";
+		}
+
+        window.onload = function() {
+			let user = getCookie("user_name");
+			let statusElement = document.getElementById("login_status");
+			if (user) {
+				statusElement.innerHTML = "Logged in as " + user;
+				statusElement.style.backgroundColor = "green"; // Set green when logged in
+			} else {
+				statusElement.innerHTML = "Not logged in";
+				statusElement.style.backgroundColor = "red"; // Set red when not logged in
+			}
+		};
+    </script>
 </head>
 <body>
+	<div id="login_status">Not logged in</div>
+
     <header>
         <h1>Welcome to our Webserver (<i>Webserv</i>)</h1>
         <p>Explore the different pages using the navigation below.</p>
@@ -76,6 +112,7 @@
         <a href="images">AUTOINDEX</a>
         <a href="filemanager.html">FILEMANAGER</a>
         <a href="guestbook.html">GUESTBOOK</a>
+        <a href="session.html">SESSION</a>
     </nav>
 
     <section class="introduction">
