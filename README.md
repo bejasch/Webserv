@@ -136,3 +136,133 @@ echo "source ~/.zshrc"
 
 ### ensure .py scripts are executable
 1. permissions
+
+
+### Useful Network Diagnostic Commands
+
+Below is a list of useful network diagnostic and troubleshooting commands.
+
+ 1. `dig example.com`
+   - Performs a DNS lookup for the given domain and provides detailed information about DNS records.
+
+ 2. `nslookup example.com`
+   - A simple DNS query tool for resolving domain names to IP addresses.
+
+ 3. `curl -v http://127.0.0.1:8081/`
+   - Sends an HTTP request and displays detailed information about the HTTP communication.
+
+ 4. `ping 127.0.0.1`
+   - Tests network connectivity by sending ICMP echo requests to the specified IP address.
+   - The ping command cannot be used with a specific port because it uses ICMP (Internet Control Message Protocol), not TCP or UDP, which are the protocols that involve ports.
+
+ 5. `telnet 127.0.0.1 8080`
+   - Opens a Telnet connection to a specified IP address and port, useful for checking basic connectivity.
+
+ 6. `netstat -tulnp`
+   - Displays active network connections, listening ports, and the associated processes.
+
+ 7. `curl --resolve example.com:8080:127.0.0.1 http://example.com/`
+   - Resolves a domain to a specific IP address and port without modifying DNS records.
+
+ 8. `traceroute example.com` (only with sudo)
+   - Traces the route packets take to reach the destination, showing each hop along the way.
+
+ 9. `ss -tulnp`
+   - Displays socket statistics and information about listening ports and associated processes.
+
+ 10. `curl -I http://127.0.0.1:8081/`
+   - Sends a HEAD request to retrieve only the HTTP headers from a server.
+
+### Useful `curl` Commands
+
+1. **`curl -I`**
+   - Fetch the HTTP headers (response headers) of a URL.
+   - Example:  
+     ```bash
+     curl -I http://127.0.0.1:8081/
+     ```
+
+2. **`curl -X`**
+   - Specify an HTTP request method (GET, POST, PUT, DELETE, etc.)
+   - Example:  
+     ```bash
+     curl -X POST http://127.0.0.1:8081/ -d "name=John&age=30"
+     ```
+
+3. **`curl -d`**
+   - Send data in a POST request.
+   - Example:  
+     ```bash
+     curl -X POST -d "name=John&age=30" http://127.0.0.1:8081/
+     ```
+
+4. **`curl -L`**
+   - Follow redirects.
+   - Example:  
+     ```bash
+     curl -L http://127.0.0.1:8081/
+     ```
+
+5. **`curl -v`**
+   - Enable verbose mode to see the detailed process of the request.
+   - Example:  
+     ```bash
+     curl -v http://127.0.0.1:8081/
+     ```
+
+6. **`curl -u`**
+   - Send HTTP basic authentication credentials.
+   - Example:  
+     ```bash
+     curl -u username:password http://127.0.0.1:8081/
+     ```
+
+7. **`curl -H`**
+   - Send custom headers with the request.
+   - Example:  
+     ```bash
+     curl -H "Content-Type: application/json" http://127.0.0.1:8081/
+     ```
+
+8. **`curl -X DELETE`**
+   - Send a DELETE request.
+   - Example:  
+     ```bash
+     curl -X DELETE http://127.0.0.1:8081/resource
+     ```
+
+9. **`curl -o`**
+   - Save the response to a file.
+   - Example:  
+     ```bash
+     curl -o output.html http://127.0.0.1:8081/
+     ```
+
+10. **`curl -T`**
+    - Upload a file with a PUT request.
+    - Example:  
+      ```bash
+      curl -T file.txt http://127.0.0.1:8081/upload
+      ```
+
+11. **`curl -F`**
+    - Submit a form with a file upload using POST.
+    - Example:  
+      ```bash
+      curl -F "file=@path/to/file" http://127.0.0.1:8081/upload
+      ```
+
+12. **`curl --resolve`**
+    - Resolve a domain name to a specific IP address (useful for testing custom domains).
+    - Example:  
+      ```bash
+      curl --resolve example.com:8080:127.0.0.1 http://example.com:8080/
+      ```
+
+13. **`curl -x`**
+    - Use a proxy server for the request.
+    - Example:  
+      ```bash
+      curl -x http://proxyserver:8080 http://127.0.0.1:8081/
+      ```
+

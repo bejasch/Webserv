@@ -16,9 +16,9 @@ int ServerManager::setServers(const std::string &config_file)
 {
     std::string line;
     std::ifstream file(config_file); // Open the config file
-    Server *server;
-    Config *config;
-    Route *route;
+    Server *server = NULL;
+    Config *config = NULL;
+    Route *route = NULL;
 
     if (config_file.find(".conf") == std::string::npos) {
         perror("Invalid configuration file format.");
@@ -43,6 +43,8 @@ int ServerManager::setServers(const std::string &config_file)
                 continue;
             }
             server->setServer(config);
+            std::string host_key = config->getName() + ":" + std::to_string(config->getPort());
+            std::cout << "Server added with host_name: " << host_key << std::endl;
             servers.push_back(server);
         }
         if (line.find("location") != std::string::npos && server != NULL) {
