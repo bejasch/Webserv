@@ -66,36 +66,44 @@ std::map<int, std::string> HttpRes::statusDescription = {
 	{504, "Gateway Timeout"}
 };
 
-void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
-	_server = &server;
-	_httpStatus = httpRequest.getHttpStatus();
-	_target = httpRequest.getTarget();
-    if (_httpStatus >= 400 && _httpStatus < 600) {
-		return;
-	}
-	_method = httpRequest.getMethod();
+void	HttpRes::getNameCookie(HttpReq &httpRequest) {
 	if (httpRequest.getHeaders().find("cookie") != httpRequest.getHeaders().end()) {
 		std::string cookie = httpRequest.getHeader("cookie");
 		if (cookie.substr(0, 10) == "user_name=")
 			_userName = cookie.substr(10);
 	}
+}
+
+void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
+	_server = &server;
+	_target = httpRequest.getTarget();
+	_httpStatus = httpRequest.getHttpStatus();
+    if (_httpStatus >= 400 && _httpStatus < 600) {
+		return;
+	}
+	_method = httpRequest.getMethod();
+	getNameCookie(httpRequest);
 
 	// Check if the method is allowed for the target (in routes)
-	Route *route = server.getConfig()->getRouteForTarget(_target);
-	if (route) {
-		std::cout << "Route found for target: " << _target << " with RootDir" << route->getRootDirRoute() << std::endl;
-		if (route->getRootDirRoute() != "") {
-			httpRequest.setRootDirReq(route->getRootDirRoute());
+	_route = server.getConfig()->getRouteForTarget(_target);
+	if (_route) {
+		std::cout << "Route found for target: " << _target << " with RootDir" << _route->getRootDirRoute() << std::endl;
+		if (_route->getRootDirRoute() != "") {
+			httpRequest.setRootDirReq(_route->getRootDirRoute());
 		}
 		//TODO: if allowed methos empty, then allow all methods specified in the server
-		if (!route->allowsMethod(_method)) {
+		if (!_route->allowsMethod(_method)) {
 			_httpStatus = 405;
 			return;
 		}
 	}
+	if (!_route) {
+		_httpStatus = 404;
+		return;
+	}
 	
     if (_method == "GET")
-		GET(httpRequest, route);
+		GET(httpRequest);
 	else if (_method == "POST")
 		POST(httpRequest);
     else if  (_method == "DELETE")
@@ -119,9 +127,6 @@ void	HttpRes::generateErrorBody(void) {
 }
 
 void	HttpRes::generateAutoindexPage(const std::string &path) {
-	// _body = "<html><head><title>Index of " + _target + "</title></head><body>";
-	// _body += "<button onclick=\"window.location.href='/index.html'\">Back to Main Page</button>";
-	// _body += "<h1>Index of " + _target + "</h1><ul>";
 	_body = "<html><head><title>Index of " + _target + "</title>";
 	_body += "<style>";
 	_body += "body { font-family: Arial, sans-serif; background-color: #ffffcc; padding: 20px; }";
@@ -160,15 +165,15 @@ void	HttpRes::generateAutoindexPage(const std::string &path) {
 	_body += "</ul></body></html>";
 }
 
-void	HttpRes::GET(HttpReq &httpRequest, Route *route) {
+void	HttpRes::GET(HttpReq &httpRequest) {
 	if (_target == "/guestbook.html") {
 		_contentType = "text/html";
 		_body = generateGuestbookHTML(_userName);
 		std::cout << "Generated guestbook page in GET" << std::endl;
 		return;
 	}
-	if (_target == "/")
-		_target = _server->getConfig()->getDefaultFile();
+	// if (_target == "/")
+	// 	_target = _server->getConfig()->getDefaultFile();
 	if (_target.find(".py") != std::string::npos || _target.find(".php") != std::string::npos) {
 		CGI cgi;
 		std::cout << "Executing CGI script: " << _target << std::endl;
@@ -177,21 +182,24 @@ void	HttpRes::GET(HttpReq &httpRequest, Route *route) {
 		return;
 	}
 	// Check if the target is a directory
-	std::string path = _server->getConfig()->getRootDirConfig() + _target;
+	// std::string path = _server->getConfig()->getRootDirConfig() + _target;
+	std::string	path = _route->getRootDirRoute() + _target;
+	// TODO: nicht ganz richtig, da zB /images mit /data/images ersetzt wird 
+	std::cout << "GET path: " << path << std::endl;
 	if (isDirectory(path)) {
-		if (route && route->getIndexFile() != "" && access((path + route->getIndexFile()).c_str(), R_OK) != -1) {
-			_target += route->getIndexFile();
+		if (_route->getAutoindex()) {
+			_httpStatus = 200;
+			_contentType = "text/html";
+			generateAutoindexPage(path);
+			return;
+		} else if (!_route->getIndexFile().empty() && access((path + _route->getIndexFile()).c_str(), R_OK) != -1) {
+			_target += _route->getIndexFile();
+			_httpStatus = 200;
+		} else if (!_route->getRedirectUrl().empty() && access((path + _route->getRedirectUrl()).c_str(), R_OK) != -1) {
+			_target = _route->getRedirectUrl();
+			_httpStatus = _route->getRedirectStatus();
 		} else {
-			std::cout << "Path: " << path << std::endl;
-			if (route && route->getAutoindex()) {
-				_httpStatus = 200;
-				_contentType = "text/html";
-				generateAutoindexPage(path);
-			} else if (route && route->getRedirectUrl() != "") {	// serve the default file
-				_target = route->getRedirectUrl();
-				_httpStatus = route->getRedirectStatus();
-			} else
-				_httpStatus = 403;
+			_httpStatus = 403;
 			return;
 		}
 	} else if (access((path).c_str(), F_OK) == -1) {	// Check if the file exists ...

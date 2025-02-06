@@ -68,7 +68,7 @@ int ServerManager::setServers(const std::string &config_file)
         std::cerr << "No correctly initialised servers found in configuration file" << std::endl;
         return 1;
     }
-    //printConfigAll();  // Print the configuration
+    // printConfigAll();  // Print the configuration
     file.close();  // Close the file explicitly (optional since it's auto-closed on scope exit)
     return 0;  // Return 0 to indicate success
 }

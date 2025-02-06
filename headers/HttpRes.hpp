@@ -8,6 +8,8 @@
 class HttpRes {
 private:
 	Server				*_server;
+	Route				*_route;
+
 	std::string			_method;
 	int					_httpStatus;
 	size_t				_responseSize;
@@ -20,12 +22,12 @@ private:
 	static std::map<std::string, std::string>	mimeTypes;
 	static std::map<int, std::string>			statusDescription;
 
-
+	void				getNameCookie(HttpReq &httpRequest);
 	bool				parseFile(void);
 	void				determineContentType(void);
 
 	// - Response methods:
-	void				GET(HttpReq &httpRequest, Route *route);
+	void				GET(HttpReq &httpRequest);
 	void				POST(HttpReq &httpRequest);
 	void				DELETE(const std::string &path);
 

@@ -52,38 +52,66 @@ Route	*Config::getRouteForTarget(std::string &target) {
 	return (route);
 }
 
-void Config::setPort(int port) {
+// Setters
+void	Config::setPort(int port) {
     this->server_port = port;
 }
 
-void Config::setName(std::string name) {
+void	Config::setName(std::string name) {
     this->server_name = name;
 }
 
-void Config::setRootDirConfig(std::string root_dir) {
+void	Config::setRootDirConfig(std::string root_dir) {
     this->root_dir = root_dir;
 }
 
-void Config::setMaxBodySize(int max_body_size) {
+void	Config::setMaxBodySize(int max_body_size) {
     this->max_body_size = max_body_size;
 }
 
-void Config::setDefaultFile(std::string default_file) {
+void	Config::setDefaultFile(std::string default_file) {
     this->default_file = default_file;
 }
 
-void Config::setErrorPage(int error_status, std::string error_file) {
+void	Config::setErrorPage(int error_status, std::string error_file) {
     this->error_pages[error_status] = error_file;
 }
 
-void Config::setAllowedMethods(const std::vector<std::string> &allowed_methods) {
+void	Config::setAllowedMethods(const std::vector<std::string> &allowed_methods) {
     this->allowed_methods = allowed_methods;
 }
 
-void Config::addRoute(Route *route) {
+void	Config::addRoute(Route *route) {
     routes.push_back(route);
 }
 
+// Getters
+int		Config::getPort() const {
+	return this->server_port;
+}
+
+std::string	Config::getName() const {
+	return this->server_name;
+}
+
+std::string	Config::getRootDirConfig() const {
+	return this->root_dir;
+}
+
+int			Config::getMaxBodySize() const {
+	return this->max_body_size;
+}
+
+std::string	Config::getDefaultFile() const {
+	return this->default_file;
+}
+
+const std::map<int, std::string>	&Config::getErrorPages() const {
+	return this->error_pages;
+}
+
+
+// Utils
 void Config::freeConfig() {
     if (!routes.empty()) {
         for (int i = 0; i < routes.size(); i++) {

@@ -6,44 +6,45 @@
 #include "AllHeaders.hpp"
 
 class Config {
-    private:
-        int         server_port;
-        std::string server_name;
-        std::string root_dir;
-        int         max_body_size;
-        std::string default_file;
-        std::map<int, std::string> error_pages;
-        std::vector<std::string> allowed_methods;
-        std::vector<Route *> routes;
+	private:
+		int				server_port;
+		std::string		server_name;
+		std::string		root_dir;
+		int				max_body_size;
+		std::string		default_file;
 
-    public:
-        Config();
-        ~Config();        
+		std::map<int, std::string>	error_pages;
+		std::vector<std::string>	allowed_methods;
+		std::vector<Route *>		routes;
 
-        //setter
-        void setPort(int port);
-        void setName(std::string name);
-        void setRootDirConfig(std::string root_dir);
-        void setMaxBodySize(int max_body_size);
-        void setDefaultFile(std::string default_file);
-        void setErrorPage(int error_status, std::string error_page);
-        void setAllowedMethods(const std::vector<std::string> &allowed_methods);
-        void addRoute(Route *route);
+	public:
+		Config();
+		~Config();        
 
-        //getter
-        int getPort() const {return this->server_port;};
-        std::string getName() const {return this->server_name;};
-        std::string getRootDirConfig() const {return this->root_dir;};
-        int getMaxBodySize() const {return this->max_body_size;};
-        std::string getDefaultFile() const {return this->default_file;};
-        const std::map<int, std::string> &getErrorPages() const {return this->error_pages;};
+		// Setters
+		void setPort(int port);
+		void setName(std::string name);
+		void setRootDirConfig(std::string root_dir);
+		void setMaxBodySize(int max_body_size);
+		void setDefaultFile(std::string default_file);
+		void setErrorPage(int error_status, std::string error_page);
+		void setAllowedMethods(const std::vector<std::string> &allowed_methods);
+		void addRoute(Route *route);
+
+		// Getters
+		int			getPort() const;
+		std::string	getName() const;
+		std::string	getRootDirConfig() const;
+		int			getMaxBodySize() const;
+		std::string	getDefaultFile() const;
+		const std::map<int, std::string>	&getErrorPages() const;
 
 		Route	*getRouteForTarget(std::string &target);
 
-        //utils
-        int initialisedCheck();
-        void printConfig();
-        void freeConfig();
+		// Utils
+		int		initialisedCheck();
+		void	printConfig();
+		void	freeConfig();
 };
 
 #endif
