@@ -32,11 +32,13 @@ class Config {
 
         //getter
         int getPort() const {return this->server_port;};
-        std::string getName() const {return this->server_name;};
-        std::string getRootDirConfig() const {return this->root_dir;};
+        const std::string &getName() const { return this->server_name; }
+        const std::string &getRootDirConfig() const { return this->root_dir; }
         int getMaxBodySize() const {return this->max_body_size;};
-        std::string getDefaultFile() const {return this->default_file;};
+        const std::string &getDefaultFile() const { return this->default_file; }
         const std::map<int, std::string> &getErrorPages() const {return this->error_pages;};
+        const std::vector<std::string> &getAllowedMethods() const {return this->allowed_methods;};
+        const std::vector<Route *> &getRoutes() const {return this->routes;};
 
 		Route	*getRouteForTarget(std::string &target);
 

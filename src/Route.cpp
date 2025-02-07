@@ -8,7 +8,8 @@ Route::Route()
       index_file(""),
       autoindex(false),
       redirect_status(0),
-      redirect_url("") {
+      redirect_url(""),
+      autoindex_set(false) {
     std::cout << "Route default constructor called" << std::endl;
 }
 
@@ -32,11 +33,9 @@ void Route::setIndexFile(const std::string &index_file) {
     this->index_file = index_file;
 }
 
-void Route::setAutoindex(std::string autoindex) {
-    if (autoindex == "on")
-        this->autoindex = true;
-    else
-        this->autoindex = false;
+void Route::setAutoindex(bool autoindex) {
+    this->autoindex = autoindex;
+    this->autoindex_set = true; 
 }
 
 void Route::setRedirectStatus(int redirect_status) {
@@ -71,7 +70,7 @@ void Route::cleanRoute(Route *route) {
     route->setAllowedMethods({});
     route->setRootDirRoute("");
     route->setIndexFile("");
-    route->setAutoindex("");
+    route->setAutoindex(false);
     route->setRedirectStatus(0);
     route->setRedirectUrl("");    
 }

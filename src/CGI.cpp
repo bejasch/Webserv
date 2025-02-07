@@ -1,6 +1,6 @@
 #include "../headers/AllHeaders.hpp"
 
-CGI::CGI() : pid(0), env({}) {
+CGI::CGI() : pid(0), env({}), envp(nullptr), argv(nullptr) {
     std::cout << "CGI default constructor called" << std::endl;
 }
 
@@ -14,29 +14,41 @@ void CGI::setAllEnv(HttpReq &httpRequest) {
     env["REQUEST_METHOD"] = httpRequest.getMethod();
     env["SCRIPT_NAME"] = httpRequest.getTarget();
     env["DOCUMENT_ROOT"] = httpRequest.getRootDirReq();
-    this->envp = (char **)calloc(sizeof(char *), this->env.size() + 1);
+    this->envp = new char*[this->env.size() + 1];
 	std::map<std::string, std::string>::const_iterator it = this->env.begin();
 	for (int i = 0; it != this->env.end(); it++, i++)
 	{
 		std::string tmp = it->first + "=" + it->second;
-		this->envp[i] = strdup(tmp.c_str());
+		this->envp[i] = new char[tmp.size() + 1];
+        std::copy(tmp.begin(), tmp.end(), this->envp[i]);
+        this->envp[i][tmp.size()] = '\0';
 	}
-	this->argv = (char **)malloc(sizeof(char *) * 3);
-	this->argv[0] = NULL;
-	this->argv[1] = NULL;
-	this->argv[2] = NULL;
+    this->envp[this->env.size()] = nullptr;
+    this->argv = new char*[3]{nullptr, nullptr, nullptr};
 }
 
+//TODO: what happens when no .py or .php configs are set
 std::string CGI::executeCGI_GET(HttpReq &httpRequest) {
     setAllEnv(httpRequest);
     std::string scriptPath = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
     std::cout << "Executing CGI script (GET): " << scriptPath << std::endl;
 
-    if (getFileExtension(scriptPath) == ".py")
-        this->argv[0] = strdup("/usr/bin/python3");
-    else if (getFileExtension(scriptPath) == ".php")
-        this->argv[0] = strdup("/usr/bin/php");
-    this->argv[1] = strdup(scriptPath.c_str());
+    if (getFileExtension(scriptPath) == ".py") {
+        std::string interpreter = "/usr/bin/python3";
+        this->argv[0] = new char[interpreter.size() + 1];
+        std::copy(interpreter.begin(), interpreter.end(), this->argv[0]);
+        this->argv[0][interpreter.size()] = '\0';
+    } 
+    else if (getFileExtension(scriptPath) == ".php") {
+        std::string interpreter = "/usr/bin/php";
+        this->argv[0] = new char[interpreter.size() + 1];
+        std::copy(interpreter.begin(), interpreter.end(), this->argv[0]);
+        this->argv[0][interpreter.size()] = '\0';
+    }
+    // Properly allocate argv[1] as well
+    this->argv[1] = new char[scriptPath.size() + 1];  
+    std::copy(scriptPath.begin(), scriptPath.end(), this->argv[1]); 
+    this->argv[1][scriptPath.size()] = '\0';  // Null-terminate
 
     int pipe_fd[2];
     if (pipe(pipe_fd) == -1) {
@@ -74,7 +86,12 @@ std::string CGI::executeCGI_GET(HttpReq &httpRequest) {
     int status;
     waitpid(pid, &status, 0);
 
-    return (WIFEXITED(status) && WEXITSTATUS(status) == 0) ? output : "500";
+    if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+        return output;
+    } else {
+        std::cout << "CGI script exited with status " << WEXITSTATUS(status) << std::endl;
+        return "500";
+    }
 }
 
 std::string CGI::executeCGI_POST(HttpReq &httpRequest, const std::map<std::string, std::string> &formData) {
@@ -174,17 +191,20 @@ void CGI::printCGI() {
 }
 
 void CGI::freeEnvironment() {
-    if (envp)
-	{
-		for (int i = 0; envp[i]; i++)
-			free(envp[i]);
-		free(envp);
-	}
-	if (argv)
-	{
-		for (int i = 0; argv[i]; i++)
-			free(argv[i]);
-		free(argv);
-	}
-	env.clear();
+    if (envp) {
+        for (int i = 0; envp[i]; i++) {
+            delete[] envp[i];
+        }
+        delete[] envp;
+        envp = nullptr;
+    }
+
+    if (argv) {
+        for (int i = 0; argv[i]; i++) {
+            delete[] argv[i];
+        }
+        delete[] argv;
+        argv = nullptr;
+    }
+    env.clear();
 }
