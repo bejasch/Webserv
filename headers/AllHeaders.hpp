@@ -1,7 +1,3 @@
-
-
-#pragma once
-
 #ifndef ALLHEADERS_HPP
 #define ALLHEADERS_HPP
 

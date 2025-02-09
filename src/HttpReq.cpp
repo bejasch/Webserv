@@ -1,6 +1,4 @@
-
 #include "../headers/AllHeaders.hpp"
-
 
 HttpReq::HttpReq() : _creationTime(time(0)), _httpStatus(0) {}
 

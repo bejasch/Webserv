@@ -1,5 +1,3 @@
-
-#pragma once
 #ifndef HTTPRES_HPP
 #define HTTPRES_HPP
 

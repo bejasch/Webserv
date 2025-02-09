@@ -1,6 +1,3 @@
-
-
-#pragma once
 #ifndef HTTPREQ_HPP
 #define HTTPREQ_HPP
 
