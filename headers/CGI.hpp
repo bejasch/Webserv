@@ -14,9 +14,11 @@ private:
 public:
 	CGI();
 	~CGI();
-	void setAllEnv(HttpReq &httpRequest);
-	std::string executeCGI_GET(HttpReq &httpRequest);
-	std::string executeCGI_POST(HttpReq &httpRequest, const std::map<std::string, std::string> &formData);
+
+	void   		setAllEnv(HttpRes &httpResponse);
+	std::string	executeCGI_GET(HttpRes &httpResponse);
+	std::string	executeCGI_POST(HttpRes &httpResponse, const std::map<std::string, std::string> &formData);
+
 	void freeEnvironment();
 	void printCGI();
 };

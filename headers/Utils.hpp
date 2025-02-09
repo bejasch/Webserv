@@ -21,4 +21,6 @@ const std::string	generateGuestbookHTML(const std::string &userName);
 
 bool	deleteFileDir(const std::string &path);
 
+std::string resolvePath(const std::string &target, const std::string &route_path, const std::string &root_dir);
+
 #endif

@@ -16,6 +16,7 @@ private:
 	std::string			_userName;
 
 	std::string			_target;
+	std::string			_serverPath;
 	std::string			_contentType;
 	std::string			_body;
 
@@ -29,7 +30,7 @@ private:
 	// - Response methods:
 	void				GET(HttpReq &httpRequest);
 	void				POST(HttpReq &httpRequest);
-	void				DELETE(const std::string &path);
+	void				DELETE(void);
 
 	void				generateAutoindexPage(const std::string &path);
 	void				generateErrorBody(void);
@@ -43,6 +44,12 @@ public:
 	void		handleRequest(HttpReq &httpRequest, Server &server);
 	std::string	getResponse(void);
 	size_t		getResponseSize(void) const;
+
+	// --> Get-methods:
+	const std::string	&getMethod(void) const;
+	const std::string	&getTarget(void) const;
+	Route				*getRoute(void) const;
+
 
 };
 

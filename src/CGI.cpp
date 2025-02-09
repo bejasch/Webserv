@@ -9,11 +9,11 @@ CGI::~CGI() {
     std::cout << "CGI destructor called" << std::endl;
 }
 
-void CGI::setAllEnv(HttpReq &httpRequest) {
-    env["SERVER_PROTOCOL"] = httpRequest.getProtocol();
-    env["REQUEST_METHOD"] = httpRequest.getMethod();
-    env["SCRIPT_NAME"] = httpRequest.getTarget();
-    env["DOCUMENT_ROOT"] = httpRequest.getRootDirReq();
+void    CGI::setAllEnv(HttpRes &httpResponse) {
+    env["SERVER_PROTOCOL"] = "HTTP/1.1";
+    env["REQUEST_METHOD"] = httpResponse.getMethod();
+    env["SCRIPT_NAME"] = httpResponse.getTarget();
+    env["DOCUMENT_ROOT"] = httpResponse.getRoute()->getRootDirRoute();
     this->envp = new char*[this->env.size() + 1];
 	std::map<std::string, std::string>::const_iterator it = this->env.begin();
 	for (int i = 0; it != this->env.end(); it++, i++)
@@ -28,8 +28,8 @@ void CGI::setAllEnv(HttpReq &httpRequest) {
 }
 
 //TODO: what happens when no .py or .php configs are set
-std::string CGI::executeCGI_GET(HttpReq &httpRequest) {
-    setAllEnv(httpRequest);
+std::string CGI::executeCGI_GET(HttpRes &httpResponse) {
+    setAllEnv(httpResponse);
     std::string scriptPath = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
     std::cout << "Executing CGI script (GET): " << scriptPath << std::endl;
 
@@ -94,10 +94,10 @@ std::string CGI::executeCGI_GET(HttpReq &httpRequest) {
     }
 }
 
-std::string CGI::executeCGI_POST(HttpReq &httpRequest, const std::map<std::string, std::string> &formData) {
+std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::string, std::string> &formData) {
     std::string scriptPath;
     
-     setAllEnv(httpRequest);
+     setAllEnv(httpResponse);
     // Check if the "action" key exists in formData
     auto it = formData.find("action");
     if (it != formData.end()) {

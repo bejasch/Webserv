@@ -219,3 +219,13 @@ std::string getFileExtension(const std::string &target) {
     }
     return "";  // No extension found
 }
+
+std::string	resolvePath(const std::string &target, const std::string &route_path, const std::string &root_dir) {
+	if (route_path == "/") {
+		return (root_dir + target);
+	}
+	if (target.find(route_path) == 0) { // If target starts with route_path
+		return (root_dir + target.substr(route_path.length())); // Replace route_path with root_dir
+	}
+	return (target); // Return unchanged if route_path is not found at the beginning
+}
