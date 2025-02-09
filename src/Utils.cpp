@@ -140,8 +140,8 @@ const std::string	generateGuestbookHTML(const std::string &userName) {
 	html << "Name: <input type='text' name='name' id='nameField'><br>";
 	html << "Message: <textarea name='message'></textarea><br>";
 	html << "<input type='submit' name='action' value='Submit'>";
-	html << "<input type='submit' name='action' value='Scramble'>";
-	html << "<input type='submit' name='action' value='Capitalize'>";
+	html << "<input type='submit' name='action' value='Scramble.py'>";
+	html << "<input type='submit' name='action' value='Capitalize.php'>";
 	html << "</form><hr>";
 
 	// Displaying existing messages
