@@ -101,11 +101,11 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
     // Check if the "action" key exists in formData
     auto it = formData.find("action");
     if (it != formData.end()) {
-        if (it->second == "Scramble") {
+        if (it->second == "Scramble.py") {
             scriptPath = "data/cgi-bin/modify_comments.py";
             this->argv[0] = strdup("/usr/bin/python3");
         }
-        else if (it->second == "Capitalize"){
+        else if (it->second == "Capitalize.php"){
             scriptPath = "data/cgi-bin/modify_comments.php";
             this->argv[0] = strdup("/usr/bin/php");
         }

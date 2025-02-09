@@ -210,7 +210,7 @@ void HttpRes::POST(HttpReq &httpRequest) {
             std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
             if (formData.count("name") && formData.count("message")) {
                 // Check if this is a Scramble request
-                if (formData.count("action") && (formData["action"] == "Scramble" || formData["action"] == "Capitalize")) {
+                if (formData.count("action") && (formData["action"] == "Scramble.py" || formData["action"] == "Capitalize.php")) {
 					std::cout << "CGI POST request" << std::endl;
                     CGI cgi;
                     std::string Message = cgi.executeCGI_POST(*this, formData);
