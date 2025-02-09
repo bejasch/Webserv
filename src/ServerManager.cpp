@@ -44,6 +44,7 @@ int ServerManager::setServers(const std::string &config_file)
             server->setServer(config);
             std::string host_key = config->getName() + ":" + std::to_string(config->getPort());
             std::cout << "Server added with host_name: " << host_key << std::endl;
+            create_base_route(config);
             servers.push_back(server);
         }
         if (line.find("location") != std::string::npos && server != NULL) {
@@ -68,7 +69,8 @@ int ServerManager::setServers(const std::string &config_file)
         std::cerr << "No correctly initialised servers found in configuration file" << std::endl;
         return 1;
     }
-    // printConfigAll();  // Print the configuration
+    validateRoutes();
+    printConfigAll();  // Print the configuration
     file.close();  // Close the file explicitly (optional since it's auto-closed on scope exit)
     return 0;  // Return 0 to indicate success
 }
@@ -143,6 +145,16 @@ void ServerManager::dispatchEvent(const epoll_event& event) {
     std::cerr << "Unknown fd: " << event.data.fd << std::endl;
 }
 
+int ServerManager::create_base_route(Config *config) {
+    Route *route = new Route();
+    route->setPath("/");
+    route->setAllowedMethods(config->getAllowedMethods());
+    route->setRootDirRoute(config->getRootDirConfig());
+    route->setIndexFile(config->getDefaultFile());
+    config->addRoute(route);
+    return 0;
+}
+
 //TODO: this assumes that there is only one space between the key and value
 //TODO: this also assumes that there are tabs in front of the key
 std::string ServerManager::fillConfig(std::string line, std::ifstream &file, Config *config) {
@@ -209,7 +221,14 @@ std::string ServerManager::fillRoute(std::string line, std::ifstream &file, Conf
         else if (line.find("index") != std::string::npos && isStandaloneWord(line, "index", line.find("index")))
             route->setIndexFile(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
         else if (line.find("autoindex") != std::string::npos)
-            route->setAutoindex(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
+        {
+            if (line.find("on") != std::string::npos)
+                route->setAutoindex(true);
+            else if (line.find("off") != std::string::npos)
+                route->setAutoindex(false);
+            else
+                std::cerr << "Invalid autoindex directive: " << line << std::endl;
+        }
         else if (!line.empty())
             std::cerr << "Unknown directive: " << line << std::endl;
     }
@@ -269,3 +288,62 @@ void ServerManager::signalHandler(int signum) {
         stop_flag = 1;
     }
 }
+
+void ServerManager::validateRoutes() {
+    for (size_t i = 0; i < servers.size(); i++) {
+        Config *config = servers[i]->getConfig();
+        std::vector<Route *> routes = config->getRoutes();
+
+        // Sort routes by path length (shorter paths first)
+        std::sort(routes.begin(), routes.end(), [](Route *a, Route *b) {
+            return a->getPath().size() < b->getPath().size();
+        });
+
+        Route *baseRoute = nullptr;
+        for (size_t j = 0; j < routes.size(); j++) {
+            Route *route = routes[j];
+            if (route->getPath() == "/"){
+                baseRoute = route;
+                continue;
+            }
+
+            // Find parent route
+            Route *parent = baseRoute;
+            for (size_t k = 0; k < j; k++) {  // Only check previously processed routes
+                // Split paths into segments to compare directories
+                std::string routePath = route->getPath();
+                std::string parentPath = routes[k]->getPath();
+
+                // Compare the directory structure
+                if (routePath.substr(0, parentPath.size()) == parentPath && 
+                    (routePath[parentPath.size()] == '/' || routePath.size() == parentPath.size())) {
+                    parent = routes[k];
+                }
+            }
+
+            // If a parent is found, inherit missing config values
+            // TODO: cgi routes are also getting filled with the base route's values
+            if (parent) {
+                if (route->getRootDirRoute().empty()) {
+                    route->setRootDirRoute(parent->getRootDirRoute());
+                }
+                if (route->getIndexFile().empty()) {
+                    route->setIndexFile(parent->getIndexFile());
+                }
+                if (route->getAllowedMethods().empty()) {
+                    route->setAllowedMethods(parent->getAllowedMethods());
+                }
+                if (route->getRedirectStatus() == 0) {
+                    route->setRedirectStatus(parent->getRedirectStatus());
+                }
+                if (route->getRedirectUrl().empty()) {
+                    route->setRedirectUrl(parent->getRedirectUrl());
+                }
+                if (!route->getAutoindexSet()) {
+                    route->setAutoindex(parent->getAutoindex());
+                }
+            }
+        }
+    }
+}
+

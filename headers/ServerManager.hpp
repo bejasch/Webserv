@@ -27,8 +27,9 @@ private:
     std::string fillConfig(std::string line, std::ifstream &file, Config *config);
     std::string fillRoute(std::string line, std::ifstream &file, Config *config, Route *route);
     static void signalHandler(int signum);
+    int create_base_route(Config *config);
+    void validateRoutes();
     int freeResources();
-    int checkCGI(Route *route);
 };
 
 #endif
