@@ -1,6 +1,6 @@
 #include "../headers/AllHeaders.hpp"
 
-CGI::CGI() : pid(0), env({}), envp(nullptr), argv(nullptr) {
+CGI::CGI() : pid(0), env(), envp(NULL), argv(NULL) {
     std::cout << "CGI default constructor called" << std::endl;
 }
 
@@ -23,8 +23,11 @@ void    CGI::setAllEnv(HttpRes &httpResponse) {
         std::copy(tmp.begin(), tmp.end(), this->envp[i]);
         this->envp[i][tmp.size()] = '\0';
 	}
-    this->envp[this->env.size()] = nullptr;
-    this->argv = new char*[3]{nullptr, nullptr, nullptr};
+    this->envp[this->env.size()] = NULL;
+    this->argv = new char*[3];
+	this->argv[0] = NULL;
+	this->argv[1] = NULL;
+	this->argv[2] = NULL;
 }
 
 //TODO: what happens when no .py or .php configs are set
@@ -103,7 +106,7 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
     
      setAllEnv(httpResponse);
     // Check if the "action" key exists in formData
-    auto it = formData.find("action");
+	std::map<std::string, std::string>::const_iterator it = formData.find("action");
     if (it != formData.end()) {
         if (it->second == "Scramble.py") {
             scriptPath = "data/cgi-bin/modify_comments.py";
@@ -200,7 +203,7 @@ void CGI::freeEnvironment() {
             delete[] envp[i];
         }
         delete[] envp;
-        envp = nullptr;
+        envp = NULL;
     }
 
     if (argv) {
@@ -208,7 +211,7 @@ void CGI::freeEnvironment() {
             delete[] argv[i];
         }
         delete[] argv;
-        argv = nullptr;
+        argv = NULL;
     }
     env.clear();
 }

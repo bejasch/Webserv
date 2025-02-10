@@ -37,6 +37,7 @@ class	ServerManager;
 #include <algorithm>
 #include <cctype>
 #include <csignal>
+#include <cstdlib>  // For strtoul
 #include <ctime>
 
 // #include "
