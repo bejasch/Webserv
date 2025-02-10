@@ -19,12 +19,12 @@ private:
     
 	std::string _body;
 
-	bool	_startlineParsed = false;	// Whether the start line is fully received
-	bool	_headersParsed = false;		// Whether the headers are fully received
-	bool	_isChunked = false;     	// Whether the body uses chunked transfer
-	bool	_bodyComplete = false;  	// Whether the body is fully received
+	bool	_startlineParsed;	// Whether the start line is fully received
+	bool	_headersParsed;		// Whether the headers are fully received
+	bool	_isChunked;     	// Whether the body uses chunked transfer
+	bool	_bodyComplete;  	// Whether the body is fully received
 
-    size_t	_currentChunkSize = 0;		// Size of the current chunk being read
+    size_t	_currentChunkSize;	// Size of the current chunk being read
 	
 	// Helper function to trim leading and trailing whitespaces
 	bool	verifyHeaders(void);

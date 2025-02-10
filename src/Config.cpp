@@ -6,9 +6,9 @@ Config::Config()
       root_dir(""),
       max_body_size(0),
       default_file(""),
-      error_pages({}),
-    allowed_methods({}),
-      routes({})
+      error_pages(),
+  	  allowed_methods(),
+      routes()
     {
     std::cout << "Config default constructor called" << std::endl;
 }
@@ -27,10 +27,10 @@ void Config::printConfig() {
     for (std::map<int, std::string>::iterator it = error_pages.begin(); it != error_pages.end(); ++it) {
         std::cout << "error_status: " << it->first << " error_file: " << it->second << std::endl;
     }
-    for (int i = 0; i < allowed_methods.size(); i++) {
+    for (unsigned long i = 0; i < allowed_methods.size(); i++) {
         std::cout << "allowed_methods: " << allowed_methods[i] << std::endl;
     }
-    for (int i = 0; i < routes.size(); i++) {
+    for (unsigned long i = 0; i < routes.size(); i++) {
         std::cout << "\nRoute " << i << std::endl;
         routes[i]->printRoute();
     }
@@ -38,7 +38,7 @@ void Config::printConfig() {
 
 Route	*Config::getRouteForTarget(std::string &target) {
 	Route	*route = NULL;
-	for (int i = 0; i < routes.size(); i++) {
+	for (unsigned long i = 0; i < routes.size(); i++) {
 		if (routes[i]->containsTarget(target)) {
 			if (!route)
 				route = routes[i];
@@ -114,7 +114,7 @@ const std::map<int, std::string>	&Config::getErrorPages() const {
 // Utils
 void Config::freeConfig() {
     if (!routes.empty()) {
-        for (int i = 0; i < routes.size(); i++) {
+        for (unsigned long i = 0; i < routes.size(); i++) {
             delete routes[i];
         }
         routes.clear();

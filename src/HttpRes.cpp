@@ -26,44 +26,97 @@ HttpRes::~HttpRes() {
     // std::cout << "HttpRes destructor called" << std::endl;
 }
 
-std::map<std::string, std::string> HttpRes::mimeTypes = {
-	{"html", "text/html"},
-	{"css", "text/css"},
-	{"js", "text/javascript"},
-	{"jpg", "image/jpeg"},
-	{"jpeg", "image/jpeg"},
-	{"png", "image/png"},
-	{"gif", "image/gif"},
-	{"ico", "image/x-icon"}
-};
+// std::map<std::string, std::string> HttpRes::mimeTypes = {
+// 	{"html", "text/html"},
+// 	{"css", "text/css"},
+// 	{"js", "text/javascript"},
+// 	{"jpg", "image/jpeg"},
+// 	{"jpeg", "image/jpeg"},
+// 	{"png", "image/png"},
+// 	{"gif", "image/gif"},
+// 	{"ico", "image/x-icon"}
+// };
 
-std::map<int, std::string> HttpRes::statusDescription = {
-	{200, "OK"},
-	{201, "Created"},
-	{202, "Accepted"},
-	{204, "No Content"},
-	{206, "Partial Content"},
-	{301, "Moved Permanently"},
-	{302, "Found"},
-	{303, "See Other"},
-	{304, "Not Modified"},
-	{307, "Temporary Redirect"},
-	{308, "Permanent Redirect"},
-	{400, "Bad Request"},
-	{401, "Unauthorized"},
-	{403, "Forbidden"},
-	{404, "Not Found"},
-	{405, "Method Not Allowed"},
-	{408, "Request Timeout"},
-	{411, "Length Required"},
-	{413, "Payload Too Large"},
-	{415, "Unsupported Media Type"},
-	{500, "Internal Server Error"},
-	{501, "Not Implemented"},
-	{502, "Bad Gateway"},
-	{503, "Service Unavailable"},
-	{504, "Gateway Timeout"}
-};
+// std::map<int, std::string> HttpRes::statusDescription = {
+// 	{200, "OK"},
+// 	{201, "Created"},
+// 	{202, "Accepted"},
+// 	{204, "No Content"},
+// 	{206, "Partial Content"},
+// 	{301, "Moved Permanently"},
+// 	{302, "Found"},
+// 	{303, "See Other"},
+// 	{304, "Not Modified"},
+// 	{307, "Temporary Redirect"},
+// 	{308, "Permanent Redirect"},
+// 	{400, "Bad Request"},
+// 	{401, "Unauthorized"},
+// 	{403, "Forbidden"},
+// 	{404, "Not Found"},
+// 	{405, "Method Not Allowed"},
+// 	{408, "Request Timeout"},
+// 	{411, "Length Required"},
+// 	{413, "Payload Too Large"},
+// 	{415, "Unsupported Media Type"},
+// 	{500, "Internal Server Error"},
+// 	{501, "Not Implemented"},
+// 	{502, "Bad Gateway"},
+// 	{503, "Service Unavailable"},
+// 	{504, "Gateway Timeout"}
+// };
+
+// Function to initialize mimeTypes
+const std::string	&HttpRes::getMimeType(const std::string &extension) {
+    static std::map<std::string, std::string> mimeTypes;
+    if (mimeTypes.empty()) {  // Only initialize once
+        mimeTypes.insert(std::make_pair("html", "text/html"));
+		mimeTypes.insert(std::make_pair("css", "text/css"));
+		mimeTypes.insert(std::make_pair("js", "text/javascript"));
+        mimeTypes.insert(std::make_pair("jpg", "image/jpeg"));
+		mimeTypes.insert(std::make_pair("jpeg", "image/jpeg"));
+        mimeTypes.insert(std::make_pair("png", "image/png"));
+		mimeTypes.insert(std::make_pair("gif", "image/gif"));
+		mimeTypes.insert(std::make_pair("ico", "image/x-icon"));
+    }
+	if (mimeTypes.find(extension) != mimeTypes.end())
+		return (mimeTypes[extension]);
+    return (mimeTypes["html"]);
+}
+
+// Function to initialize statusDescription
+const std::string	&HttpRes::getStatusDescription(int status) {
+    static std::map<int, std::string> statusDescription;
+    if (statusDescription.empty()) {  // Only initialize once
+		statusDescription.insert(std::make_pair(200, "OK"));
+		statusDescription.insert(std::make_pair(201, "Created"));
+		statusDescription.insert(std::make_pair(202, "Accepted"));
+		statusDescription.insert(std::make_pair(204, "No Content"));
+		statusDescription.insert(std::make_pair(206, "Partial Content"));
+		statusDescription.insert(std::make_pair(301, "Moved Permanently"));
+		statusDescription.insert(std::make_pair(302, "Found"));
+		statusDescription.insert(std::make_pair(303, "See Other"));
+		statusDescription.insert(std::make_pair(304, "Not Modified"));
+		statusDescription.insert(std::make_pair(307, "Temporary Redirect"));
+		statusDescription.insert(std::make_pair(308, "Permanent Redirect"));
+		statusDescription.insert(std::make_pair(400, "Bad Request"));
+		statusDescription.insert(std::make_pair(401, "Unauthorized"));
+		statusDescription.insert(std::make_pair(403, "Forbidden"));
+		statusDescription.insert(std::make_pair(404, "Not Found"));
+		statusDescription.insert(std::make_pair(405, "Method Not Allowed"));
+		statusDescription.insert(std::make_pair(408, "Request Timeout"));
+		statusDescription.insert(std::make_pair(411, "Length Required"));
+		statusDescription.insert(std::make_pair(413, "Payload Too Large"));
+		statusDescription.insert(std::make_pair(415, "Unsupported Media Type"));
+		statusDescription.insert(std::make_pair(500, "Internal Server Error"));
+		statusDescription.insert(std::make_pair(501, "Not Implemented"));
+		statusDescription.insert(std::make_pair(502, "Bad Gateway"));
+		statusDescription.insert(std::make_pair(503, "Service Unavailable"));
+		statusDescription.insert(std::make_pair(504, "Gateway Timeout"));
+    }
+	if (statusDescription.find(status) != statusDescription.end())
+		return (statusDescription[status]);
+    return (statusDescription[404]);
+}
 
 void	HttpRes::getNameCookie(HttpReq &httpRequest) {
 	if (httpRequest.getHeaders().find("cookie") != httpRequest.getHeaders().end()) {
@@ -107,16 +160,12 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 
 void	HttpRes::generateErrorBody(void) {
 	_contentType = "text/html";
-	std::string statusMessage = statusDescription[_httpStatus];
+	std::string statusMessage = getStatusDescription(_httpStatus);
 
-	_body = "<html><head><title>" + std::to_string(_httpStatus) + " "
+	_body = "<html><head><title>" + intToString(_httpStatus) + " "
 			+ statusMessage + "</title></head><body><h1>"
-			+ std::to_string(_httpStatus) + " " + statusMessage + "</h1>";
-
-	if (statusDescription.find(_httpStatus) != statusDescription.end())
-		_body += "<p>" + statusDescription[_httpStatus] + "</p>";
-	
-	_body += "</body></html>";
+			+ intToString(_httpStatus) + " " + statusMessage + "</h1>"
+			+ "<p>" + statusMessage + "</p></body></html>";
 }
 
 void	HttpRes::generateAutoindexPage(const std::string &path) {
@@ -263,12 +312,7 @@ void	HttpRes::determineContentType(void) {
 		_contentType = "text/plain";
 		return;
 	}
-	// Look up the MIME type in the static map
-	std::map<std::string, std::string>::const_iterator it = mimeTypes.find(extension);
-	if (it != mimeTypes.end())
-		_contentType = it->second;
-	else
-		_contentType = "text/plain";
+	_contentType = getMimeType(extension);
 }
 
 bool	HttpRes::parseFile(void) {
@@ -308,10 +352,10 @@ std::string	HttpRes::getResponse(void) {
 		}
 	}
 	std::string response;
-	response = "HTTP/1.1 " + std::to_string(_httpStatus) + " " + statusDescription[_httpStatus] + "\r\n";
+	response = "HTTP/1.1 " + intToString(_httpStatus) + " " + getStatusDescription(_httpStatus) + "\r\n";
 	response += "Content-Type: " + _contentType + "\r\n";
 	response += "Location: " + _target + "\r\n";
-	response += "Content-Length: " + std::to_string(_body.length()) + "\r\n";
+	response += "Content-Length: " + intToString(_body.length()) + "\r\n";
 	response += "Connection: close\r\n";
 	response += "\r\n";
 	response += _body;

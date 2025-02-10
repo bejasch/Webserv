@@ -14,7 +14,7 @@ ServerManager::~ServerManager() {
 int ServerManager::setServers(const std::string &config_file)
 {
     std::string line;
-    std::ifstream file(config_file); // Open the config file
+	std::ifstream file(config_file.c_str());	// Open the config file
     Server *server = NULL;
     Config *config = NULL;
     Route *route = NULL;
@@ -46,7 +46,7 @@ int ServerManager::setServers(const std::string &config_file)
                 continue;
             }
             server->setServer(config);
-            std::string host_key = config->getName() + ":" + std::to_string(config->getPort());
+            std::string host_key = config->getName() + ":" + intToString(config->getPort());
             std::cout << "Server added with host_name: " << host_key << std::endl;
             create_base_route(config);
             servers.push_back(server);
@@ -95,7 +95,7 @@ void ServerManager::startServers() {
         std::exit(EXIT_FAILURE);
     }
     // Add all server_fd to epoll instance to monitor incoming connections
-    for (int i = 0; i < servers.size(); ++i) {
+    for (unsigned long i = 0; i < servers.size(); ++i) {
         Server *server = servers[i]; // Access the Server object by index
         int server_fd = server->getServerFd();
         epoll_event ev;
@@ -128,7 +128,7 @@ void ServerManager::handleEvents() {
 }
 
 void ServerManager::dispatchEvent(const epoll_event& event) {
-    for (int i = 0; i < servers.size(); ++i) {
+    for (unsigned long i = 0; i < servers.size(); ++i) {
         Server *server = servers[i];
         // this implies its a new connection, that needs to be added to epoll instance
         if (event.data.fd == server->getServerFd()) {
@@ -195,6 +195,7 @@ std::string ServerManager::fillConfig(std::string line, std::ifstream &file, Con
 }
 
 std::string ServerManager::fillRoute(std::string line, std::ifstream &file, Config *config, Route *route) {
+	(void)config;
     int braceCount = 1;  // Track number of open braces
     while (std::getline(file, line)) {
         if (line.find("{") != std::string::npos)
@@ -243,13 +244,13 @@ std::string ServerManager::fillRoute(std::string line, std::ifstream &file, Conf
 }
 
 void ServerManager::printConfigAll() {
-    for (int i = 0; i < servers.size(); i++) {
+    for (unsigned long i = 0; i < servers.size(); i++) {
         servers[i]->getConfig()->printConfig();
     }
 }
 
 int ServerManager::portCheck(int port) {
-    for (int i = 0; i < servers.size(); i++) {
+    for (unsigned long i = 0; i < servers.size(); i++) {
         if (servers[i]->getConfig()->getPort() == port) {
             std::cerr << "Port " << port << " already in use" << std::endl;
             return 1;
@@ -270,7 +271,7 @@ int ServerManager::checkConfig(Config *config) {
 
 int ServerManager::freeResources() {
     if (!servers.empty()) {
-        for (int i = 0; i < servers.size(); i++) {
+        for (unsigned long i = 0; i < servers.size(); i++) {
             servers[i]->getConfig()->freeConfig();
             servers[i]->freeServer();
             delete servers[i];
@@ -295,17 +296,20 @@ void ServerManager::signalHandler(int signum) {
     }
 }
 
+static bool	compareRoutes(Route* a, Route* b) {
+    return (a->getPath().size() < b->getPath().size());
+}
+
+
 void ServerManager::validateRoutes() {
     for (size_t i = 0; i < servers.size(); i++) {
         Config *config = servers[i]->getConfig();
         std::vector<Route *> routes = config->getRoutes();
 
         // Sort routes by path length (shorter paths first)
-        std::sort(routes.begin(), routes.end(), [](Route *a, Route *b) {
-            return a->getPath().size() < b->getPath().size();
-        });
+		std::sort(routes.begin(), routes.end(), compareRoutes);
 
-        Route *baseRoute = nullptr;
+        Route *baseRoute = NULL;
         for (size_t j = 0; j < routes.size(); j++) {
             Route *route = routes[j];
             if (route->getPath() == "/"){

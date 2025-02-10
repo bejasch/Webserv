@@ -1,11 +1,10 @@
 #include "../headers/AllHeaders.hpp"
 
-HttpReq::HttpReq() : _creationTime(time(0)), _httpStatus(0),
-					_server(NULL), _buffer(""), _method(""),
-					_target(""), _protocol(""), _headers({}), _body("") {}
+HttpReq::HttpReq() : _creationTime(time(0)), _server(NULL), _buffer(""), _httpStatus(0),
+					_method(""), _target(""), _protocol(""), _headers(), _body("") {}
 
 HttpReq::HttpReq(const HttpReq &other) : _creationTime(other._creationTime),
-	_httpStatus(other._httpStatus), _buffer(other._buffer),
+	_server(other._server), _buffer(other._buffer),	_httpStatus(other._httpStatus), 
 	_method(other._method), _target(other._target), _protocol(other._protocol), 
 	_headers(other._headers), _body(other._body),
 	_startlineParsed(other._startlineParsed), _headersParsed(other._headersParsed),
@@ -16,6 +15,7 @@ HttpReq	HttpReq::operator=(const HttpReq &another)	{
 	if (this == &another)
 		return (*this);
 	_creationTime = another._creationTime;
+	_server = another._server;
 	_httpStatus = another._httpStatus;
 	_buffer = another._buffer;
 	_method = another._method;
@@ -277,8 +277,8 @@ bool HttpReq::verifyHeaders() {
 bool	HttpReq::parseBody(void) {
 	printf("\n\t##### Parsing body ... with status: %d\n", _httpStatus);
 	if (_headers.find("content-length") != _headers.end()) {
-		size_t	content_length = std::stoul(_headers["content-length"]);
-		if (content_length > _server->getConfig()->getMaxBodySize()) {
+		size_t content_length = std::strtoul(_headers["content-length"].c_str(), NULL, 10);
+		if (content_length > static_cast<size_t>(_server->getConfig()->getMaxBodySize())) {
 			_httpStatus = 413; // Payload Too Large
 			return (true);
 		}
