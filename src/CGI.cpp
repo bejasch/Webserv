@@ -15,7 +15,7 @@ void    CGI::setAllEnv(HttpRes &httpResponse) {
     env["SCRIPT_NAME"] = httpResponse.getTarget();
     env["DOCUMENT_ROOT"] = httpResponse.getRoute()->getRootDirRoute();
     this->envp = new char*[this->env.size() + 1];
-    if (this->envp == nullptr) {
+    if (this->envp == NULL) {
         perror("Failed to allocate memory for envp");
         return;
     }
@@ -47,7 +47,7 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse) {
     if (getFileExtension(scriptPath) == ".py") {
         std::string interpreter = "/usr/bin/python3";
         this->argv[0] = new char[interpreter.size() + 1];
-        if (this->argv[0] == nullptr) {
+        if (this->argv[0] == NULL) {
             perror("Failed to allocate memory for argv[0]");
             return "500";  // Internal Server Error
         }
@@ -57,7 +57,7 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse) {
     else if (getFileExtension(scriptPath) == ".php") {
         std::string interpreter = "/usr/bin/php";
         this->argv[0] = new char[interpreter.size() + 1];
-        if (this->argv[0] == nullptr) {
+        if (this->argv[0] == NULL) {
             perror("Failed to allocate memory for argv[0]");
             return "500";  // Internal Server Error
         }
@@ -66,7 +66,7 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse) {
     }
     // Properly allocate argv[1] as well
     this->argv[1] = new char[scriptPath.size() + 1];
-    if (this->argv[1] == nullptr) {
+    if (this->argv[1] == NULL) {
         perror("Failed to allocate memory for argv[1]");
         return "500";  // Internal Server Error
     }
