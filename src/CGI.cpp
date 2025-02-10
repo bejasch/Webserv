@@ -15,6 +15,10 @@ void    CGI::setAllEnv(HttpRes &httpResponse) {
     env["SCRIPT_NAME"] = httpResponse.getTarget();
     env["DOCUMENT_ROOT"] = httpResponse.getRoute()->getRootDirRoute();
     this->envp = new char*[this->env.size() + 1];
+    if (this->envp == nullptr) {
+        perror("Failed to allocate memory for envp");
+        return;
+    }
 	std::map<std::string, std::string>::const_iterator it = this->env.begin();
 	for (int i = 0; it != this->env.end(); it++, i++)
 	{
@@ -25,6 +29,10 @@ void    CGI::setAllEnv(HttpRes &httpResponse) {
 	}
     this->envp[this->env.size()] = nullptr;
     this->argv = new char*[3]{nullptr, nullptr, nullptr};
+    if (this->envp == nullptr || this->argv == nullptr) {
+        perror("Failed to allocate memory for envp or argv");
+        return;
+    }
 }
 
 //TODO: what happens when no .py or .php configs are set
@@ -36,17 +44,29 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse) {
     if (getFileExtension(scriptPath) == ".py") {
         std::string interpreter = "/usr/bin/python3";
         this->argv[0] = new char[interpreter.size() + 1];
+        if (this->argv[0] == nullptr) {
+            perror("Failed to allocate memory for argv[0]");
+            return "500";  // Internal Server Error
+        }
         std::copy(interpreter.begin(), interpreter.end(), this->argv[0]);
         this->argv[0][interpreter.size()] = '\0';
     } 
     else if (getFileExtension(scriptPath) == ".php") {
         std::string interpreter = "/usr/bin/php";
         this->argv[0] = new char[interpreter.size() + 1];
+        if (this->argv[0] == nullptr) {
+            perror("Failed to allocate memory for argv[0]");
+            return "500";  // Internal Server Error
+        }
         std::copy(interpreter.begin(), interpreter.end(), this->argv[0]);
         this->argv[0][interpreter.size()] = '\0';
     }
     // Properly allocate argv[1] as well
-    this->argv[1] = new char[scriptPath.size() + 1];  
+    this->argv[1] = new char[scriptPath.size() + 1];
+    if (this->argv[1] == nullptr) {
+        perror("Failed to allocate memory for argv[1]");
+        return "500";  // Internal Server Error
+    }
     std::copy(scriptPath.begin(), scriptPath.end(), this->argv[1]); 
     this->argv[1][scriptPath.size()] = '\0';  // Null-terminate
 

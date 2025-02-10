@@ -32,6 +32,10 @@ int ServerManager::setServers(const std::string &config_file)
             // Dynamically allocate memory for Server and Config
             server = new Server(*this);
             config = new Config();
+            if (server == NULL || config == NULL) {
+                std::cerr << "Failed to allocate memory for server or config" << std::endl;
+                return 1;
+            }
             // Call fillConfig to parse and fill the server's configuration
             line = fillConfig(line, file, config);  // Pass the file by reference
             if (checkConfig(config) == 1) {
@@ -49,6 +53,10 @@ int ServerManager::setServers(const std::string &config_file)
         }
         if (line.find("location") != std::string::npos && server != NULL) {
             route = new Route();
+            if (route == NULL) {
+                std::cerr << "Failed to allocate memory for route" << std::endl;
+                return 1;
+            }
             route->setPath(line.substr(line.find("location") + std::string("location").length() + 1, line.find("{") - line.find(" ") - 2));
             line = fillRoute(line, file, config, route);
             if (line.empty()) {
@@ -70,7 +78,7 @@ int ServerManager::setServers(const std::string &config_file)
         return 1;
     }
     validateRoutes();
-    printConfigAll();  // Print the configuration
+    //printConfigAll();  // Print the configuration
     file.close();  // Close the file explicitly (optional since it's auto-closed on scope exit)
     return 0;  // Return 0 to indicate success
 }

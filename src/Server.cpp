@@ -35,7 +35,6 @@ void Server::setUpServer() {
 		perror("Bind failed");
 		exit(EXIT_FAILURE);
 	}
-
     // Make server_fd non-blocking
     fcntl(server_fd, F_SETFL, O_NONBLOCK);
     listen(server_fd, 10); // 10 defines how many pending connections can be queued before connections are refused.
