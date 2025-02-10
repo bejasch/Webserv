@@ -243,3 +243,12 @@ char *cpp_strdup(const std::string str)
 	dup[str.size()] = '\0';
 	return (dup);
 }
+
+int	find_commented_line(std::string &line) {
+	int i = 0;
+	while (line[i] == ' ' || line[i] == '\t')
+		i++;
+	if (line[i] == '#')
+		return (1);
+	return (0);
+}

@@ -28,6 +28,9 @@ int ServerManager::setServers(const std::string &config_file)
         return (1); // TODO: remember to free (no need to free here, goes out of scope)
     }
     while (std::getline(file, line)) {
+        if (line.empty() || find_commented_line(line) == 1) {
+            continue; // Skip empty lines and comments
+        }
         if (line.find("server") != std::string::npos) {
             // Dynamically allocate memory for Server and Config
             server = new Server(*this);
@@ -58,7 +61,7 @@ int ServerManager::setServers(const std::string &config_file)
                 return 1;
             }
             route->setPath(line.substr(line.find("location") + std::string("location").length() + 1, line.find("{") - line.find(" ") - 2));
-            line = fillRoute(line, file, config, route);
+            line = fillRoute(line, file, route);
             if (line.empty()) {
                 std::cerr << "Discarding unfinished route: " << route->getPath() << std::endl;
                 delete route;
@@ -166,6 +169,9 @@ int ServerManager::create_base_route(Config *config) {
 std::string ServerManager::fillConfig(std::string line, std::ifstream &file, Config *config) {
     // std::string line;
     while (std::getline(file, line)) {
+        if (line.empty() || find_commented_line(line) == 1) {
+            continue;
+        }
         if (line.find("{") != std::string::npos || line.find("}") != std::string::npos)
             return(line); // Stop if we find the closing brace
         if (line.find("listen") != std::string::npos)
@@ -194,12 +200,12 @@ std::string ServerManager::fillConfig(std::string line, std::ifstream &file, Con
     return NULL; // Return 0 to indicate successful parsing
 }
 
-std::string ServerManager::fillRoute(std::string line, std::ifstream &file, Config *config, Route *route) {
-	(void)config;
-    int braceCount = 1;  // Track number of open braces
+std::string ServerManager::fillRoute(std::string line, std::ifstream &file, Route *route) {
+    int braceCount = 1;
     while (std::getline(file, line)) {
-        if (line.find("{") != std::string::npos)
-            braceCount++;
+        if (line.empty() || find_commented_line(line) == 1) {
+            continue;
+        }
         if (line.find("}") != std::string::npos) {
             braceCount--;
             if (braceCount == 0)
@@ -207,15 +213,14 @@ std::string ServerManager::fillRoute(std::string line, std::ifstream &file, Conf
         }
         if (braceCount < 0) {
             std::cerr << "Error: Mismatched braces in config file!" << std::endl;
-            return ""; // Indicate an error
+            return NULL;
         }
-        if (line.find("location") != std::string::npos && braceCount == 2)
+        if (line.find("location") != std::string::npos)
         {
             route->setPath(line.substr(line.find("location") + std::string("location").length() + 1, line.find("{") - line.find(" ") - 2));
             route->cleanRoute(route);
         }
-        if (line.find("allow_methods") != std::string::npos) {
-            // Parse the allowed methods and set them to the route
+        else if (line.find("allow_methods") != std::string::npos) {
             std::string methods = line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1);
             route->setAllowedMethods(splitString(methods, ' '));
         }
@@ -229,9 +234,10 @@ std::string ServerManager::fillRoute(std::string line, std::ifstream &file, Conf
             route->setIndexFile(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
         else if (line.find("autoindex") != std::string::npos)
         {
-            if (line.find("on") != std::string::npos)
+            std::string autoindex = line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1);
+            if (autoindex.find("on") != std::string::npos)
                 route->setAutoindex(true);
-            else if (line.find("off") != std::string::npos)
+            else if (autoindex.find("off") != std::string::npos)
                 route->setAutoindex(false);
             else
                 std::cerr << "Invalid autoindex directive: " << line << std::endl;
@@ -356,4 +362,5 @@ void ServerManager::validateRoutes() {
         }
     }
 }
+
 
