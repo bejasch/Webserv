@@ -1,6 +1,6 @@
 #include "../headers/AllHeaders.hpp"
 
-CGI::CGI() : pid(0), env({}), envp(nullptr), argv(nullptr) {
+CGI::CGI() : pid(0), env(), envp(NULL), argv(NULL) {
     std::cout << "CGI default constructor called" << std::endl;
 }
 
@@ -15,19 +15,22 @@ void    CGI::setAllEnv(HttpRes &httpResponse) {
     env["SCRIPT_NAME"] = httpResponse.getTarget();
     env["DOCUMENT_ROOT"] = httpResponse.getRoute()->getRootDirRoute();
     this->envp = new char*[this->env.size() + 1];
-    if (this->envp == nullptr) {
+    if (this->envp == NULL) {
         perror("Failed to allocate memory for envp");
         return;
     }
 	std::map<std::string, std::string>::const_iterator it = this->env.begin();
 	for (int i = 0; it != this->env.end(); it++, i++)
         this->envp[i] = cpp_strdup(it->first + "=" + it->second);
-    this->envp[this->env.size()] = nullptr;
-    this->argv = new char*[3]{nullptr, nullptr, nullptr};
-    if (this->argv == nullptr) {
+    this->envp[this->env.size()] = NULL;
+    this->argv = new char*[3];
+    if (this->argv == NULL) {
         perror("Failed to allocate memory for envp or argv");
         return;
     }
+    this->argv[0] = NULL;
+    this->argv[1] = NULL;
+    this->argv[2] = NULL;
 }
 
 //TODO: what happens when no .py or .php configs are set
@@ -47,14 +50,14 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse) {
     if (pipe(pipe_fd) == -1) {
         perror("Failed to create pipe");
         httpResponse.setStatus(500);
-        return NULL;
+        return "";
     }
 
     pid = fork();
     if (pid == -1) {
         perror("Failed to fork");
         httpResponse.setStatus(500);
-        return NULL;
+        return "";
     }
 
     if (pid == 0) {  // Child process
@@ -90,10 +93,10 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse) {
     } else {
         std::cout << "CGI script exited with status " << WEXITSTATUS(status) << std::endl;
         httpResponse.setStatus(500);
-        return NULL;
+        return "";
     }
     httpResponse.setStatus(500);
-    return NULL;
+    return "";
 }
 
 std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::string, std::string> &formData) {
@@ -101,7 +104,7 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
     setAllEnv(httpResponse);
 
     // Check if the "action" key exists in formData
-    auto it = formData.find("action");
+	std::map<std::string, std::string>::const_iterator it = formData.find("action");
     if (it != formData.end()) {
         if (it->second == "Scramble.py") {
             scriptPath = "data/cgi-bin/modify_comments.py";
@@ -121,7 +124,7 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
         postData = "name=" + formData.at("name") + "&message=" + formData.at("message");
     } else {
         httpResponse.setStatus(500);
-        return nullptr;
+        return "";
     }
 
     // Create two pipes: one for input (stdin) and one for output (stdout)
@@ -129,7 +132,7 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
     if (pipe(inputPipe) == -1 || pipe(outputPipe) == -1) {
         perror("pipe");
         httpResponse.setStatus(500);
-        return nullptr;
+        return "";
     }
 
     // Fork to execute the CGI script
@@ -137,7 +140,7 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
     if (pid == -1) {
         perror("fork");
         httpResponse.setStatus(500);
-        return nullptr;
+        return "";
     } else if (pid == 0) {
         // Child process
 
@@ -182,11 +185,11 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
         } else {
             std::cerr << "Failed to read from CGI script" << std::endl;
             httpResponse.setStatus(500);
-            return nullptr;
+            return "";
         }
     }
     httpResponse.setStatus(500);
-    return nullptr;
+    return "";
 }
 
 void CGI::printCGI() {
@@ -203,7 +206,7 @@ void CGI::freeEnvironment() {
             delete[] envp[i];
         }
         delete[] envp;
-        envp = nullptr;
+        envp = NULL;
     }
 
     if (argv) {
@@ -211,7 +214,7 @@ void CGI::freeEnvironment() {
             delete[] argv[i];
         }
         delete[] argv;
-        argv = nullptr;
+        argv = NULL;
     }
     env.clear();
 }

@@ -3,7 +3,7 @@ NAME = webserv
 SRC_DIR		= src
 OBJ_DIR		= obj
 CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98
+CXXFLAGS = -Wall -Wextra -Werror -g -std=c++98
 
 SRCS = src/main.cpp src/Config.cpp src/HttpReq.cpp src/HttpRes.cpp src/Route.cpp src/Server.cpp src/ServerManager.cpp src/Utils.cpp src/CGI.cpp
 OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SRCS))
@@ -16,7 +16,7 @@ $(NAME): $(OBJS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(dir $@)
-	cc $(FLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
 	rm -rf $(OBJ_DIR)

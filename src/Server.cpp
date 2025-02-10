@@ -152,8 +152,6 @@ void	Server::handleResponse(int client_fd) {
 }
 
 void	Server::freeServer() {
-	//TODO: is shutdown() allowed? It doesnt seem to be in the list!
-	shutdown(server_fd, SHUT_RDWR);
 	close(server_fd);
 	client_requests.clear();
 	delete config;

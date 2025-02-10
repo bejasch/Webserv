@@ -18,12 +18,15 @@ private:
 	std::string			_contentType;
 	std::string			_body;
 
-	static std::map<std::string, std::string>	mimeTypes;
-	static std::map<int, std::string>			statusDescription;
+	// static std::map<std::string, std::string>	mimeTypes;
+	// static std::map<int, std::string>			statusDescription;
 
 	void				getNameCookie(HttpReq &httpRequest);
 	bool				parseFile(void);
 	void				determineContentType(void);
+
+	const std::string	&getMimeType(const std::string &extension);
+	const std::string	&getStatusDescription(int status);
 
 	// - Response methods:
 	void				GET(void);
@@ -38,6 +41,9 @@ public:
 	HttpRes(const HttpRes &other);
 	HttpRes operator=(const HttpRes &another);
 	~HttpRes();
+
+	static const std::map<std::string, std::string>	&mimeTypes();
+    static const std::map<int, std::string>			&statusDescription();
 
 	void		handleRequest(HttpReq &httpRequest, Server &server);
 	std::string	getResponse(void);

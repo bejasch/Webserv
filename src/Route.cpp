@@ -3,7 +3,7 @@
 // TODO: Cant there be many redirect pages?
 Route::Route() 
     : path(""),
-      allowed_methods({}),
+      allowed_methods(),
       root_dir(""),
       index_file(""),
       autoindex(false),
@@ -56,7 +56,7 @@ bool	Route::allowsMethod(const std::string &method) const {
 
 void Route::printRoute() {
     std::cout << "\npath: " << path << std::endl;
-    for (int i = 0; i < allowed_methods.size(); i++) {
+    for (unsigned long i = 0; i < allowed_methods.size(); i++) {
         std::cout << "allowed_methods: " << allowed_methods[i] << std::endl;
     }
     std::cout << "root_dir: " << root_dir << std::endl;
@@ -67,7 +67,7 @@ void Route::printRoute() {
 }
 
 void Route::cleanRoute(Route *route) {
-    route->setAllowedMethods({});
+    route->setAllowedMethods(std::vector<std::string>());
     route->setRootDirRoute("");
     route->setIndexFile("");
     route->setAutoindex(false);
@@ -78,5 +78,6 @@ void Route::cleanRoute(Route *route) {
 //TODO: implement this if needed
 int Route::checkRoute(Route *route)
 {
-    return 0;
+	(void)route;
+    return (0);
 }

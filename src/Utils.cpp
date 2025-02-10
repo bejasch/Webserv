@@ -4,10 +4,10 @@ int stringToInt(const std::string &str) {
     return std::atoi(str.c_str());
 }
 
-std::string intToString(int value) {
-    std::ostringstream oss;
-    oss << value;
-    return oss.str();
+std::string	intToString(int value) {
+	std::ostringstream oss;
+	oss << value;
+	return oss.str();
 }
 
 bool isStandaloneWord(const std::string& line, const std::string& word, size_t pos) {
@@ -44,7 +44,7 @@ bool	isDirectory(const std::string &path) {
 
 // Function to save a file to disk
 bool	saveFile(const std::string &filename, const char* data, size_t size) {
-	std::ofstream file(filename, std::ios::binary);
+	std::ofstream file(filename.c_str(), std::ios::binary);
 	if (!file.is_open())
 		return (false);
 	file.write(data, size);
@@ -232,11 +232,10 @@ std::string	resolvePath(const std::string &target, const std::string &route_path
 
 char *cpp_strdup(const std::string str)
 {
-	int	i;
 	char *dup;
 
 	dup = new char[str.size() + 1];
-	if (dup == nullptr) {
+	if (dup == NULL) {
 		perror("Failed to allocate memory for argv[0]");
 		return NULL;
 	}
