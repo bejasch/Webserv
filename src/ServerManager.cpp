@@ -130,13 +130,11 @@ void ServerManager::dispatchEvent(const epoll_event& event) {
     }
     for (std::map<int, Server*>::iterator it = clientfd_to_serverfd.begin(); it != clientfd_to_serverfd.end(); ++it) {
         if (event.data.fd == it->first) {
-            std::cout << "Existing connection" << std::endl;
             Server *server = it->second;
 			if (event.events & EPOLLIN) {
-            	server->handleRequest(event.data.fd);
+            	server->handleRequest(event.data.fd);	// Handle request for client_fd
 			} else if (event.events & EPOLLOUT) {
-				std::cout << "####### EPOLLOUT -> Handling response for client_fd: " << event.data.fd << std::endl;
-				server->handleResponse(event.data.fd);
+				server->handleResponse(event.data.fd);	// Handle response for client_fd
 			}
             return;
         }

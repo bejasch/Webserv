@@ -6,6 +6,7 @@
 class HttpReq {
 private:
 	time_t	_creationTime;
+	Server	*_server;
 
 	std::string	_buffer;
 	int			_httpStatus;
@@ -60,7 +61,7 @@ public:
 	const std::string	&getBody(void);
 	int					getHttpStatus(void) const;
 
-	bool 	processData(const std::string &data);	// Encapsulates the parsing of the incoming data
+	bool	processData(Server &server, const std::string &data);	// Encapsulates the parsing of the incoming data
 
 	// print content
 	void	print(void) const;

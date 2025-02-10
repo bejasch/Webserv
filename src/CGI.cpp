@@ -79,6 +79,10 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse) {
     std::string output;
     int bytes_read;
     while ((bytes_read = read(pipe_fd[0], buffer, sizeof(buffer))) > 0) {
+		if (bytes_read == -1) {
+			perror("Read error");
+			break;
+		}
         output.append(buffer, bytes_read);
     }
     close(pipe_fd[0]);
@@ -171,7 +175,7 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
         ssize_t bytesRead = read(outputPipe[0], buffer, sizeof(buffer));
         close(outputPipe[0]); // Close read end after reading
 
-        if (bytesRead > 0) {
+        if (bytesRead >= 0) {
             std::cout << "Read " << bytesRead << " bytes from CGI script" << std::endl;
             return std::string(buffer, bytesRead);
         } else {
