@@ -266,3 +266,16 @@ Below is a list of useful network diagnostic and troubleshooting commands.
       curl -x http://proxyserver:8080 http://127.0.0.1:8081/
       ```
 
+
+
+//TODO: do tasks below
+
+- config file segfault
+- POST request segfault (can we reproduce?)
+- autoindex always set on??
+- return? return 201 /index.html;
+- index? does the index show correct
+- location /filemanager.html
+- if # then ignore in config
+- if location is fully hit, care for indexing -> problem with file-location
+- difference between index file and redirect in config

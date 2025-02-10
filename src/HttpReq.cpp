@@ -1,7 +1,9 @@
 #include "../headers/AllHeaders.hpp"
 
 HttpReq::HttpReq() : _creationTime(time(0)), _server(NULL), _buffer(""), _httpStatus(0),
-					_method(""), _target(""), _protocol(""), _headers(), _body("") {}
+					_method(""), _target(""), _protocol(""), _headers(), _body(""),	
+					_startlineParsed(false), _headersParsed(false), _isChunked(false),
+					_bodyComplete(false), _currentChunkSize(0) {}
 
 HttpReq::HttpReq(const HttpReq &other) : _creationTime(other._creationTime),
 	_server(other._server), _buffer(other._buffer),	_httpStatus(other._httpStatus), 

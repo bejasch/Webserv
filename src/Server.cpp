@@ -1,11 +1,11 @@
 #include "../headers/AllHeaders.hpp"
 
 Server::Server(ServerManager &server_manager) : server_manager(server_manager) {
-	std::cout << "Server default constructor called" << std::endl;
+	// std::cout << "Server default constructor called" << std::endl;
 }
 
 Server::~Server() {
-    std::cout << "Server destructor called" << std::endl;
+    // std::cout << "Server destructor called" << std::endl;
 }
 
 void Server::setServer(Config *config) {

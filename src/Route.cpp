@@ -10,11 +10,11 @@ Route::Route()
       redirect_status(0),
       redirect_url(""),
       autoindex_set(false) {
-    std::cout << "Route default constructor called" << std::endl;
+    // std::cout << "Route default constructor called" << std::endl;
 }
 
 Route::~Route() {
-    std::cout << "Route destructor called" << std::endl;
+    // std::cout << "Route destructor called" << std::endl;
 }
 
 void Route::setPath(const std::string &path) {

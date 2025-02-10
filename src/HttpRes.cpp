@@ -26,45 +26,6 @@ HttpRes::~HttpRes() {
     // std::cout << "HttpRes destructor called" << std::endl;
 }
 
-// std::map<std::string, std::string> HttpRes::mimeTypes = {
-// 	{"html", "text/html"},
-// 	{"css", "text/css"},
-// 	{"js", "text/javascript"},
-// 	{"jpg", "image/jpeg"},
-// 	{"jpeg", "image/jpeg"},
-// 	{"png", "image/png"},
-// 	{"gif", "image/gif"},
-// 	{"ico", "image/x-icon"}
-// };
-
-// std::map<int, std::string> HttpRes::statusDescription = {
-// 	{200, "OK"},
-// 	{201, "Created"},
-// 	{202, "Accepted"},
-// 	{204, "No Content"},
-// 	{206, "Partial Content"},
-// 	{301, "Moved Permanently"},
-// 	{302, "Found"},
-// 	{303, "See Other"},
-// 	{304, "Not Modified"},
-// 	{307, "Temporary Redirect"},
-// 	{308, "Permanent Redirect"},
-// 	{400, "Bad Request"},
-// 	{401, "Unauthorized"},
-// 	{403, "Forbidden"},
-// 	{404, "Not Found"},
-// 	{405, "Method Not Allowed"},
-// 	{408, "Request Timeout"},
-// 	{411, "Length Required"},
-// 	{413, "Payload Too Large"},
-// 	{415, "Unsupported Media Type"},
-// 	{500, "Internal Server Error"},
-// 	{501, "Not Implemented"},
-// 	{502, "Bad Gateway"},
-// 	{503, "Service Unavailable"},
-// 	{504, "Gateway Timeout"}
-// };
-
 // Function to initialize mimeTypes
 const std::string	&HttpRes::getMimeType(const std::string &extension) {
     static std::map<std::string, std::string> mimeTypes;
@@ -138,6 +99,7 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 
 	// Check if the method is allowed for the target (in routes)
 	_route = server.getConfig()->getRouteForTarget(_target);
+	_route->printRoute();
 	if (!_route || _route->getRootDirRoute().empty()) {
 		_httpStatus = 404;
 		return;
@@ -267,6 +229,10 @@ void HttpRes::POST(HttpReq &httpRequest) {
                 }
                 std::cout << "Saved entry: " << formData["name"] << ": " << formData["message"] << std::endl;
             }
+			else {
+				_httpStatus = 400;
+				return;
+			}
         }
         _httpStatus = 303;  // Redirect after POST
         _target = "/guestbook.html";  // Redirect back to guestbook

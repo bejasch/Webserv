@@ -10,11 +10,11 @@ Config::Config()
   	  allowed_methods(),
       routes()
     {
-    std::cout << "Config default constructor called" << std::endl;
+    // std::cout << "Config default constructor called" << std::endl;
 }
 
 Config::~Config() {
-    std::cout << "Config destructor called" << std::endl;
+    // std::cout << "Config destructor called" << std::endl;
 }
 
 void Config::printConfig() {
