@@ -229,3 +229,18 @@ std::string	resolvePath(const std::string &target, const std::string &route_path
 	}
 	return (target); // Return unchanged if route_path is not found at the beginning
 }
+
+char *cpp_strdup(const std::string str)
+{
+	int	i;
+	char *dup;
+
+	dup = new char[str.size() + 1];
+	if (dup == nullptr) {
+		perror("Failed to allocate memory for argv[0]");
+		return NULL;
+	}
+	std::copy(str.begin(), str.end(), dup);
+	dup[str.size()] = '\0';
+	return (dup);
+}

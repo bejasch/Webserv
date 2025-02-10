@@ -10,6 +10,7 @@ std::string	trim(const std::string& str);
 bool	    isDirectory(const std::string &path);
 bool		saveFile(const std::string &filename, const char* data, size_t size);
 std::string getFileExtension(const std::string &target);
+char        *cpp_strdup(const std::string str);
 
 std::vector<std::string> splitString(const std::string &str, const char delimiter);
 

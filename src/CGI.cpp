@@ -21,15 +21,10 @@ void    CGI::setAllEnv(HttpRes &httpResponse) {
     }
 	std::map<std::string, std::string>::const_iterator it = this->env.begin();
 	for (int i = 0; it != this->env.end(); it++, i++)
-	{
-		std::string tmp = it->first + "=" + it->second;
-		this->envp[i] = new char[tmp.size() + 1];
-        std::copy(tmp.begin(), tmp.end(), this->envp[i]);
-        this->envp[i][tmp.size()] = '\0';
-	}
+        this->envp[i] = cpp_strdup(it->first + "=" + it->second);
     this->envp[this->env.size()] = nullptr;
     this->argv = new char*[3]{nullptr, nullptr, nullptr};
-    if (this->envp == nullptr || this->argv == nullptr) {
+    if (this->argv == nullptr) {
         perror("Failed to allocate memory for envp or argv");
         return;
     }
@@ -38,48 +33,28 @@ void    CGI::setAllEnv(HttpRes &httpResponse) {
 //TODO: what happens when no .py or .php configs are set
 std::string CGI::executeCGI_GET(HttpRes &httpResponse) {
     setAllEnv(httpResponse);
+    std::cout << "root dir: " << env["DOCUMENT_ROOT"] << std::endl;
     std::string scriptPath = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
     std::cout << "Executing CGI script (GET): " << scriptPath << std::endl;
 
-    if (getFileExtension(scriptPath) == ".py") {
-        std::string interpreter = "/usr/bin/python3";
-        this->argv[0] = new char[interpreter.size() + 1];
-        if (this->argv[0] == nullptr) {
-            perror("Failed to allocate memory for argv[0]");
-            return "500";  // Internal Server Error
-        }
-        std::copy(interpreter.begin(), interpreter.end(), this->argv[0]);
-        this->argv[0][interpreter.size()] = '\0';
-    } 
-    else if (getFileExtension(scriptPath) == ".php") {
-        std::string interpreter = "/usr/bin/php";
-        this->argv[0] = new char[interpreter.size() + 1];
-        if (this->argv[0] == nullptr) {
-            perror("Failed to allocate memory for argv[0]");
-            return "500";  // Internal Server Error
-        }
-        std::copy(interpreter.begin(), interpreter.end(), this->argv[0]);
-        this->argv[0][interpreter.size()] = '\0';
-    }
-    // Properly allocate argv[1] as well
-    this->argv[1] = new char[scriptPath.size() + 1];
-    if (this->argv[1] == nullptr) {
-        perror("Failed to allocate memory for argv[1]");
-        return "500";  // Internal Server Error
-    }
-    std::copy(scriptPath.begin(), scriptPath.end(), this->argv[1]); 
-    this->argv[1][scriptPath.size()] = '\0';  // Null-terminate
+    if (getFileExtension(scriptPath) == ".py")
+        this->argv[0] = cpp_strdup("/usr/bin/python3");
+    else if (getFileExtension(scriptPath) == ".php")
+        this->argv[0] = cpp_strdup("/usr/bin/php");
+    this->argv[1] = cpp_strdup(scriptPath);
 
     int pipe_fd[2];
     if (pipe(pipe_fd) == -1) {
         perror("Failed to create pipe");
-        return "500";  // Internal Server Error
+        httpResponse.setStatus(500);
+        return NULL;
     }
 
     pid = fork();
     if (pid == -1) {
         perror("Failed to fork");
-        return "500";
+        httpResponse.setStatus(500);
+        return NULL;
     }
 
     if (pid == 0) {  // Child process
@@ -114,26 +89,29 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse) {
         return output;
     } else {
         std::cout << "CGI script exited with status " << WEXITSTATUS(status) << std::endl;
-        return "500";
+        httpResponse.setStatus(500);
+        return NULL;
     }
+    httpResponse.setStatus(500);
+    return NULL;
 }
 
 std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::string, std::string> &formData) {
     std::string scriptPath;
-    
-     setAllEnv(httpResponse);
+    setAllEnv(httpResponse);
+
     // Check if the "action" key exists in formData
     auto it = formData.find("action");
     if (it != formData.end()) {
         if (it->second == "Scramble.py") {
             scriptPath = "data/cgi-bin/modify_comments.py";
-            this->argv[0] = strdup("/usr/bin/python3");
+            this->argv[0] = cpp_strdup("/usr/bin/python3");
         }
         else if (it->second == "Capitalize.php"){
             scriptPath = "data/cgi-bin/modify_comments.php";
-            this->argv[0] = strdup("/usr/bin/php");
+            this->argv[0] = cpp_strdup("/usr/bin/php");
         }
-        this->argv[1] = strdup(scriptPath.c_str());
+        this->argv[1] = cpp_strdup(scriptPath);
     }
     std::cout << "Executing CGI script (POST): " << scriptPath << std::endl;
 
@@ -142,21 +120,24 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
     if (formData.count("name") && formData.count("message")) {
         postData = "name=" + formData.at("name") + "&message=" + formData.at("message");
     } else {
-        return "500"; // Return an error if required fields are missing
+        httpResponse.setStatus(500);
+        return nullptr;
     }
 
     // Create two pipes: one for input (stdin) and one for output (stdout)
     int inputPipe[2], outputPipe[2];
     if (pipe(inputPipe) == -1 || pipe(outputPipe) == -1) {
         perror("pipe");
-        return "500";
+        httpResponse.setStatus(500);
+        return nullptr;
     }
 
     // Fork to execute the CGI script
     pid_t pid = fork();
     if (pid == -1) {
         perror("fork");
-        return "500";
+        httpResponse.setStatus(500);
+        return nullptr;
     } else if (pid == 0) {
         // Child process
 
@@ -200,10 +181,12 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
             return std::string(buffer, bytesRead);
         } else {
             std::cerr << "Failed to read from CGI script" << std::endl;
-            return "500";
+            httpResponse.setStatus(500);
+            return nullptr;
         }
     }
-    return "500";
+    httpResponse.setStatus(500);
+    return nullptr;
 }
 
 void CGI::printCGI() {

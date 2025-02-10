@@ -167,7 +167,6 @@ void	HttpRes::GET(void) {
 	}
 	if (_target.find(".py") != std::string::npos || _target.find(".php") != std::string::npos) {
 		CGI cgi;
-		std::cout << "Executing CGI script: " << _target << std::endl;
 		_body = cgi.executeCGI_GET(*this);
 		_contentType = "text/html";
 		return;

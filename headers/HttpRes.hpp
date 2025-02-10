@@ -47,6 +47,7 @@ public:
 	const std::string	&getMethod(void) const;
 	const std::string	&getTarget(void) const;
 	Route				*getRoute(void) const;
+	void				setStatus(int status) { _httpStatus = status; }
 
 
 };
