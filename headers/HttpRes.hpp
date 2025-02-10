@@ -1,5 +1,3 @@
-
-#pragma once
 #ifndef HTTPRES_HPP
 #define HTTPRES_HPP
 
@@ -28,7 +26,7 @@ private:
 	void				determineContentType(void);
 
 	// - Response methods:
-	void				GET(HttpReq &httpRequest);
+	void				GET(void);
 	void				POST(HttpReq &httpRequest);
 	void				DELETE(void);
 

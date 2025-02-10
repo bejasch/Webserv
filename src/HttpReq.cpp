@@ -1,8 +1,8 @@
-
 #include "../headers/AllHeaders.hpp"
 
-
-HttpReq::HttpReq() : _creationTime(time(0)), _httpStatus(0) {}
+HttpReq::HttpReq() : _creationTime(time(0)), _httpStatus(0),
+					_server(NULL), _buffer(""), _method(""),
+					_target(""), _protocol(""), _headers({}), _body("") {}
 
 HttpReq::HttpReq(const HttpReq &other) : _creationTime(other._creationTime),
 	_httpStatus(other._httpStatus), _buffer(other._buffer),
@@ -98,7 +98,8 @@ void	HttpReq::print(void) const {
     std::cout << "Method: " << _method << "\n";
     std::cout << "Target: " << _target << "\n";
     std::cout << "Protocol: " << _protocol << "\n";
-	std::cout << "Chunked transfer: " << _isChunked << "\n";
+	if (_isChunked)
+		std::cout << "This is a chunked transfer!\n";
     std::cout << "Headers:\n";
     for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
         std::cout << "\t" << it->first << ": " << it->second << "\n";
@@ -128,7 +129,9 @@ int					HttpReq::getHttpStatus(void) const { return (_httpStatus); }
 
 // TODO: How to react if an error occurs during (previous) parsing ???
 // true means the full request is assembled (incl errors), false means more data is needed
-bool HttpReq::processData(const std::string &data) {
+bool HttpReq::processData(Server &server, const std::string &data) {
+	if (!_server)
+		_server = &server;
 	_buffer += data;
 	if (!_startlineParsed && !parseStartLine())	// Parse start line if not already done
 		return (true);							// Error occurred or short request in start line
@@ -272,12 +275,13 @@ bool HttpReq::verifyHeaders() {
 }
 
 bool	HttpReq::parseBody(void) {
-	
 	printf("\n\t##### Parsing body ... with status: %d\n", _httpStatus);
 	if (_headers.find("content-length") != _headers.end()) {
 		size_t	content_length = std::stoul(_headers["content-length"]);
-		printf("\n\n\t##### Content-Length: %lu\n", content_length);
-		printf("\n\t##### Buffer length: %lu\n", _buffer.length());
+		if (content_length > _server->getConfig()->getMaxBodySize()) {
+			_httpStatus = 413; // Payload Too Large
+			return (true);
+		}
 		_body += _buffer;
 		_buffer.clear();
 		if (_body.length() < content_length) {

@@ -1,8 +1,7 @@
 #include "../headers/AllHeaders.hpp"
 
-
 HttpRes::HttpRes() : _httpStatus(0), _responseSize(0) {
-    std::cout << "HttpRes default constructor called" << std::endl;
+    // std::cout << "HttpRes default constructor called" << std::endl;
 }
 
 HttpRes::HttpRes(const HttpRes &other) : _method(other._method),
@@ -24,7 +23,7 @@ HttpRes HttpRes::operator=(const HttpRes &another) {
 }
 
 HttpRes::~HttpRes() {
-    std::cout << "HttpRes destructor called" << std::endl;
+    // std::cout << "HttpRes destructor called" << std::endl;
 }
 
 std::map<std::string, std::string> HttpRes::mimeTypes = {
@@ -97,7 +96,7 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 	std::cout << "Server path: " << _serverPath << std::endl;
 	
     if (_method == "GET")
-		GET(httpRequest);
+		GET();
 	else if (_method == "POST")
 		POST(httpRequest);
     else if  (_method == "DELETE")
@@ -159,9 +158,7 @@ void	HttpRes::generateAutoindexPage(const std::string &path) {
 	_body += "</ul></body></html>";
 }
 
-
-
-void	HttpRes::GET(HttpReq &httpRequest) {
+void	HttpRes::GET(void) {
 	if (_target == "/guestbook.html") {
 		_contentType = "text/html";
 		_body = generateGuestbookHTML(_userName);
@@ -175,7 +172,6 @@ void	HttpRes::GET(HttpReq &httpRequest) {
 		_contentType = "text/html";
 		return;
 	}
-
 	if (isDirectory(_serverPath)) {
 		if (_route->getAutoindex()) {
 			_httpStatus = 200;
@@ -240,10 +236,10 @@ void HttpRes::POST(HttpReq &httpRequest) {
 
 // gets the full path of the file to delete
 void	HttpRes::DELETE(void) {
-	if (access(_serverPath.c_str(), F_OK) != 0) {			// Check if the file exists
+	if (access(_serverPath.c_str(), F_OK)) {			// Check if the file exists
 		_httpStatus = 404;
 		return;
-	} else if (access(_serverPath.c_str(), W_OK) != 0) {	// Check if the file is writable
+	} else if (access(_serverPath.c_str(), W_OK)) {	// Check if the file is writable
 		_httpStatus = 403;
 		return;
 	}
@@ -267,7 +263,6 @@ void	HttpRes::determineContentType(void) {
 		_contentType = "text/plain";
 		return;
 	}
-
 	// Look up the MIME type in the static map
 	std::map<std::string, std::string>::const_iterator it = mimeTypes.find(extension);
 	if (it != mimeTypes.end())
@@ -312,7 +307,6 @@ std::string	HttpRes::getResponse(void) {
 			generateErrorBody();
 		}
 	}
-	
 	std::string response;
 	response = "HTTP/1.1 " + std::to_string(_httpStatus) + " " + statusDescription[_httpStatus] + "\r\n";
 	response += "Content-Type: " + _contentType + "\r\n";
@@ -329,7 +323,6 @@ std::string	HttpRes::getResponse(void) {
 size_t	HttpRes::getResponseSize(void) const {
 	return (_responseSize);
 }
-
 
 const std::string	&HttpRes::getTarget(void) const {
 	return (_target);
