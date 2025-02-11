@@ -37,26 +37,22 @@ private:
 	void				generateErrorBody(void);
 	
 public:
-	HttpRes();
+	HttpRes(void);
 	HttpRes(const HttpRes &other);
 	HttpRes operator=(const HttpRes &another);
 	~HttpRes();
 
-	static const std::map<std::string, std::string>	&mimeTypes();
-    static const std::map<int, std::string>			&statusDescription();
+	// --> Response methods:
+	void				handleRequest(HttpReq &httpRequest, Server &server);
+	std::string			getResponse(void);
+	size_t				getResponseSize(void) const;
 
-	void		handleRequest(HttpReq &httpRequest, Server &server);
-	std::string	getResponse(void);
-	size_t		getResponseSize(void) const;
-
-	// --> Get-methods:
+	// --> Get/Set-methods:
 	const std::string	&getMethod(void) const;
 	const std::string	&getTarget(void) const;
 	Route				*getRoute(void) const;
-	void				setStatus(int status) { _httpStatus = status; }
-	Server				*getServer(void) const { return (_server); }
-
-
+	void				setStatus(int status);
+	Server				*getServer(void) const;
 };
 
 #endif

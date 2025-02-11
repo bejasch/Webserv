@@ -1,9 +1,11 @@
 #include "../headers/AllHeaders.hpp"
 
-HttpReq::HttpReq() : _creationTime(time(0)), _server(NULL), _buffer(""), _httpStatus(0),
-					_method(""), _target(""), _protocol(""), _headers(), _body(""),	
-					_startlineParsed(false), _headersParsed(false), _isChunked(false),
-					_bodyComplete(false), _currentChunkSize(0) {}
+HttpReq::HttpReq() : _creationTime(time(0)), _server(NULL), _buffer(""),
+	_httpStatus(0), _method(""), _target(""), _protocol(""), _headers(),
+	_body(""), _startlineParsed(false), _headersParsed(false),
+	_isChunked(false), _bodyComplete(false), _currentChunkSize(0) {
+	// std::cout << "HttpReq default constructor called" << std::endl;
+}
 
 HttpReq::HttpReq(const HttpReq &other) : _creationTime(other._creationTime),
 	_server(other._server), _buffer(other._buffer),	_httpStatus(other._httpStatus), 
@@ -11,15 +13,17 @@ HttpReq::HttpReq(const HttpReq &other) : _creationTime(other._creationTime),
 	_headers(other._headers), _body(other._body),
 	_startlineParsed(other._startlineParsed), _headersParsed(other._headersParsed),
 	_isChunked(other._isChunked), _bodyComplete(other._bodyComplete),
-	_currentChunkSize(other._currentChunkSize) {}
+	_currentChunkSize(other._currentChunkSize) {
+	// std::cout << "HttpReq copy constructor called" << std::endl;
+}
 
 HttpReq	HttpReq::operator=(const HttpReq &another)	{
 	if (this == &another)
 		return (*this);
 	_creationTime = another._creationTime;
 	_server = another._server;
-	_httpStatus = another._httpStatus;
 	_buffer = another._buffer;
+	_httpStatus = another._httpStatus;
 	_method = another._method;
 	_target = another._target;
 	_protocol = another._protocol;
@@ -30,11 +34,12 @@ HttpReq	HttpReq::operator=(const HttpReq &another)	{
 	_isChunked = another._isChunked;
 	_bodyComplete = another._bodyComplete;
 	_currentChunkSize = another._currentChunkSize;
-
 	return (*this);
 }
 
-HttpReq::~HttpReq()	{}
+HttpReq::~HttpReq()	{
+	// std::cout << "HttpReq destructor called" << std::endl;
+}
 
 // false means errors occurred, true means the startline does not contain errors
 bool	HttpReq::parseStartLine(void) {
@@ -57,11 +62,11 @@ bool	HttpReq::parseStartLine(void) {
 		return (_httpStatus = 400, false);
 	_protocol = start_line.substr(prev_pos);
 
-    if (!isValidMethod())
+	if (!isValidMethod())
 		return (_httpStatus = 405, false);
-    if (!isValidTarget())
+	if (!isValidTarget())
 		return (_httpStatus = 400, false);
-    if (!isValidProtocol())
+	if (!isValidProtocol())
 		return (_httpStatus = 505, false);
 		
 	_startlineParsed = true;
@@ -97,19 +102,19 @@ bool	HttpReq::isValidProtocol(void) const {
 
 void	HttpReq::print(void) const {
 	std::cout << "Request time: " << std::ctime(&_creationTime);
-    std::cout << "Method: " << _method << "\n";
-    std::cout << "Target: " << _target << "\n";
-    std::cout << "Protocol: " << _protocol << "\n";
+	std::cout << "Method: " << _method << "\n";
+	std::cout << "Target: " << _target << "\n";
+	std::cout << "Protocol: " << _protocol << "\n";
 	if (_isChunked)
 		std::cout << "This is a chunked transfer!\n";
-    std::cout << "Headers:\n";
-    for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
-        std::cout << "\t" << it->first << ": " << it->second << "\n";
-    }
+	std::cout << "Headers:\n";
+	for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
+		std::cout << "\t" << it->first << ": " << it->second << "\n";
+	}
 	if (_body.size() > 100)
 		std::cout << "Body(head):\n" << _body.substr(0, 100) << "...\n";
 	else
-	    std::cout << "Body:\n" << _body << "\n";
+		std::cout << "Body:\n" << _body << "\n";
 }
 
 const std::string	&HttpReq::getMethod(void) const { return (_method); }
@@ -119,17 +124,20 @@ const std::string	&HttpReq::getTarget(void) const { return (_target); }
 const std::string	&HttpReq::getProtocol(void) const { return (_protocol); }
 
 // Care for exceptions if key does not exist
-const std::string	&HttpReq::getHeader(const std::string &key) const { return (_headers.at(key)); }
+const std::string	&HttpReq::getHeader(const std::string &key) const {
+	std::map<std::string, std::string>::const_iterator it = _headers.find(key);
+	if (it != _headers.end())
+		return (it->second);
+	static const std::string emptyString = "";
+	return (emptyString);
+}
 
 const std::map<std::string, std::string>	&HttpReq::getHeaders(void) const { return (_headers); }
-
-// size_t				&HttpReq::getBodySize(void) const { return (_bodySize); }
 
 const std::string	&HttpReq::getBody(void) { return (_body); }
 
 int					HttpReq::getHttpStatus(void) const { return (_httpStatus); }
 
-// TODO: How to react if an error occurs during (previous) parsing ???
 // true means the full request is assembled (incl errors), false means more data is needed
 bool HttpReq::processData(Server &server, const std::string &data) {
 	if (!_server)
@@ -277,7 +285,6 @@ bool HttpReq::verifyHeaders() {
 }
 
 bool	HttpReq::parseBody(void) {
-	printf("\n\t##### Parsing body ... with status: %d\n", _httpStatus);
 	if (_headers.find("content-length") != _headers.end()) {
 		size_t content_length = std::strtoul(_headers["content-length"].c_str(), NULL, 10);
 		if (content_length > static_cast<size_t>(_server->getConfig()->getMaxBodySize())) {
@@ -290,12 +297,14 @@ bool	HttpReq::parseBody(void) {
 			return (false);		// Wait for full body
 		}
 	}
-	_httpStatus = 200; // OK
+	_httpStatus = 200;
 	return (true);
 }
 
-// Reset for a new request - or better destroy and create a new object ?
+// Reset for a new request
 void	HttpReq::reset(void) {
+	_creationTime = time(0);
+	_server = NULL;
 	_buffer.clear();
 	_httpStatus = 0;
 	_method.clear();

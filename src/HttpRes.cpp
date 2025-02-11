@@ -1,54 +1,60 @@
 #include "../headers/AllHeaders.hpp"
 
-HttpRes::HttpRes() : _method(""), _httpStatus(0), _responseSize(0),
+HttpRes::HttpRes(void) : _server(NULL), _route(NULL), _method(""), _httpStatus(0), _responseSize(0),
 	_userName(""), _target(""), _serverPath(""), _contentType(""), _body(""), _wasRedirected(false) {
 	// std::cout << "HttpRes default constructor called" << std::endl;
 }
 
-HttpRes::HttpRes(const HttpRes &other) : _method(other._method),
-	_httpStatus(other._httpStatus),	_responseSize(other._responseSize),
-	_target(other._target), _contentType(other._contentType),
-	_body(other._body), _wasRedirected(false) {}
+HttpRes::HttpRes(const HttpRes &other) : _server(other._server), _route(other._route), _method(other._method),
+	_httpStatus(other._httpStatus), _responseSize(other._responseSize), _userName(other._userName),
+	_target(other._target), _serverPath(other._serverPath), _contentType(other._contentType),
+	_body(other._body), _wasRedirected(other._wasRedirected) {
+	// std::cout << "HttpRes copy constructor called" << std::endl;
+}
 
 HttpRes HttpRes::operator=(const HttpRes &another) {
 	if (this == &another)
 		return (*this);
+	_server = another._server;
+	_route = another._route;
 	_method = another._method;
 	_httpStatus = another._httpStatus;
 	_responseSize = another._responseSize;
+	_userName = another._userName;
 	_target = another._target;
+	_serverPath = another._serverPath;
 	_contentType = another._contentType;
 	_body = another._body;
-
+	_wasRedirected = another._wasRedirected;
 	return (*this);
 }
 
-HttpRes::~HttpRes() {
-    // std::cout << "HttpRes destructor called" << std::endl;
+HttpRes::~HttpRes(void) {
+	// std::cout << "HttpRes destructor called" << std::endl;
 }
 
 // Function to initialize mimeTypes
 const std::string	&HttpRes::getMimeType(const std::string &extension) {
-    static std::map<std::string, std::string> mimeTypes;
-    if (mimeTypes.empty()) {  // Only initialize once
-        mimeTypes.insert(std::make_pair("html", "text/html"));
+	static std::map<std::string, std::string> mimeTypes;
+	if (mimeTypes.empty()) {
+		mimeTypes.insert(std::make_pair("html", "text/html"));
 		mimeTypes.insert(std::make_pair("css", "text/css"));
 		mimeTypes.insert(std::make_pair("js", "text/javascript"));
-        mimeTypes.insert(std::make_pair("jpg", "image/jpeg"));
+		mimeTypes.insert(std::make_pair("jpg", "image/jpeg"));
 		mimeTypes.insert(std::make_pair("jpeg", "image/jpeg"));
-        mimeTypes.insert(std::make_pair("png", "image/png"));
+		mimeTypes.insert(std::make_pair("png", "image/png"));
 		mimeTypes.insert(std::make_pair("gif", "image/gif"));
 		mimeTypes.insert(std::make_pair("ico", "image/x-icon"));
-    }
+	}
 	if (mimeTypes.find(extension) != mimeTypes.end())
 		return (mimeTypes[extension]);
-    return (mimeTypes["html"]);
+	return (mimeTypes["html"]);
 }
 
 // Function to initialize statusDescription
 const std::string	&HttpRes::getStatusDescription(int status) {
-    static std::map<int, std::string> statusDescription;
-    if (statusDescription.empty()) {  // Only initialize once
+	static std::map<int, std::string> statusDescription;
+	if (statusDescription.empty()) {
 		statusDescription.insert(std::make_pair(200, "OK"));
 		statusDescription.insert(std::make_pair(201, "Created"));
 		statusDescription.insert(std::make_pair(202, "Accepted"));
@@ -74,10 +80,10 @@ const std::string	&HttpRes::getStatusDescription(int status) {
 		statusDescription.insert(std::make_pair(502, "Bad Gateway"));
 		statusDescription.insert(std::make_pair(503, "Service Unavailable"));
 		statusDescription.insert(std::make_pair(504, "Gateway Timeout"));
-    }
+	}
 	if (statusDescription.find(status) != statusDescription.end())
 		return (statusDescription[status]);
-    return (statusDescription[404]);
+	return (statusDescription[404]);
 }
 
 void	HttpRes::getNameCookie(HttpReq &httpRequest) {
@@ -92,15 +98,13 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 	_server = &server;
 	_target = httpRequest.getTarget();
 	_httpStatus = httpRequest.getHttpStatus();
-    if (_httpStatus >= 400 && _httpStatus < 600) {
+	if (_httpStatus >= 400 && _httpStatus < 600) {
 		return;
 	}
 	_method = httpRequest.getMethod();
-	getNameCookie(httpRequest);
+	getNameCookie(httpRequest);					// Get the name of the user from the cookie
 
-	// Check if the method is allowed for the target (in routes)
 	_route = server.getConfig()->getRouteForTarget(_target);
-	_route->printRoute();
 	if (!_route || _route->getRootDirRoute().empty()) {
 		_httpStatus = 404;
 		return;
@@ -111,13 +115,13 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 	_serverPath = resolvePath(_target, _route->getPath(), _route->getRootDirRoute());
 	std::cout << "\n\tServer path: " << _serverPath << std::endl;
 	
-    if (_method == "GET")
+	if (_method == "GET")
 		GET();
 	else if (_method == "POST")
 		POST(httpRequest);
-    else if  (_method == "DELETE")
+	else if  (_method == "DELETE")
 		DELETE();
-    else						// Unsupported method
+	else						// Unsupported method
 		_httpStatus = 405;
 }
 
@@ -126,9 +130,9 @@ void	HttpRes::generateErrorBody(void) {
 	std::string statusMessage = getStatusDescription(_httpStatus);
 
 	_body = "<html><head><title>" + intToString(_httpStatus) + " "
-			+ statusMessage + "</title></head><body><h1>"
-			+ intToString(_httpStatus) + " " + statusMessage + "</h1>"
-			+ "<p>" + statusMessage + "</p></body></html>";
+		+ statusMessage + "</title></head><body><h1>"
+		+ intToString(_httpStatus) + " " + statusMessage + "</h1>"
+		+ "<p>" + statusMessage + "</p></body></html>";
 }
 
 void	HttpRes::generateAutoindexPage(const std::string &path) {
@@ -152,7 +156,6 @@ void	HttpRes::generateAutoindexPage(const std::string &path) {
 	} else {
 		_body += "<div id='login_status' style='background-color: red;'>Not logged in</div>";
 	}
-
 	_body += "<button onclick=\"window.location.href='/index.html'\">Back to Main Page</button>";
 	_body += "<h1>Index of " + _target + "</h1><ul>";
 	
@@ -223,37 +226,37 @@ void HttpRes::POST(HttpReq &httpRequest) {
 	if (_target == "/guestbook.html") {
 		if (!httpRequest.getBody().empty()) {
 			std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
-            if (formData.count("name") && formData.count("message")) {
+			if (formData.count("name") && formData.count("message")) {
 				// Check if this is a Scramble request
-                if (formData.count("action") && (formData["action"] == "Scramble.py" || formData["action"] == "Capitalize.php")) {
+				if (formData.count("action") && (formData["action"] == "Scramble.py" || formData["action"] == "Capitalize.php")) {
 					std::cout << "CGI POST request" << std::endl;
-                    CGI cgi;
-                    std::string Message = cgi.executeCGI_POST(*this, formData);
-                    if (Message != "500") {
+					CGI cgi;
+					std::string Message = cgi.executeCGI_POST(*this, formData);
+					if (Message != "500") {
 						saveGuestbookEntry(formData["name"], Message);
-                    }
-                } else {
+					}
+				} else {
 					// Regular submission
-                    saveGuestbookEntry(formData["name"], formData["message"]);
-                }
-                std::cout << "Saved entry: " << formData["name"] << ": " << formData["message"] << std::endl;
-            }
+					saveGuestbookEntry(formData["name"], formData["message"]);
+				}
+				std::cout << "Saved entry: " << formData["name"] << ": " << formData["message"] << std::endl;
+			}
 			else {
 				_httpStatus = 400;
 				return;
 			}
-        }
-        _httpStatus = 303;			// Redirect after POST
-        return;
-    }
-    if (!access(_route->getRootDirRoute().c_str(), W_OK) && !access(_serverPath.c_str(), F_OK)) {
-        _httpStatus = 404;
-        return;
-    }
-    if (saveFile(_serverPath, httpRequest.getBody().c_str(), httpRequest.getBody().size()))
-        _httpStatus = 201;
-    else
-        _httpStatus = 500;
+		}
+		_httpStatus = 303;			// Redirect after POST
+		return;
+	}
+	if (!access(_route->getRootDirRoute().c_str(), W_OK) && !access(_serverPath.c_str(), F_OK)) {
+		_httpStatus = 404;
+		return;
+	}
+	if (saveFile(_serverPath, httpRequest.getBody().c_str(), httpRequest.getBody().size()))
+		_httpStatus = 201;
+	else
+		_httpStatus = 500;
 }
 
 // gets the full path of the file to delete
@@ -281,26 +284,25 @@ void	HttpRes::determineContentType(void) {
 	catch(const std::exception& e)
 	{
 		_contentType = getMimeType("html");
-		return;
 	}
 }
 
 bool	HttpRes::parseFile(void) {
-    std::ifstream file((_server->getConfig()->getRootDirConfig() + _target).c_str());
-    if (!file.is_open()) {
+	std::ifstream file((_server->getConfig()->getRootDirConfig() + _target).c_str());
+	if (!file.is_open()) {
 		std::cerr << "Error: Could not open file " << _target << std::endl;
 		_httpStatus = 404;
-        return (false);
-    }
-    std::stringstream buffer;
-    buffer << file.rdbuf(); // Read entire file
-    _body = buffer.str();
-    file.close();
-    return (true);
+		return (false);
+	}
+	std::stringstream buffer;
+	buffer << file.rdbuf(); // Read entire file
+	_body = buffer.str();
+	file.close();
+	return (true);
 }
 
 std::string	HttpRes::getResponse(void) {
-    if (_httpStatus >= 400 && _httpStatus < 600) {
+	if (_httpStatus >= 400 && _httpStatus < 600) {
 		// Store a reference to the map
 		const std::map<int, std::string> &errorPages = _server->getConfig()->getErrorPages();
 
@@ -348,4 +350,12 @@ const std::string	&HttpRes::getMethod(void) const {
 
 Route				*HttpRes::getRoute(void) const {
 	return (_route);
+}
+
+void	HttpRes::setStatus(int status) {
+	_httpStatus = status;
+}
+
+Server	*HttpRes::getServer(void) const {
+	return (_server);
 }
