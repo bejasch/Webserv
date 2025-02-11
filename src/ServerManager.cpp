@@ -73,7 +73,9 @@ int ServerManager::setServers(const std::string &config_file)
 				std::cerr << "Failed to allocate memory for route: " << std::strerror(errno) << std::endl;
 				return 1;
 			}
-			route->setPath(line.substr(line.find("location") + std::string("location").length() + 1, line.find("{") - line.find(" ") - 2));
+			std::string path = line.substr(line.find("location") + std::string("location").length() + 1, line.find("{") - line.find(" ") - 2);
+			route->setPath(removeTrailingSlash(path));
+            std::cout << BLUE << "\t🌱 Route path: " << route->getPath() << RESET << std::endl;
 			line = fillRoute(line, file, route);
 			if (line.empty()) {
 				std::cerr << "Discarding unfinished route: " << route->getPath() << std::endl;
@@ -199,18 +201,23 @@ std::string ServerManager::fillConfig(std::string line, std::ifstream &file, Con
 		else if (line.find("server_name") != std::string::npos)
 			config->setName(line.substr(line.find("server_name") + std::string("server_name").length() + 1, line.find(";") - line.find(" ") - 1));
 		else if (line.find("root") != std::string::npos)
-			config->setRootDirConfig(line.substr(line.find("root") + std::string("root").length() + 1, line.find(";") - line.find(" ") - 1));
+		{
+			std::string root_dir = line.substr(line.find("root") + std::string("root").length() + 1, line.find(";") - line.find(" ") - 1);
+			config->setRootDirConfig(removeTrailingSlash(root_dir));
+		}
 		else if (line.find("client_max_body_size") != std::string::npos)
 			config->setMaxBodySize(stringToInt(line.substr(line.find("client_max_body_size") + std::string("client_max_body_size").length() + 1, line.find(";") - line.find(" ") - 1)));
 		else if (line.find("index") != std::string::npos)
-			config->setDefaultFile(line.substr(line.find("index") + std::string("index").length() + 1, line.find(";") - line.find(" ") - 1));
+		{
+			std::string index_file = line.substr(line.find("index") + std::string("index").length() + 1, line.find(";") - line.find(" ") - 1);
+			config->setDefaultFile(removeTrailingSlash(index_file));
+		}
 		else if (line.find("error_page") != std::string::npos) {
 			int error_status = stringToInt(line.substr(line.find("error_page") + std::string("error_page").length() + 1, line.find(" ") - line.find("error_page") - 1));
 			std::string error_page = line.substr(line.find("error_page") + std::string("error_page").length() + 5, line.find(";") - line.find(" ") - 5);
-			config->setErrorPage(error_status, error_page);
+			config->setErrorPage(error_status, removeTrailingSlash(error_page));
 		}
 		else if (line.find("allow_methods") != std::string::npos) {
-			// Parse the allowed methods and set them to the route
 			std::string methods = line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1);
 			config->setAllowedMethods(splitString(methods, ' '));
 		}
@@ -245,13 +252,20 @@ std::string ServerManager::fillRoute(std::string line, std::ifstream &file, Rout
 			route->setAllowedMethods(splitString(methods, ' '));
 		}
 		else if (line.find("root") != std::string::npos)
-			route->setRootDirRoute(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
+		{
+			std::string root = line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1);
+			route->setRootDirRoute(removeTrailingSlash(root));
+		}
 		else if (line.find("return") != std::string::npos) {
 			route->setRedirectStatus(stringToInt(line.substr(line.find("return") + std::string("return").length() + 1, line.find(" ") - line.find("return") - 1)));
-			route->setRedirectUrl(line.substr(line.find("return") + std::string("return").length() + 5, line.find(";") - line.find(" ") - 5));
+			std::string redirect_url = line.substr(line.find("return") + std::string("return").length() + 5, line.find(";") - line.find(" ") - 5);
+			route->setRedirectUrl(removeTrailingSlash(redirect_url));
 		}
 		else if (line.find("index") != std::string::npos && isStandaloneWord(line, "index", line.find("index")))
-			route->setIndexFile(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
+		{
+			std::string index = line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1);
+			route->setIndexFile(removeTrailingSlash(index));
+		}
 		else if (line.find("autoindex") != std::string::npos)
 		{
 			std::string autoindex = line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1);

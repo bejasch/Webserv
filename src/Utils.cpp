@@ -252,3 +252,11 @@ int	find_commented_line(std::string &line) {
 		return (1);
 	return (0);
 }
+
+std::string removeTrailingSlash(std::string &path){
+	if (path == "/")
+		return path;
+	if (path[path.length() - 1] == '/')
+		path = path.substr(0, path.length() - 1);
+	return path;
+}
