@@ -79,6 +79,7 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse) {
 	}
 
 	if (pid == 0) {  // Child process
+		alarm(10); //TODO: is there a cpp equivalent?
 		close(pipe_fd[0]);
 		dup2(pipe_fd[1], STDOUT_FILENO);
 		dup2(pipe_fd[1], STDERR_FILENO);
@@ -94,19 +95,65 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse) {
 	} 
 
 	close(pipe_fd[1]);
+
+	// Make the pipe non-blocking
+    fcntl(pipe_fd[0], F_SETFL, O_NONBLOCK);
+
+    // Add pipe to epoll
+    epoll_event ev;
+    ev.events = EPOLLIN;
+    ev.data.fd = pipe_fd[0];
+    
+    if (epoll_ctl(httpResponse.getServer()->getServerManager().getEpollFd(), 
+                  EPOLL_CTL_ADD, pipe_fd[0], &ev) == -1) {
+        std::cerr << "Failed to add pipe to epoll" << std::endl;
+        close(pipe_fd[0]);
+        httpResponse.setStatus(500);
+        return "";
+    }
+
 	char buffer[4096];
 	std::string output;
-	int bytes_read;
-	while ((bytes_read = read(pipe_fd[0], buffer, sizeof(buffer))) > 0) {
-		if (bytes_read == -1) {
-			std::cerr << "Read error: " << std::strerror(errno) << std::endl;
-			break;
-		}
-		output.append(buffer, bytes_read);
-	}
+    time_t start_time = time(NULL);
+    
+    // Read from pipe using epoll
+    while (true) {
+        epoll_event events[1];
+        int nfds = epoll_wait(httpResponse.getServer()->getServerManager().getEpollFd(), 
+                             events, 1, 1000); // 1 second timeout
+
+        // Check for timeout
+        if (time(NULL) - start_time > 10) {
+            kill(pid, SIGTERM);
+            usleep(1000);
+            kill(pid, SIGKILL);
+            epoll_ctl(httpResponse.getServer()->getServerManager().getEpollFd(), 
+                     EPOLL_CTL_DEL, pipe_fd[0], NULL);
+            close(pipe_fd[0]);
+            httpResponse.setStatus(504);
+            return "CGI script timed out";
+        }
+
+        if (nfds > 0) {
+            int bytes_read = read(pipe_fd[0], buffer, sizeof(buffer));
+            if (bytes_read > 0) {
+                output.append(buffer, bytes_read);
+            } else if (bytes_read == 0 || (bytes_read == -1 && errno != EAGAIN)) {
+                break;
+            }
+        }
+    }
+	// Cleanup
+    epoll_ctl(httpResponse.getServer()->getServerManager().getEpollFd(), 
+              EPOLL_CTL_DEL, pipe_fd[0], NULL);
 	close(pipe_fd[0]);
 	int status;
-	waitpid(pid, &status, 0);
+	if (waitpid(pid, &status, WNOHANG) == 0) {
+        kill(pid, SIGTERM);
+        usleep(1000);
+        kill(pid, SIGKILL);
+        waitpid(pid, &status, 0);
+    }
 	if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
 		return output;
 	} else {
@@ -114,8 +161,6 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse) {
 		httpResponse.setStatus(500);
 		return "";
 	}
-	httpResponse.setStatus(500);
-	return "";
 }
 
 std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::string, std::string> &formData) {
