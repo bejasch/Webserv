@@ -3,11 +3,11 @@
 volatile sig_atomic_t ServerManager::stop_flag = 0;
 
 ServerManager::ServerManager(): epoll_fd(0), servers(), clientfd_to_serverfd() {
-	std::cout << "ServerManager default constructor called" << std::endl;
+	// std::cout << "ServerManager default constructor called" << std::endl;
 }
 
 ServerManager::ServerManager(const ServerManager &other): epoll_fd(other.epoll_fd), servers(other.servers), clientfd_to_serverfd(other.clientfd_to_serverfd) {
-	std::cout << "ServerManager copy constructor called" << std::endl;
+	// std::cout << "ServerManager copy constructor called" << std::endl;
 }
 
 ServerManager ServerManager::operator=(const ServerManager &another) {
@@ -21,7 +21,7 @@ ServerManager ServerManager::operator=(const ServerManager &another) {
 
 ServerManager::~ServerManager() {
 	freeResources();
-	std::cout << "ServerManager destructor called" << std::endl;
+	// std::cout << "ServerManager destructor called" << std::endl;
 }
 
 int ServerManager::setServers(const std::string &config_file)
@@ -63,7 +63,7 @@ int ServerManager::setServers(const std::string &config_file)
 			}
 			server->setServer(config);
 			std::string host_key = config->getName() + ":" + intToString(config->getPort());
-			std::cout << "Server added with host_name: " << host_key << std::endl;
+			std::cout << GREEN << "💻Server added with host_name: " << host_key << RESET <<std::endl;
 			create_base_route(config);
 			servers.push_back(server);
 		}
@@ -122,6 +122,7 @@ void ServerManager::startServers() {
 			return;
 		}
 	}
+    std::cout << GREEN << "🚀Servers are running!" << RESET << std::endl;
 	handleEvents();
 }
 
