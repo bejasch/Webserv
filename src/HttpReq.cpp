@@ -101,20 +101,18 @@ bool	HttpReq::isValidProtocol(void) const {
 }
 
 void	HttpReq::print(void) const {
-	std::cout << "Request time: " << std::ctime(&_creationTime);
-	std::cout << "Method: " << _method << "\n";
-	std::cout << "Target: " << _target << "\n";
-	std::cout << "Protocol: " << _protocol << "\n";
+	std::cout << BG_WHITE << BLUE << "Request received: " << std::ctime(&_creationTime) << RESET;
+	std::cout << BLINK<< GREEN << _method << "    " << CYAN << _target << "    " << YELLOW << _protocol << RESET << "\n";
 	if (_isChunked)
 		std::cout << "This is a chunked transfer!\n";
-	std::cout << "Headers:\n";
+	std::cout << MAGENTA << "Headers:\n";
 	for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
 		std::cout << "\t" << it->first << ": " << it->second << "\n";
 	}
 	if (_body.size() > 100)
-		std::cout << "Body(head):\n" << _body.substr(0, 100) << "...\n";
+		std::cout << BLUE << "Body(head):\n" << _body.substr(0, 100) << "...\n" << RESET;
 	else
-		std::cout << "Body:\n" << _body << "\n";
+		std::cout << BLUE << "Body:\n" << _body << "\n" << RESET;
 }
 
 const std::string	&HttpReq::getMethod(void) const { return (_method); }
@@ -157,9 +155,7 @@ bool HttpReq::processData(Server &server, const std::string &data) {
 
 bool	HttpReq::parseChunkedBody(void) {
 	size_t pos = 0;
-	std::cout << "### Parsing chunked body..." << std::endl;
 	while (!_buffer.empty()) {
-		// std::cout << "Current buffer: " << _buffer << std::endl;
 		if (_currentChunkSize == 0) {	// Parse new chunk size -> hex number followed by CRLF
 			if ((pos = _buffer.find("\r\n")) == std::string::npos) {
 				return (false); // Wait for full chunk size
@@ -193,8 +189,7 @@ bool	HttpReq::parseChunkedBody(void) {
 		} else
 			break;
 	}
-	std::cout << "### Not fully assembled yet..." << std::endl;
-	return (false); // Not fully assembled yet
+	return (false);	// Wait for more data
 }
 
 // Returns true if headers are fully received (or on error), false otherwise

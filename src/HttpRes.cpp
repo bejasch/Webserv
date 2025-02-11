@@ -113,7 +113,6 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 		return;
 	}
 	_serverPath = resolvePath(_target, _route->getPath(), _route->getRootDirRoute());
-	std::cout << "\n\tServer path: " << _serverPath << std::endl;
 	
 	if (_method == "GET")
 		GET();
@@ -177,7 +176,6 @@ void	HttpRes::GET(void) {
 	if (_target == "/guestbook.html") {
 		_contentType = "text/html";
 		_body = generateGuestbookHTML(_userName);
-		std::cout << "Generated guestbook page in GET" << std::endl;
 		return;
 	}
 	if (_route->getPath().find(".py") != std::string::npos || _route->getPath().find(".php") != std::string::npos) {
