@@ -192,10 +192,6 @@ void	HttpRes::GET(void) {
 		return (GET());
 	}
 	if (isDirectory(_serverPath)) {
-		std::cout << "\nTHIS IS A DIRECTORY!" << std::endl;
-		std::cout << "Index-file: " << _route->getIndexFile() << std::endl;
-		std::cout << "RootDirConfig: " << _server->getConfig()->getRootDirConfig() << std::endl;
-		std::cout << "Was redirected: " << _wasRedirected << std::endl;
 		if (_route->getAutoindex()) {											// autoindex directive
 			_httpStatus = 200;
 			_contentType = "text/html";
@@ -224,21 +220,20 @@ void	HttpRes::GET(void) {
 }
 
 void HttpRes::POST(HttpReq &httpRequest) {
-    std::cout << "POST DATA" << httpRequest.getBody() << std::endl;
-    if (_target == "/guestbook.html") {
-        if (!httpRequest.getBody().empty()) {
-            std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
+	if (_target == "/guestbook.html") {
+		if (!httpRequest.getBody().empty()) {
+			std::map<std::string, std::string> formData = parsePostData(httpRequest.getBody());
             if (formData.count("name") && formData.count("message")) {
-                // Check if this is a Scramble request
+				// Check if this is a Scramble request
                 if (formData.count("action") && (formData["action"] == "Scramble.py" || formData["action"] == "Capitalize.php")) {
 					std::cout << "CGI POST request" << std::endl;
                     CGI cgi;
                     std::string Message = cgi.executeCGI_POST(*this, formData);
                     if (Message != "500") {
-                        saveGuestbookEntry(formData["name"], Message);
+						saveGuestbookEntry(formData["name"], Message);
                     }
                 } else {
-                    // Regular submission
+					// Regular submission
                     saveGuestbookEntry(formData["name"], formData["message"]);
                 }
                 std::cout << "Saved entry: " << formData["name"] << ": " << formData["message"] << std::endl;
@@ -248,11 +243,10 @@ void HttpRes::POST(HttpReq &httpRequest) {
 				return;
 			}
         }
-        _httpStatus = 303;  // Redirect after POST
-        _target = "/guestbook.html";  // Redirect back to guestbook
+        _httpStatus = 303;			// Redirect after POST
         return;
     }
-    if (access(_serverPath.c_str(), F_OK) == 0) {
+    if (!access(_route->getRootDirRoute().c_str(), W_OK) && !access(_serverPath.c_str(), F_OK)) {
         _httpStatus = 404;
         return;
     }
@@ -267,7 +261,7 @@ void	HttpRes::DELETE(void) {
 	if (access(_serverPath.c_str(), F_OK)) {			// Check if the file exists
 		_httpStatus = 404;
 		return;
-	} else if (access(_serverPath.c_str(), W_OK)) {	// Check if the file is writable
+	} else if (access(_serverPath.c_str(), W_OK)) {		// Check if the file is writable
 		_httpStatus = 403;
 		return;
 	}
@@ -280,18 +274,15 @@ void	HttpRes::DELETE(void) {
 }
 
 void	HttpRes::determineContentType(void) {
-	std::string extension;
 	try
 	{
-		extension = _target.substr(_target.find_last_of(".") + 1);
+		_contentType = getMimeType(_target.substr(_target.find_last_of(".") + 1));
 	}
 	catch(const std::exception& e)
 	{
-		std::cerr << e.what() << '\n';
-		_contentType = "text/plain";
+		_contentType = getMimeType("html");
 		return;
 	}
-	_contentType = getMimeType(extension);
 }
 
 bool	HttpRes::parseFile(void) {

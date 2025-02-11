@@ -5,6 +5,7 @@
 
 class HttpRes {
 private:
+	// - Static variables:
 	Server				*_server;
 	Route				*_route;
 
@@ -18,11 +19,11 @@ private:
 	std::string			_contentType;
 	std::string			_body;
 
-	bool				_wasRedirected;
+	bool				_wasRedirected;		// If the request was redirected (to avoid double free)
 
-	void				getNameCookie(HttpReq &httpRequest);
-	bool				parseFile(void);
-	void				determineContentType(void);
+	void				getNameCookie(HttpReq &httpRequest);	// Get the name of the user from the cookie
+	bool				parseFile(void);						
+	void				determineContentType(void);				
 
 	const std::string	&getMimeType(const std::string &extension);
 	const std::string	&getStatusDescription(int status);
