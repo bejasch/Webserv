@@ -1,7 +1,7 @@
 #include "../headers/AllHeaders.hpp"
 
 int stringToInt(const std::string &str) {
-    return std::atoi(str.c_str());
+	return std::atoi(str.c_str());
 }
 
 std::string	intToString(int value) {
@@ -11,18 +11,18 @@ std::string	intToString(int value) {
 }
 
 bool isStandaloneWord(const std::string& line, const std::string& word, size_t pos) {
-    // Check character before the word (if not at the start of the string)
-    if (pos > 0 && std::isalnum(line[pos - 1])) {
-        return false;
-    }
+	// Check character before the word (if not at the start of the string)
+	if (pos > 0 && std::isalnum(line[pos - 1])) {
+		return false;
+	}
 
-    // Check character after the word (if not at the end of the string)
-    size_t after = pos + word.length();
-    if (after < line.size() && std::isalnum(line[after])) {
-        return false;
-    }
+	// Check character after the word (if not at the end of the string)
+	size_t after = pos + word.length();
+	if (after < line.size() && std::isalnum(line[after])) {
+		return false;
+	}
 
-    return true;
+	return true;
 }
 
 // Helper function to trim leading and trailing whitespaces
@@ -84,7 +84,7 @@ std::map<std::string, std::string>	parsePostData(const std::string &data) {
 
 // Save a new entry to the file located at GUESTBOOK_FILE
 void	saveGuestbookEntry(const std::string &name, const std::string &message) {
-    if (name.empty() || message.empty()) {
+	if (name.empty() || message.empty()) {
 		return;
 	}
 	if (name.find('|') != std::string::npos || message.find('|') != std::string::npos) {
@@ -181,10 +181,10 @@ bool	deleteFileDir(const std::string &path) {
 	if (pid == 0) {
 		const char *const args[] = {"/bin/rm", "-rf", path.c_str(), NULL};
 		if (execve("/bin/rm", (char *const *)args, NULL) == -1) {
-            // If execve fails, report the error
+			// If execve fails, report the error
 			std::cerr << "Execve failed: " << std::strerror(errno) << std::endl;
-            return (false);  // Return false if execve fails
-        }
+			return (false);  // Return false if execve fails
+		}
 	} else {
 		// Parent process: Wait for the child process to finish
 		int status;
@@ -213,11 +213,11 @@ std::vector<std::string> splitString(const std::string &str, const char delimite
 }
 
 std::string getFileExtension(const std::string &target) {
-    size_t dotPos = target.find_last_of('.');  // Find the last dot
-    if (dotPos != std::string::npos) {
-        return target.substr(dotPos);  // Extract the substring after the last dot
-    }
-    return "";  // No extension found
+	size_t dotPos = target.find_last_of('.');  // Find the last dot
+	if (dotPos != std::string::npos) {
+		return target.substr(dotPos);  // Extract the substring after the last dot
+	}
+	return "";  // No extension found
 }
 
 std::string	resolvePath(const std::string &target, const std::string &route_path, const std::string &root_dir) {

@@ -5,10 +5,10 @@
 
 class CGI {
 private:
-	pid_t                               pid;
+	pid_t								pid;
 	std::map<std::string, std::string>  env;
-	char                                **envp;
-	char						        **argv;
+	char								**envp;
+	char								**argv;
 
 public:
 	CGI();
@@ -16,7 +16,7 @@ public:
 	CGI operator=(const CGI &another);
 	~CGI();
 
-	int   		setAllEnv(HttpRes &httpResponse);
+	int			setAllEnv(HttpRes &httpResponse);
 	std::string	executeCGI_GET(HttpRes &httpResponse);
 	std::string	executeCGI_POST(HttpRes &httpResponse, const std::map<std::string, std::string> &formData);
 

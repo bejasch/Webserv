@@ -38,8 +38,8 @@ class Config {
 		int			getMaxBodySize() const;
 		std::string	getDefaultFile() const;
 		const std::map<int, std::string>	&getErrorPages() const;
-        const std::vector<std::string> &getAllowedMethods() const {return this->allowed_methods;};
-        const std::vector<Route *> &getRoutes() const {return this->routes;};
+		const std::vector<std::string> &getAllowedMethods() const {return this->allowed_methods;};
+		const std::vector<Route *> &getRoutes() const {return this->routes;};
 
 		Route	*getRouteForTarget(const std::string &target);
 

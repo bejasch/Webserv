@@ -25,7 +25,7 @@ Server Server::operator=(const Server &another) {
 }
 
 Server::~Server() {
-    // std::cout << "Server destructor called" << std::endl;
+	// std::cout << "Server destructor called" << std::endl;
 }
 
 int Server::setServer(Config *config) {
@@ -37,7 +37,7 @@ int Server::setServer(Config *config) {
 
 int Server::setUpServer() {
 	// Creating the file descriptor of the program running the server
-    server_fd = socket(AF_INET, SOCK_STREAM, 0);
+	server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_fd == 0 || server_fd == -1) {
 		std::cerr << "Socket creation failed: " << std::strerror(errno) << std::endl;
 		return(1);
@@ -48,15 +48,15 @@ int Server::setUpServer() {
 		std::cerr << "Setsockopt failed: " << std::strerror(errno) << std::endl;
 		return(1);
 	}
-    address.sin_family = AF_INET; // address family used previously
-    address.sin_addr.s_addr = INADDR_ANY; // this is my IP address
-    address.sin_port = htons( config->getPort() ); // the port I would like to expose
-    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) { // bind server file descriptor to socket address
+	address.sin_family = AF_INET; // address family used previously
+	address.sin_addr.s_addr = INADDR_ANY; // this is my IP address
+	address.sin_port = htons( config->getPort() ); // the port I would like to expose
+	if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) { // bind server file descriptor to socket address
 		std::cerr << "Bind failed: " << std::strerror(errno) << std::endl;
 		return(1);
 	}
-    fcntl(server_fd, F_SETFL, O_NONBLOCK);		// Make server_fd non-blocking
-    listen(server_fd, 10);			// 10 defines how many pending connections can be queued before connections are refused.
+	fcntl(server_fd, F_SETFL, O_NONBLOCK);		// Make server_fd non-blocking
+	listen(server_fd, 10);			// 10 defines how many pending connections can be queued before connections are refused.
 	return (0);
 }
 
@@ -83,14 +83,13 @@ int	Server::acceptConnection(int epoll_fd) {
 	// Add the new client to the client_requests map
 	client_requests.insert(std::make_pair(client_fd, HttpReq()));
 	server_manager.clientfd_to_serverfd[client_fd] = this;	
-	std::cout << "New client connected: fd " << client_fd << " linked to server_fd: " << server_fd << std::endl;
+	std::cout << GREEN << "New client connected with client_fd " << client_fd << ", linked to server_fd: " << server_fd << RESET<< std::endl;
 	return (0);
 }
 
 // Data is available to read from the socket
 int	Server::handleRequest(int client_fd) {
 	HttpReq	&request = client_requests[client_fd];
-	std::cout << "Handling request for client_fd: " << client_fd << std::endl;
 	char buffer[30000] = {0};
 	int valread = read(client_fd, buffer, sizeof(buffer));
 	if (valread <= 0) {
@@ -110,8 +109,8 @@ int	Server::handleRequest(int client_fd) {
 		client_requests.erase(client_fd);
 
 		epoll_event ev;
-        ev.events = EPOLLOUT;		// replace event with client_fd for writing data back as response
-        ev.data.fd = client_fd;
+		ev.events = EPOLLOUT;		// replace event with client_fd for writing data back as response
+		ev.data.fd = client_fd;
 		if (epoll_ctl(server_manager.getEpollFd(), EPOLL_CTL_MOD, client_fd, &ev) == -1) {
 			std::cerr << "Failed to add client_fd to epoll for writing: " << std::strerror(errno) << std::endl;
 			pending_responses.erase(client_fd);
@@ -124,9 +123,9 @@ int	Server::handleRequest(int client_fd) {
 
 // When the server is ready to send a response to the client, it calls handleResponse
 int		Server::handleResponse(int client_fd) {
-    if (pending_responses.find(client_fd) != pending_responses.end()) {
-        HttpRes &response = pending_responses[client_fd];
-        std::string response_str = response.getResponse();
+	if (pending_responses.find(client_fd) != pending_responses.end()) {
+		HttpRes &response = pending_responses[client_fd];
+		std::string response_str = response.getResponse();
 		const char* response_cstr = response_str.c_str();
 		size_t		size = response.getResponseSize();
 		if (response_cstr == NULL || size == 0) {

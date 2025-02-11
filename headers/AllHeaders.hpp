@@ -1,12 +1,18 @@
 #ifndef ALLHEADERS_HPP
 #define ALLHEADERS_HPP
 
-#define MAX_HEADER_SIZE 8192	// 8 KB
-#define MAX_HEADER_COUNT 100	// Arbitrary limit
-// #define MAX_BODY_SIZE 1048576	// is in Server->Config
-#define MAX_RETRY_COUNT 5		// Maximum number of retries for write failures
-#define GUESTBOOK_FILE "data/guestbook/guestbook.txt"
-#define MAX_EVENTS 100			// Max events for epoll_wait
+#define MAX_HEADER_SIZE		8192	// 8 KB
+#define MAX_HEADER_COUNT	100		// Arbitrary limit
+#define MAX_RETRY_COUNT		5		// Maximum number of retries for write failures
+#define MAX_EVENTS			100		// Max events for epoll_wait
+#define GUESTBOOK_FILE		"data/guestbook/guestbook.txt"
+
+#define RESET   "\033[0m"      // Reset all colors
+#define RED     "\033[31m"     // Red text
+#define GREEN   "\033[32m"     // Green text
+#define YELLOW  "\033[33m"     // Yellow text
+#define BLUE    "\033[34m"     // Blue text
+#define CYAN    "\033[36m"     // Cyan text
 
 class	CGI;
 class	Config;
@@ -50,6 +56,5 @@ class	ServerManager;
 #include "ServerManager.hpp"
 #include "Utils.hpp"
 #include "CGI.hpp"
-
 
 #endif

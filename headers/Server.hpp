@@ -4,16 +4,16 @@
 #include "AllHeaders.hpp"
 
 class Server {
-    private:
-        // server-set
-        int						server_fd;
-        struct sockaddr_in		address;
+	private:
+		// server-set
+		int						server_fd;
+		struct sockaddr_in		address;
 		std::map<int, HttpReq>	client_requests;
 		std::map<int, HttpRes>	pending_responses;
 		Config					*config;
 		ServerManager			&server_manager;
 
-    public:
+	public:
 		Server();
 		Server(ServerManager &server_manager);
 		Server(const Server &other);
