@@ -226,7 +226,7 @@ std::string resolvePath(const std::string &target, const std::string &route_path
 	if (target.find(route_path) == 0) { // If route_path is a prefix of target
 		if (target == route_path) {
 			if (target.find_last_of('.') != std::string::npos) {
-				return root_dir + "/" + target; // Keep full target if it's a file
+				return root_dir + target; // Keep full target if it's a file
 			} else {
 				return root_dir + "/"; // If it's a directory, return root_dir only
 			}
@@ -235,7 +235,7 @@ std::string resolvePath(const std::string &target, const std::string &route_path
 
 		if (resolvedPath.empty() || resolvedPath[0] != '/')
 			resolvedPath = "/" + resolvedPath;
-		return root_dir + resolvedPath;
+		return (root_dir + resolvedPath);
 	}
 	return ""; // Return empty string if route_path is not a prefix of target
 }
