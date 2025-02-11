@@ -101,7 +101,7 @@ int	Server::handleRequest(int client_fd) {
 		client_requests.erase(client_fd); // Clean up state
 		return(1);
 	}
-	std::cout << "Received " << valread << " bytes from client_fd: " << client_fd << std::endl;
+	std::cout << BOLD << "\tReceived " << valread << " bytes from client_fd: " << client_fd << std::endl << RESET;
 	// Process the incoming data if the request is complete
 	if (request.processData(*this, std::string(buffer, valread))) {
 		pending_responses[client_fd].handleRequest(request, *this);
@@ -151,7 +151,7 @@ int		Server::handleResponse(int client_fd) {
 			if (total_sent < size)
 				std::cerr << "Warning: Only " << total_sent << " out of " << size << " bytes were sent.\n";
 			else
-				std::cout << "Successfully sent " << total_sent << " bytes to client.\n";
+				std::cout << BOLD << "\tSuccessfully sent " << total_sent << " bytes to client.\n" << RESET;
 		}
 		pending_responses.erase(client_fd);
 	}

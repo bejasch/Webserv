@@ -113,7 +113,6 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 		return;
 	}
 	_serverPath = resolvePath(_target, _route->getPath(), _route->getRootDirRoute());
-	std::cout << "\n\tServer path: " << _serverPath << std::endl;
 	
 	if (_method == "GET")
 		GET();

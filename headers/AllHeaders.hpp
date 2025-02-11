@@ -7,12 +7,32 @@
 #define MAX_EVENTS			100		// Max events for epoll_wait
 #define GUESTBOOK_FILE		"data/guestbook/guestbook.txt"
 
-#define RESET   "\033[0m"      // Reset all colors
-#define RED     "\033[31m"     // Red text
-#define GREEN   "\033[32m"     // Green text
-#define YELLOW  "\033[33m"     // Yellow text
-#define BLUE    "\033[34m"     // Blue text
-#define CYAN    "\033[36m"     // Cyan text
+#include <iostream>
+
+// Text Colors
+#define RESET     "\033[0m"      // Reset all styles
+#define RED       "\033[31m"     // Red text
+#define GREEN     "\033[32m"     // Green text
+#define YELLOW    "\033[33m"     // Yellow text
+#define BLUE      "\033[34m"     // Blue text
+#define MAGENTA   "\033[35m"     // Magenta text
+#define CYAN      "\033[36m"     // Cyan text
+#define WHITE     "\033[37m"     // White text
+
+// Background Colors
+#define BG_RED    "\033[41m"     // Red background
+#define BG_GREEN  "\033[42m"     // Green background
+#define BG_YELLOW "\033[43m"     // Yellow background
+#define BG_BLUE   "\033[44m"     // Blue background
+#define BG_MAGENTA "\033[45m"    // Magenta background
+#define BG_CYAN   "\033[46m"     // Cyan background
+#define BG_WHITE  "\033[47m"     // White background
+
+// Text Styles
+#define BOLD      "\033[1m"      // Bold text
+#define UNDERLINE "\033[4m"      // Underline text
+#define BLINK     "\033[5m"      // Blinking text (⚠️ Not supported in all terminals)
+#define REVERSE   "\033[7m"      // Inverted colors (swap foreground/background)
 
 class	CGI;
 class	Config;
