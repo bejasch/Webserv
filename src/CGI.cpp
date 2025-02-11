@@ -164,7 +164,10 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
 
         // Execute the CGI script using execve
         if (execve(argv[0], argv, envp) == -1) {
-            std::cerr << "Execve error: " << std::strerror(errno) << std::endl;
+            std::cerr << "Failed to execute script: " << std::strerror(errno) << std::endl;
+            freeEnvironment();
+            ServerManager &serverManager = httpResponse.getServer()->getServerManager();
+            serverManager.freeResources();
             exit(EXIT_FAILURE);
         }
     } else {

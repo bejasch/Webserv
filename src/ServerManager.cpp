@@ -282,27 +282,6 @@ int ServerManager::checkConfig(Config *config) {
     return 0;
 }
 
-int ServerManager::freeResources() {
-    if (!servers.empty()) {
-        for (unsigned long i = 0; i < servers.size(); i++) {
-            servers[i]->getConfig()->freeConfig();
-            servers[i]->freeServer();
-            delete servers[i];
-        }
-        servers.clear();
-    }
-    else
-        return 0;
-    // Close epoll file descriptor
-    if (epoll_fd != -1) {
-        close(epoll_fd);
-        epoll_fd = -1;
-    }
-    // Clear the client-to-server mapping
-    clientfd_to_serverfd.clear();
-    return 0;
-}
-
 void ServerManager::signalHandler(int signum) {
     if (signum == SIGINT) {
         stop_flag = 1;
@@ -368,4 +347,23 @@ void ServerManager::validateRoutes() {
     }
 }
 
-
+int ServerManager::freeResources() {
+    if (!servers.empty()) {
+        for (unsigned long i = 0; i < servers.size(); i++) {
+            servers[i]->getConfig()->freeConfig();
+            servers[i]->freeServer();
+            delete servers[i];
+        }
+        servers.clear();
+    }
+    else
+        return 0;
+    // Close epoll file descriptor
+    if (epoll_fd != -1) {
+        close(epoll_fd);
+        epoll_fd = -1;
+    }
+    // Clear the client-to-server mapping
+    clientfd_to_serverfd.clear();
+    return 0;
+}

@@ -149,5 +149,6 @@ void	Server::freeServer() {
 	close(server_fd);
 	client_requests.clear();
 	pending_responses.clear();
-	delete config;
+	if (config)
+		delete config;
 }
