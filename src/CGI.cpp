@@ -9,15 +9,15 @@ CGI::~CGI() {
     std::cout << "CGI destructor called" << std::endl;
 }
 
-void    CGI::setAllEnv(HttpRes &httpResponse) {
+int CGI::setAllEnv(HttpRes &httpResponse) {
     env["SERVER_PROTOCOL"] = "HTTP/1.1";
     env["REQUEST_METHOD"] = httpResponse.getMethod();
     env["SCRIPT_NAME"] = httpResponse.getTarget();
     env["DOCUMENT_ROOT"] = httpResponse.getRoute()->getRootDirRoute();
     this->envp = new char*[this->env.size() + 1];
     if (this->envp == NULL) {
-        perror("Failed to allocate memory for envp");
-        return;
+        std::cerr << "Failed to allocate memory for envp: " << std::strerror(errno) << std::endl;
+        return(1);
     }
 	std::map<std::string, std::string>::const_iterator it = this->env.begin();
 	for (int i = 0; it != this->env.end(); it++, i++)
@@ -25,17 +25,21 @@ void    CGI::setAllEnv(HttpRes &httpResponse) {
     this->envp[this->env.size()] = NULL;
     this->argv = new char*[3];
     if (this->argv == NULL) {
-        perror("Failed to allocate memory for envp or argv");
-        return;
+        std::cerr << "Failed to allocate memory for argv: " << std::strerror(errno) << std::endl;
+        return(1);
     }
     this->argv[0] = NULL;
     this->argv[1] = NULL;
     this->argv[2] = NULL;
+    return (0);
 }
 
-//TODO: what happens when no .py or .php configs are set
 std::string CGI::executeCGI_GET(HttpRes &httpResponse) {
-    setAllEnv(httpResponse);
+    if (setAllEnv(httpResponse)){
+        std::cerr << "Failed to set env variables: " << std::strerror(errno) << std::endl;
+        httpResponse.setStatus(500);
+        return "";
+    }
     std::cout << "root dir: " << env["DOCUMENT_ROOT"] << std::endl;
     std::string scriptPath = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
     std::cout << "Executing CGI script (GET): " << scriptPath << std::endl;
@@ -48,14 +52,14 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse) {
 
     int pipe_fd[2];
     if (pipe(pipe_fd) == -1) {
-        perror("Failed to create pipe");
+        std::cerr << "Failed to create pipe: " << std::strerror(errno) << std::endl;
         httpResponse.setStatus(500);
         return "";
     }
 
     pid = fork();
     if (pid == -1) {
-        perror("Failed to fork");
+        std::cerr << "Failed to fork: " << std::strerror(errno) << std::endl;
         httpResponse.setStatus(500);
         return "";
     }
@@ -67,7 +71,10 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse) {
         close(pipe_fd[1]);
 
         if (execve(argv[0], argv, envp) == -1) {
-            perror("Failed to execute script");
+            std::cerr << "Failed to execute script: " << std::strerror(errno) << std::endl;
+            freeEnvironment();
+            ServerManager &serverManager = httpResponse.getServer()->getServerManager();
+            serverManager.freeResources();
             exit(EXIT_FAILURE);
         }
     } 
@@ -78,16 +85,14 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse) {
     int bytes_read;
     while ((bytes_read = read(pipe_fd[0], buffer, sizeof(buffer))) > 0) {
 		if (bytes_read == -1) {
-			perror("Read error");
+            std::cerr << "Read error: " << std::strerror(errno) << std::endl;
 			break;
 		}
         output.append(buffer, bytes_read);
     }
     close(pipe_fd[0]);
-
     int status;
     waitpid(pid, &status, 0);
-
     if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
         return output;
     } else {
@@ -101,8 +106,11 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse) {
 
 std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::string, std::string> &formData) {
     std::string scriptPath;
-    setAllEnv(httpResponse);
-
+    if (setAllEnv(httpResponse)){
+        std::cerr << "Failed to set env variables: " << std::strerror(errno) << std::endl;
+        httpResponse.setStatus(500);
+        return "";
+    }
     // Check if the "action" key exists in formData
 	std::map<std::string, std::string>::const_iterator it = formData.find("action");
     if (it != formData.end()) {
@@ -130,7 +138,7 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
     // Create two pipes: one for input (stdin) and one for output (stdout)
     int inputPipe[2], outputPipe[2];
     if (pipe(inputPipe) == -1 || pipe(outputPipe) == -1) {
-        perror("pipe");
+        std::cerr << "Pipe error: " << std::strerror(errno) << std::endl;
         httpResponse.setStatus(500);
         return "";
     }
@@ -138,7 +146,7 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
     // Fork to execute the CGI script
     pid_t pid = fork();
     if (pid == -1) {
-        perror("fork");
+        std::cerr << "Fork error: " << std::strerror(errno) << std::endl;
         httpResponse.setStatus(500);
         return "";
     } else if (pid == 0) {
@@ -156,8 +164,8 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
 
         // Execute the CGI script using execve
         if (execve(argv[0], argv, envp) == -1) {
-            perror("execve failed");
-            exit(1);
+            std::cerr << "Execve error: " << std::strerror(errno) << std::endl;
+            exit(EXIT_FAILURE);
         }
     } else {
         // Parent process

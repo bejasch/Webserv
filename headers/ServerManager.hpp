@@ -20,16 +20,16 @@ public:
     void printConfigAll();
     int portCheck(int port);
     int checkConfig(Config *config);
+    int freeResources();
 
 private:
-    void handleEvents();
-    void dispatchEvent(const epoll_event& event);
+    int handleEvents();
+    int dispatchEvent(const epoll_event& event);
     std::string fillConfig(std::string line, std::ifstream &file, Config *config);
     std::string fillRoute(std::string line, std::ifstream &file, Route *route);
     static void signalHandler(int signum);
     int create_base_route(Config *config);
     void validateRoutes();
-    int freeResources();
 };
 
 #endif

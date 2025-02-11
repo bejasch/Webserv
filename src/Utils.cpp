@@ -174,7 +174,7 @@ const std::string	generateGuestbookHTML(const std::string &userName) {
 bool	deleteFileDir(const std::string &path) {
 	pid_t	pid = fork();
 	if (pid < 0) {
-		perror("Fork failed");
+		std::cerr << "Fork failed: " << std::strerror(errno) << std::endl;
 		return (false);
 	}
 
@@ -182,7 +182,7 @@ bool	deleteFileDir(const std::string &path) {
 		const char *const args[] = {"/bin/rm", "-rf", path.c_str(), NULL};
 		if (execve("/bin/rm", (char *const *)args, NULL) == -1) {
             // If execve fails, report the error
-            perror("execve failed");
+			std::cerr << "Execve failed: " << std::strerror(errno) << std::endl;
             return (false);  // Return false if execve fails
         }
 	} else {
@@ -236,7 +236,7 @@ char *cpp_strdup(const std::string str)
 
 	dup = new char[str.size() + 1];
 	if (dup == NULL) {
-		perror("Failed to allocate memory for argv[0]");
+		std::cerr << "Failed to allocate memory: " << std::strerror(errno) << std::endl;
 		return NULL;
 	}
 	std::copy(str.begin(), str.end(), dup);

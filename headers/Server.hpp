@@ -3,7 +3,6 @@
 
 #include "AllHeaders.hpp"
 
-// TODO: Why is the Config as a pointer?
 class Server {
     private:
         // server-set
@@ -17,14 +16,15 @@ class Server {
     public:
 		Server(ServerManager &server_manager);
 		~Server();
-		void setServer(Config *config); //define server configs
-		void setUpServer(); //define socket and bind to server fd
+		int		setServer(Config *config); //define server configs
+		int		setUpServer(); //define socket and bind to server fd
 	
 		Config	*getConfig() const { return this->config; } ;
+		ServerManager	&getServerManager() const { return this->server_manager; } ;
 		int		getServerFd() const { return this->server_fd; } ;
-		void	acceptConnection(int epoll_fd);
-		void	handleRequest(int fd);
-		void	handleResponse(int fd);
+		int		acceptConnection(int epoll_fd);
+		int		handleRequest(int fd);
+		int		handleResponse(int fd);
 		void	freeServer();
 };
 

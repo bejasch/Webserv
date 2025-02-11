@@ -21,11 +21,11 @@ int ServerManager::setServers(const std::string &config_file)
 
     if (config_file.find(".conf") == std::string::npos) {
         std::cerr << "Invalid configuration file format: " << std::strerror(errno) << std::endl;
-        return (1); // TODO: remember to free (no need to free here, goes out of scope)
+        return (1);
     }
     if (!file.is_open()) {
         std::cerr << "Failed to open configuration file: " << std::strerror(errno) << std::endl;
-        return (1); // TODO: remember to free (no need to free here, goes out of scope)
+        return (1);
     }
     while (std::getline(file, line)) {
         if (line.empty() || find_commented_line(line) == 1) {
@@ -36,7 +36,7 @@ int ServerManager::setServers(const std::string &config_file)
             server = new Server(*this);
             config = new Config();
             if (server == NULL || config == NULL) {
-                std::cerr << "Failed to allocate memory for server or config" << std::endl;
+                std::cerr << "Failed to allocate memory for server or config: " << std::strerror(errno) << std::endl;
                 return 1;
             }
             // Call fillConfig to parse and fill the server's configuration
@@ -57,7 +57,7 @@ int ServerManager::setServers(const std::string &config_file)
         if (line.find("location") != std::string::npos && server != NULL) {
             route = new Route();
             if (route == NULL) {
-                std::cerr << "Failed to allocate memory for route" << std::endl;
+                std::cerr << "Failed to allocate memory for route: " << std::strerror(errno) << std::endl;
                 return 1;
             }
             route->setPath(line.substr(line.find("location") + std::string("location").length() + 1, line.find("{") - line.find(" ") - 2));
@@ -66,11 +66,11 @@ int ServerManager::setServers(const std::string &config_file)
                 std::cerr << "Discarding unfinished route: " << route->getPath() << std::endl;
                 delete route;
                 route = NULL;
-                continue; // Skip to the next line in the config
+                continue;
             }
             if (route->checkRoute(route) == 1) {
                 delete route;
-                route = NULL; // Avoid dangling pointer
+                route = NULL;
                 continue;
             }
             config->addRoute(route);
@@ -81,20 +81,20 @@ int ServerManager::setServers(const std::string &config_file)
         return 1;
     }
     validateRoutes();
-    printConfigAll();  // Print the configuration
-    file.close();  // Close the file explicitly (optional since it's auto-closed on scope exit)
-    return 0;  // Return 0 to indicate success
+    // printConfigAll();
+    file.close();
+    return 0;
 }
 
 void ServerManager::startServers() {
     // // Create epoll instance
     epoll_fd = epoll_create1(0);
     if (epoll_fd == -1) {
-        perror("Failed to create epoll instance");
+        std::cerr << "Failed to create epoll instance: " << std::strerror(errno) << std::endl;
         return;
     }
     if (signal(SIGINT, ServerManager::signalHandler) == SIG_ERR) {
-        std::perror("signal");
+        std::cerr << "Error with signal: " << std::strerror(errno) << std::endl;
         std::exit(EXIT_FAILURE);
     }
     // Add all server_fd to epoll instance to monitor incoming connections
@@ -105,53 +105,63 @@ void ServerManager::startServers() {
         ev.events = EPOLLIN;
         ev.data.fd = server_fd;
         if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &ev) == -1) {
-            perror("Failed to add server_fd to epoll");
+            std::cerr << "Failed to add server_fd to epoll: " << std::strerror(errno) << std::endl;
             return;
-            }
-        //std::cout << "Added server_fd: " << server_fd << " to epoll" << std::endl;
+        }
     }
     handleEvents();
 }
 
 // Central event loop that distributes events to the appropriate server
-void ServerManager::handleEvents() {
+int ServerManager::handleEvents() {
     epoll_event events[MAX_EVENTS];
 
     while (!stop_flag) {
         int n = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
         if (n == -1) {
-            perror("epoll_wait failed");
-            return;
+            std::cerr << "Epoll_wait failed: " << std::strerror(errno) << std::endl;
+            return (1);
         }
         for (int i = 0; i < n; ++i) {
-            dispatchEvent(events[i]);
+            if (dispatchEvent(events[i])) {
+                std::cerr << "Error handling event" << std::endl;
+                //freeResources();
+                return (1);
+            }
         }
     }
     freeResources();
+    return (0);
 }
 
-void ServerManager::dispatchEvent(const epoll_event& event) {
+int ServerManager::dispatchEvent(const epoll_event& event) {
     for (unsigned long i = 0; i < servers.size(); ++i) {
         Server *server = servers[i];
         // this implies its a new connection, that needs to be added to epoll instance
         if (event.data.fd == server->getServerFd()) {
-            server->acceptConnection(epoll_fd);
-            return;
+            if (server->acceptConnection(epoll_fd)) {
+                std::cerr << "Failed to accept connection for server_fd: " << server->getServerFd() << std::endl;
+                return (1);
+            }
+            return (0);
         }
     }
     for (std::map<int, Server*>::iterator it = clientfd_to_serverfd.begin(); it != clientfd_to_serverfd.end(); ++it) {
         if (event.data.fd == it->first) {
             Server *server = it->second;
 			if (event.events & EPOLLIN) {
-            	server->handleRequest(event.data.fd);	// Handle request for client_fd
-			} else if (event.events & EPOLLOUT) {
-				server->handleResponse(event.data.fd);	// Handle response for client_fd
-			}
-            return;
+            	if (server->handleRequest(event.data.fd))	// Handle request for client_fd
+                    return (1);
+            } else if (event.events & EPOLLOUT) {
+				if (server->handleResponse(event.data.fd))	// Handle response for client_fd
+                    return (1);
+            }
+            return (0);
         }
     }
     //if it gets here, it means the fd is not recognized
     std::cerr << "Unknown fd: " << event.data.fd << std::endl;
+    return (1);
 }
 
 int ServerManager::create_base_route(Config *config) {
@@ -164,10 +174,7 @@ int ServerManager::create_base_route(Config *config) {
     return 0;
 }
 
-//TODO: this assumes that there is only one space between the key and value
-//TODO: this also assumes that there are tabs in front of the key
 std::string ServerManager::fillConfig(std::string line, std::ifstream &file, Config *config) {
-    // std::string line;
     while (std::getline(file, line)) {
         if (line.empty() || find_commented_line(line) == 1) {
             continue;
@@ -183,7 +190,7 @@ std::string ServerManager::fillConfig(std::string line, std::ifstream &file, Con
         else if (line.find("client_max_body_size") != std::string::npos)
             config->setMaxBodySize(stringToInt(line.substr(line.find("client_max_body_size") + std::string("client_max_body_size").length() + 1, line.find(";") - line.find(" ") - 1)));
         else if (line.find("index") != std::string::npos)
-            config->setDefaultFile(line.substr(line.find("index") + std::string("index").length() + 1, line.find(";") - line.find(" ") - 1)); //TODO: currently only supports one index file
+            config->setDefaultFile(line.substr(line.find("index") + std::string("index").length() + 1, line.find(";") - line.find(" ") - 1));
         else if (line.find("error_page") != std::string::npos) {
             int error_status = stringToInt(line.substr(line.find("error_page") + std::string("error_page").length() + 1, line.find(" ") - line.find("error_page") - 1));
             std::string error_page = line.substr(line.find("error_page") + std::string("error_page").length() + 5, line.find(";") - line.find(" ") - 5);
@@ -197,7 +204,7 @@ std::string ServerManager::fillConfig(std::string line, std::ifstream &file, Con
         else if (!line.empty())
             std::cerr << "Unknown directive in Server Configs: " << line << std::endl;
     }
-    return NULL; // Return 0 to indicate successful parsing
+    return NULL;
 }
 
 std::string ServerManager::fillRoute(std::string line, std::ifstream &file, Route *route) {
@@ -306,7 +313,6 @@ static bool	compareRoutes(Route* a, Route* b) {
     return (a->getPath().size() < b->getPath().size());
 }
 
-
 void ServerManager::validateRoutes() {
     for (size_t i = 0; i < servers.size(); i++) {
         Config *config = servers[i]->getConfig();
@@ -338,7 +344,6 @@ void ServerManager::validateRoutes() {
             }
 
             // If a parent is found, inherit missing config values
-            // TODO: cgi routes are also getting filled with the base route's values
             if (parent) {
                 if (route->getRootDirRoute().empty()) {
                     route->setRootDirRoute(parent->getRootDirRoute());

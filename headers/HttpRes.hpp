@@ -54,6 +54,7 @@ public:
 	const std::string	&getTarget(void) const;
 	Route				*getRoute(void) const;
 	void				setStatus(int status) { _httpStatus = status; }
+	Server				*getServer(void) const { return (_server); }
 
 
 };
