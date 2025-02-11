@@ -18,8 +18,7 @@ private:
 	std::string			_contentType;
 	std::string			_body;
 
-	// static std::map<std::string, std::string>	mimeTypes;
-	// static std::map<int, std::string>			statusDescription;
+	bool				_wasRedirected;
 
 	void				getNameCookie(HttpReq &httpRequest);
 	bool				parseFile(void);

@@ -1,13 +1,14 @@
 #include "../headers/AllHeaders.hpp"
 
-HttpRes::HttpRes() : _httpStatus(0), _responseSize(0) {
-    // std::cout << "HttpRes default constructor called" << std::endl;
+HttpRes::HttpRes() : _method(""), _httpStatus(0), _responseSize(0),
+	_userName(""), _target(""), _serverPath(""), _contentType(""), _body(""), _wasRedirected(false) {
+	// std::cout << "HttpRes default constructor called" << std::endl;
 }
 
 HttpRes::HttpRes(const HttpRes &other) : _method(other._method),
 	_httpStatus(other._httpStatus),	_responseSize(other._responseSize),
 	_target(other._target), _contentType(other._contentType),
-	_body(other._body) {}
+	_body(other._body), _wasRedirected(false) {}
 
 HttpRes HttpRes::operator=(const HttpRes &another) {
 	if (this == &another)
@@ -108,7 +109,7 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 		return;
 	}
 	_serverPath = resolvePath(_target, _route->getPath(), _route->getRootDirRoute());
-	std::cout << "Server path: " << _serverPath << std::endl;
+	std::cout << "\n\tServer path: " << _serverPath << std::endl;
 	
     if (_method == "GET")
 		GET();
@@ -182,19 +183,32 @@ void	HttpRes::GET(void) {
 		_contentType = "text/html";
 		return;
 	}
+	if (!_wasRedirected && !_route->getRedirectUrl().empty()) {		// return directive
+		_wasRedirected = true;
+		_target = _route->getRedirectUrl();
+		_httpStatus = _route->getRedirectStatus();
+		_route = _server->getConfig()->getRouteForTarget(_route->getRedirectUrl());
+		_serverPath = _route->getRootDirRoute() + _target;
+		return (GET());
+	}
 	if (isDirectory(_serverPath)) {
-		if (_route->getAutoindex()) {
+		std::cout << "\nTHIS IS A DIRECTORY!" << std::endl;
+		std::cout << "Index-file: " << _route->getIndexFile() << std::endl;
+		std::cout << "RootDirConfig: " << _server->getConfig()->getRootDirConfig() << std::endl;
+		std::cout << "Was redirected: " << _wasRedirected << std::endl;
+		if (_route->getAutoindex()) {											// autoindex directive
 			_httpStatus = 200;
 			_contentType = "text/html";
 			generateAutoindexPage(_serverPath);
 			return;
-		} else if (!_route->getIndexFile().empty() && access((_serverPath + _route->getIndexFile()).c_str(), R_OK) != -1) {
-			_target += _route->getIndexFile();
-			_httpStatus = 200;
-		} else if (!_route->getRedirectUrl().empty() && access((_serverPath + _route->getRedirectUrl()).c_str(), R_OK) != -1) {
-			_target = _route->getRedirectUrl();
-			_httpStatus = _route->getRedirectStatus();
-		} else {
+		} else if (!_wasRedirected && !_route->getIndexFile().empty()) {		// index-file directive
+			std::cout << "Redirecting to index file" << std::endl;
+			_wasRedirected = true;
+			_target = _route->getIndexFile();
+			_route = _server->getConfig()->getRouteForTarget(_route->getIndexFile());
+			_serverPath = _route->getRootDirRoute() + _target;
+			return (GET());
+		} else {																// No index-file or autoindex
 			_httpStatus = 403;
 			return;
 		}

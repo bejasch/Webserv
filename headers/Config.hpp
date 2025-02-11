@@ -39,7 +39,7 @@ class Config {
         const std::vector<std::string> &getAllowedMethods() const {return this->allowed_methods;};
         const std::vector<Route *> &getRoutes() const {return this->routes;};
 
-		Route	*getRouteForTarget(std::string &target);
+		Route	*getRouteForTarget(const std::string &target);
 
 		// Utils
 		int		initialisedCheck();

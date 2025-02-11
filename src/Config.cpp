@@ -36,7 +36,7 @@ void Config::printConfig() {
     }
 }
 
-Route	*Config::getRouteForTarget(std::string &target) {
+Route	*Config::getRouteForTarget(const std::string &target) {
 	Route	*route = NULL;
 	for (unsigned long i = 0; i < routes.size(); i++) {
 		if (routes[i]->containsTarget(target)) {
