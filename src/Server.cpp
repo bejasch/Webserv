@@ -105,8 +105,8 @@ int	Server::handleRequest(int client_fd) {
 	std::cout << BOLD << "\n\tReceived " << valread << " bytes from client_fd: " << client_fd << std::endl << RESET;
 	// Process the incoming data if the request is complete
 	if (request.processData(*this, std::string(buffer, valread))) {
-		pending_responses[client_fd].handleRequest(request, *this);
-		request.print();
+		pending_responses[client_fd].handleRequest(request, *this, client_fd);
+		///request.print();
 		client_requests.erase(client_fd);
 
 		epoll_event ev;

@@ -94,10 +94,11 @@ void	HttpRes::getNameCookie(HttpReq &httpRequest) {
 	}
 }
 
-void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
+void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server, int client_fd) {
 	_server = &server;
 	_target = httpRequest.getTarget();
 	_httpStatus = httpRequest.getHttpStatus();
+	_client_fd = client_fd;
 	if (_httpStatus >= 400 && _httpStatus < 600) {
 		return;
 	}
@@ -181,7 +182,7 @@ void	HttpRes::GET(void) {
 	}
 	if (_route->getPath().find(".py") != std::string::npos || _route->getPath().find(".php") != std::string::npos) {
 		CGI cgi;
-		_body = cgi.executeCGI_GET(*this);
+		_body = cgi.executeCGI_GET(*this, _client_fd);
 		_contentType = "text/html";
 		return;
 	}

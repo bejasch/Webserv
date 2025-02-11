@@ -18,6 +18,7 @@ private:
 	std::string			_serverPath;
 	std::string			_contentType;
 	std::string			_body;
+	int					_client_fd;
 
 	bool				_wasRedirected;		// If the request was redirected (to avoid double free)
 
@@ -43,7 +44,7 @@ public:
 	~HttpRes();
 
 	// --> Response methods:
-	void				handleRequest(HttpReq &httpRequest, Server &server);
+	void				handleRequest(HttpReq &httpRequest, Server &server, int client_fd);
 	std::string			getResponse(void);
 	size_t				getResponseSize(void) const;
 
@@ -52,6 +53,7 @@ public:
 	const std::string	&getTarget(void) const;
 	Route				*getRoute(void) const;
 	void				setStatus(int status);
+	
 	Server				*getServer(void) const;
 };
 

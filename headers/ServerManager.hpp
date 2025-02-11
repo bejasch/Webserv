@@ -18,9 +18,11 @@ public:
 	void startServers(); // Runs the central event loop
 	int getEpollFd() const { return epoll_fd; }
 	std::map<int, Server*> clientfd_to_serverfd;
+	std::map<int, int> cgi_pipes;
 	void printConfigAll();
 	int portCheck(int port);
 	int checkConfig(Config *config);
+	int	handleCGIResponse(int pipe_fd);
 	int freeResources();
 
 private:

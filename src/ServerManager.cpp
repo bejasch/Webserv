@@ -139,6 +139,7 @@ int ServerManager::handleEvents() {
 			return (1);
 		}
 		for (int i = 0; i < n; ++i) {
+			std::cout << "Event received" << std::endl;
 			if (dispatchEvent(events[i])) {
 				std::cerr << "Error handling event" << std::endl;
 				return (1);
@@ -150,6 +151,11 @@ int ServerManager::handleEvents() {
 }
 
 int ServerManager::dispatchEvent(const epoll_event& event) {
+	std::cout << "Dispatching event" << std::endl;
+	if (cgi_pipes.find(event.data.fd) != cgi_pipes.end()) {
+		std::cout << "CGI response received on pipe_fd: " << event.data.fd << std::endl;
+		return (handleCGIResponse(event.data.fd));
+	}
 	for (unsigned long i = 0; i < servers.size(); ++i) {
 		Server *server = servers[i];
 		// this implies its a new connection, that needs to be added to epoll instance
@@ -165,9 +171,11 @@ int ServerManager::dispatchEvent(const epoll_event& event) {
 		if (event.data.fd == it->first) {
 			Server *server = it->second;
 			if (event.events & EPOLLIN) {
+				std::cout << "Request received" << std::endl;
 				if (server->handleRequest(event.data.fd))	// Handle request for client_fd
 					return (1);
 			} else if (event.events & EPOLLOUT) {
+				std::cout << "Response ready" << std::endl;
 				if (server->handleResponse(event.data.fd))	// Handle response for client_fd
 					return (1);
 			}
@@ -374,6 +382,61 @@ void ServerManager::validateRoutes() {
 	}
 }
 
+int ServerManager::handleCGIResponse(int pipe_fd) {
+	std::cout << "Handling CGI response" << std::endl;
+    char buffer[30000] = {0};
+    std::string output;
+    int bytes_read;
+
+    // Read CGI output
+	while ((bytes_read = read(pipe_fd, buffer, sizeof(buffer))) > 0) {
+		output.append(buffer, bytes_read);
+		std::cout << "Read " << bytes_read << " bytes from CGI output\n";
+	}
+	if (bytes_read == 0) {
+		std::cout << "CGI process closed the pipe.\n";
+	} else if (bytes_read == -1) {
+		std::cerr << "Read error: " << strerror(errno) << std::endl;
+	}
+
+    // Find the client_fd that requested the CGI execution
+    int client_fd = cgi_pipes[pipe_fd];
+
+    // Remove from epoll and close the pipe
+	close(pipe_fd);
+    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, NULL);
+    cgi_pipes.erase(pipe_fd);
+
+    // If no output was received, return a 500 error
+    if (output.empty()) {
+        std::cerr << "Error: CGI script produced no output.\n";
+        close(client_fd);
+        return 1;
+    }
+
+    // Prepare HTTP response
+    std::string response = "HTTP/1.1 200 OK\r\n";
+    response += "Content-Length: " + intToString(output.size()) + "\r\n";
+    response += "Content-Type: text/html\r\n\r\n";
+    response += output;
+	std::cout << "CGI response: " << response << std::endl;
+
+    // Send response to client
+    size_t total_sent = 0;
+    while (total_sent < response.size()) {
+        ssize_t sent = write(client_fd, response.c_str() + total_sent, response.size() - total_sent);
+        if (sent <= 0) break;
+        total_sent += sent;
+    }
+	std::cout << "CGI response sent to client_fd: " << client_fd << std::endl;
+
+    // Clean up client connection
+    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
+    close(client_fd);
+
+    return 0;
+}
+
 int ServerManager::freeResources() {
 	if (!servers.empty()) {
 		for (unsigned long i = 0; i < servers.size(); i++) {
@@ -392,5 +455,6 @@ int ServerManager::freeResources() {
 	}
 	// Clear the client-to-server mapping
 	clientfd_to_serverfd.clear();
+	cgi_pipes.clear();
 	return 0;
 }

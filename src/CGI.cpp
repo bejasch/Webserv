@@ -48,120 +48,69 @@ int CGI::setAllEnv(HttpRes &httpResponse) {
 	return (0);
 }
 
-std::string CGI::executeCGI_GET(HttpRes &httpResponse) {
-	if (setAllEnv(httpResponse)){
-		std::cerr << "Failed to set env variables: " << std::strerror(errno) << std::endl;
-		httpResponse.setStatus(500);
-		return "";
-	}
-	std::cout << "root dir: " << env["DOCUMENT_ROOT"] << std::endl;
-	std::string scriptPath = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
-	std::cout << "Executing CGI script (GET): " << scriptPath << std::endl;
+std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
+    if (setAllEnv(httpResponse)) {
+        std::cerr << "Failed to set env variables: " << std::strerror(errno) << std::endl;
+        httpResponse.setStatus(500);
+        return "";
+    }
 
-	if (getFileExtension(scriptPath) == ".py")
-		this->argv[0] = cpp_strdup("/usr/bin/python3");
-	else if (getFileExtension(scriptPath) == ".php")
-		this->argv[0] = cpp_strdup("/usr/bin/php");
-	this->argv[1] = cpp_strdup(scriptPath);
+    std::cout << "root dir: " << env["DOCUMENT_ROOT"] << std::endl;
+    std::string scriptPath = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
+    std::cout << "Executing CGI script (GET): " << scriptPath << std::endl;
 
-	int pipe_fd[2];
-	if (pipe(pipe_fd) == -1) {
-		std::cerr << "Failed to create pipe: " << std::strerror(errno) << std::endl;
-		httpResponse.setStatus(500);
-		return "";
-	}
+    if (getFileExtension(scriptPath) == ".py")
+        this->argv[0] = cpp_strdup("/usr/bin/python3");
+    else if (getFileExtension(scriptPath) == ".php")
+        this->argv[0] = cpp_strdup("/usr/bin/php");
+    this->argv[1] = cpp_strdup(scriptPath);
 
-	pid = fork();
-	if (pid == -1) {
-		std::cerr << "Failed to fork: " << std::strerror(errno) << std::endl;
-		httpResponse.setStatus(500);
-		return "";
-	}
+    int pipe_fd[2];
+    if (pipe(pipe_fd) == -1) {
+        std::cerr << "Failed to create pipe: " << std::strerror(errno) << std::endl;
+        httpResponse.setStatus(500);
+        return "";
+    }
 
-	if (pid == 0) {  // Child process
-		alarm(10); //TODO: is there a cpp equivalent?
-		close(pipe_fd[0]);
-		dup2(pipe_fd[1], STDOUT_FILENO);
-		dup2(pipe_fd[1], STDERR_FILENO);
-		close(pipe_fd[1]);
+    pid = fork();
+    if (pid == -1) {
+        std::cerr << "Failed to fork: " << std::strerror(errno) << std::endl;
+        httpResponse.setStatus(500);
+        return "";
+    }
 
-		if (execve(argv[0], argv, envp) == -1) {
-			std::cerr << "Failed to execute script: " << std::strerror(errno) << std::endl;
-			freeEnvironment();
-			ServerManager &serverManager = httpResponse.getServer()->getServerManager();
-			serverManager.freeResources();
-			exit(EXIT_FAILURE);
-		}
-	} 
+    if (pid == 0) {  // Child process
+        close(pipe_fd[0]);
+        dup2(pipe_fd[1], STDOUT_FILENO);
+        dup2(pipe_fd[1], STDERR_FILENO);
+        close(pipe_fd[1]);
+        if (execve(argv[0], argv, envp) == -1) {
+            std::cerr << "Failed to execute script: " << std::strerror(errno) << std::endl;
+            exit(EXIT_FAILURE);
+        }
+    } 
 
-	close(pipe_fd[1]);
-
-	// Make the pipe non-blocking
+    // Parent process
+    close(pipe_fd[1]);
+    // Make pipe non-blocking
     fcntl(pipe_fd[0], F_SETFL, O_NONBLOCK);
-
-    // Add pipe to epoll
+	httpResponse.getServer()->getServerManager().cgi_pipes[pipe_fd[0]] = client_fd;
+    // Add to epoll
     epoll_event ev;
-    ev.events = EPOLLIN;
+    ev.events = EPOLLIN | EPOLLET;
     ev.data.fd = pipe_fd[0];
-    
-    if (epoll_ctl(httpResponse.getServer()->getServerManager().getEpollFd(), 
-                  EPOLL_CTL_ADD, pipe_fd[0], &ev) == -1) {
+
+	int epoll_fd = httpResponse.getServer()->getServerManager().getEpollFd();
+	std::cout << "registered pipe: " << pipe_fd[0] << "to epoll_fd" << epoll_fd << std::endl;
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, pipe_fd[0], &ev) == -1) {
         std::cerr << "Failed to add pipe to epoll" << std::endl;
         close(pipe_fd[0]);
         httpResponse.setStatus(500);
         return "";
     }
-
-	char buffer[4096];
-	std::string output;
-    time_t start_time = time(NULL);
-    
-    // Read from pipe using epoll
-    while (true) {
-        epoll_event events[1];
-        int nfds = epoll_wait(httpResponse.getServer()->getServerManager().getEpollFd(), 
-                             events, 1, 1000); // 1 second timeout
-
-        // Check for timeout
-        if (time(NULL) - start_time > 10) {
-            kill(pid, SIGTERM);
-            usleep(1000);
-            kill(pid, SIGKILL);
-            epoll_ctl(httpResponse.getServer()->getServerManager().getEpollFd(), 
-                     EPOLL_CTL_DEL, pipe_fd[0], NULL);
-            close(pipe_fd[0]);
-            httpResponse.setStatus(504);
-            return "CGI script timed out";
-        }
-
-        if (nfds > 0) {
-            int bytes_read = read(pipe_fd[0], buffer, sizeof(buffer));
-            if (bytes_read > 0) {
-                output.append(buffer, bytes_read);
-            } else if (bytes_read == 0 || (bytes_read == -1 && errno != EAGAIN)) {
-                break;
-            }
-        }
-    }
-	// Cleanup
-    epoll_ctl(httpResponse.getServer()->getServerManager().getEpollFd(), 
-              EPOLL_CTL_DEL, pipe_fd[0], NULL);
-	close(pipe_fd[0]);
-	int status;
-	if (waitpid(pid, &status, WNOHANG) == 0) {
-        kill(pid, SIGTERM);
-        usleep(1000);
-        kill(pid, SIGKILL);
-        waitpid(pid, &status, 0);
-    }
-	if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-		return output;
-	} else {
-		std::cout << "CGI script exited with status " << WEXITSTATUS(status) << std::endl;
-		httpResponse.setStatus(500);
-		return "";
-	}
+    return "";
 }
+
 
 std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::string, std::string> &formData) {
 	std::string scriptPath;
