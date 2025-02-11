@@ -83,7 +83,7 @@ int	Server::acceptConnection(int epoll_fd) {
 	// Add the new client to the client_requests map
 	client_requests.insert(std::make_pair(client_fd, HttpReq()));
 	server_manager.clientfd_to_serverfd[client_fd] = this;	
-	std::cout << GREEN << "New client connected with client_fd " << client_fd << ", linked to server_fd: " << server_fd << RESET<< std::endl;
+	std::cout << GREEN << "\nNew client connected with client_fd " << client_fd << ", linked to server_fd: " << server_fd << RESET<< std::endl;
 	return (0);
 }
 
@@ -93,15 +93,16 @@ int	Server::handleRequest(int client_fd) {
 	char buffer[30000] = {0};
 	int valread = read(client_fd, buffer, sizeof(buffer));
 	if (valread <= 0) {
-		if (valread == 0)
-			std::cerr << "Connection closed by client.\n";
-		else
-			std::cerr << "Error reading from socket.\n";
 		close(client_fd);
 		client_requests.erase(client_fd); // Clean up state
+		if (valread == 0) {
+			std::cerr << RED << "Connection closed by client.\n" << RESET;
+			return(0);
+		}
+		std::cerr << "Error reading from socket.\n";
 		return(1);
 	}
-	std::cout << BOLD << "\tReceived " << valread << " bytes from client_fd: " << client_fd << std::endl << RESET;
+	std::cout << BOLD << "\n\tReceived " << valread << " bytes from client_fd: " << client_fd << std::endl << RESET;
 	// Process the incoming data if the request is complete
 	if (request.processData(*this, std::string(buffer, valread))) {
 		pending_responses[client_fd].handleRequest(request, *this);
