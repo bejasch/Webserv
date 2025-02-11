@@ -7,11 +7,12 @@ class ServerManager {
 private:
     int epoll_fd;
     std::vector<Server*> servers;
-    const static int MAX_EVENTS = 100; // For all servers
     static volatile sig_atomic_t stop_flag;
 
 public:
     ServerManager();
+    ServerManager(const ServerManager &other);
+	ServerManager operator=(const ServerManager &another);
     ~ServerManager();
     int setServers(const std::string& config_file);
     void startServers(); // Runs the central event loop

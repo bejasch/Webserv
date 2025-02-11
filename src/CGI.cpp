@@ -4,6 +4,20 @@ CGI::CGI() : pid(0), env(), envp(NULL), argv(NULL) {
     std::cout << "CGI default constructor called" << std::endl;
 }
 
+CGI::CGI(const CGI &other) : pid(other.pid), env(other.env), envp(NULL), argv(NULL) {
+    std::cout << "CGI copy constructor called" << std::endl;
+}
+
+CGI CGI::operator=(const CGI &another) {
+    if (this == &another)
+        return (*this);
+    pid = another.pid;
+    env = another.env;
+    envp = NULL;
+    argv = NULL;
+    return (*this);
+}
+
 CGI::~CGI() {
     freeEnvironment();
     std::cout << "CGI destructor called" << std::endl;

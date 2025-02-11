@@ -16,6 +16,8 @@ class Route {
 
 	public:
 		Route();
+		Route(const Route &other);
+		Route operator=(const Route &another);
 		~Route();
 		
 		//setter functions

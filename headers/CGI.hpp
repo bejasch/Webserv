@@ -12,6 +12,8 @@ private:
 
 public:
 	CGI();
+	CGI(const CGI &other);
+	CGI operator=(const CGI &another);
 	~CGI();
 
 	int   		setAllEnv(HttpRes &httpResponse);

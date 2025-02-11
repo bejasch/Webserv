@@ -1,7 +1,27 @@
 #include "../headers/AllHeaders.hpp"
 
-Server::Server(ServerManager &server_manager) : server_manager(server_manager) {
+Server::Server() : server_fd(0), address(), client_requests(), pending_responses(), config(NULL), server_manager(*(new ServerManager())) {
 	// std::cout << "Server default constructor called" << std::endl;
+}
+
+Server::Server(ServerManager &server_manager) : server_fd(0), address(), client_requests(), pending_responses(), config(NULL), server_manager(server_manager) {
+	// std::cout << "Server default constructor called" << std::endl;
+}
+
+Server::Server(const Server &other) : server_fd(other.server_fd), address(other.address), client_requests(other.client_requests), pending_responses(other.pending_responses), config(other.config), server_manager(other.server_manager) {
+	// std::cout << "Server copy constructor called" << std::endl;
+}
+
+Server Server::operator=(const Server &another) {
+	if (this == &another)
+		return (*this);
+	server_fd = another.server_fd;
+	address = another.address;
+	client_requests = another.client_requests;
+	pending_responses = another.pending_responses;
+	config = another.config;
+	server_manager = another.server_manager;
+	return (*this);
 }
 
 Server::~Server() {

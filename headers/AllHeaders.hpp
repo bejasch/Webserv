@@ -6,6 +6,7 @@
 // #define MAX_BODY_SIZE 1048576	// is in Server->Config
 #define MAX_RETRY_COUNT 5		// Maximum number of retries for write failures
 #define GUESTBOOK_FILE "data/guestbook/guestbook.txt"
+#define MAX_EVENTS 100			// Max events for epoll_wait
 
 class	CGI;
 class	Config;

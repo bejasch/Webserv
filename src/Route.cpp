@@ -1,6 +1,5 @@
 #include "../headers/AllHeaders.hpp"
 
-// TODO: Cant there be many redirect pages?
 Route::Route() 
     : path(""),
       allowed_methods(),
@@ -11,6 +10,32 @@ Route::Route()
       redirect_url(""),
       autoindex_set(false) {
     // std::cout << "Route default constructor called" << std::endl;
+}
+
+Route::Route(const Route &other) 
+    : path(other.path),
+      allowed_methods(other.allowed_methods),
+      root_dir(other.root_dir),
+      index_file(other.index_file),
+      autoindex(other.autoindex),
+      redirect_status(other.redirect_status),
+      redirect_url(other.redirect_url),
+      autoindex_set(other.autoindex_set) {
+    // std::cout << "Route copy constructor called" << std::endl;
+}
+
+Route Route::operator=(const Route &another) {
+    if (this == &another)
+        return (*this);
+    path = another.path;
+    allowed_methods = another.allowed_methods;
+    root_dir = another.root_dir;
+    index_file = another.index_file;
+    autoindex = another.autoindex;
+    redirect_status = another.redirect_status;
+    redirect_url = another.redirect_url;
+    autoindex_set = another.autoindex_set;
+    return (*this);
 }
 
 Route::~Route() {

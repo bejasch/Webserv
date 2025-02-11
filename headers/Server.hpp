@@ -14,7 +14,10 @@ class Server {
 		ServerManager			&server_manager;
 
     public:
+		Server();
 		Server(ServerManager &server_manager);
+		Server(const Server &other);
+		Server operator=(const Server &another);
 		~Server();
 		int		setServer(Config *config); //define server configs
 		int		setUpServer(); //define socket and bind to server fd

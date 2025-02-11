@@ -13,6 +13,32 @@ Config::Config()
     // std::cout << "Config default constructor called" << std::endl;
 }
 
+Config::Config(const Config &other) 
+    : server_port(other.server_port),
+      server_name(other.server_name),
+      root_dir(other.root_dir),
+      max_body_size(other.max_body_size),
+      default_file(other.default_file),
+      error_pages(other.error_pages),
+      allowed_methods(other.allowed_methods),
+      routes(other.routes) {
+    // std::cout << "Config copy constructor called" << std::endl;
+}
+
+Config Config::operator=(const Config &another) {
+    if (this == &another)
+        return (*this);
+    server_port = another.server_port;
+    server_name = another.server_name;
+    root_dir = another.root_dir;
+    max_body_size = another.max_body_size;
+    default_file = another.default_file;
+    error_pages = another.error_pages;
+    allowed_methods = another.allowed_methods;
+    routes = another.routes;
+    return (*this);
+}
+
 Config::~Config() {
     // std::cout << "Config destructor called" << std::endl;
 }

@@ -2,13 +2,26 @@
 
 volatile sig_atomic_t ServerManager::stop_flag = 0;
 
-ServerManager::ServerManager() {
+ServerManager::ServerManager(): epoll_fd(0), servers(), clientfd_to_serverfd() {
     std::cout << "ServerManager default constructor called" << std::endl;
 }
 
+ServerManager::ServerManager(const ServerManager &other): epoll_fd(other.epoll_fd), servers(other.servers), clientfd_to_serverfd(other.clientfd_to_serverfd) {
+    std::cout << "ServerManager copy constructor called" << std::endl;
+}
+
+ServerManager ServerManager::operator=(const ServerManager &another) {
+    if (this == &another)
+        return (*this);
+    epoll_fd = another.epoll_fd;
+    servers = another.servers;
+    clientfd_to_serverfd = another.clientfd_to_serverfd;
+    return (*this);
+}
+
 ServerManager::~ServerManager() {
-    std::cout << "ServerManager destructor called" << std::endl;
     freeResources();
+    std::cout << "ServerManager destructor called" << std::endl;
 }
 
 int ServerManager::setServers(const std::string &config_file)

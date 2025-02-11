@@ -17,6 +17,8 @@ class Config {
 
 	public:
 		Config();
+		Config(const Config &other);
+		Config operator=(const Config &another);
 		~Config();        
 
 		// Setters
