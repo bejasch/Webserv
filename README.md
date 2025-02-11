@@ -1,8 +1,4 @@
-# Key Requirements Checklist
-
-Here is a breakdown of the requirements in your project, organized into what you’ve already implemented and what’s still missing.
-
-## Already Implemented
+# Webserv Key Requirements Checklist
 
 ### Non-blocking I/O
 ✅ You have used `fcntl()` to make both the server socket and client sockets non-blocking. This allows the server to not block while waiting for data from clients, ensuring the server stays responsive.
@@ -34,78 +30,41 @@ Here is a breakdown of the requirements in your project, organized into what you
 ### Signal Handling
 ✅ **Done**: JK
 
----
-
-## Missing / Pending Implementation
-
 ### Configuration File Handling
-❌ **Missing**: Your program does not currently handle a configuration file, which should be passed as a command-line argument or use a default path. The configuration file might specify settings like ports to listen on, file paths, or other server settings.
-https://www.youtube.com/watch?v=8P2r0xSXk28&ab_channel=TonyTeachesTech
-https://www.youtube.com/watch?v=MQpw4oXjIqY&ab_channel=KacperSzurekEN
-https://www.youtube.com/watch?v=C5kMgshNc6g&ab_channel=NGINX
+✅ **Done**: Your program does not currently handle a configuration file, which should be passed as a command-line argument or use a default path. The configuration file might specify settings like ports to listen on, file paths, or other server settings.
 
 ### Serving Static Files
-❌ **Missing**: While you serve basic text responses, you do not yet handle serving actual static files (like HTML, CSS, JavaScript, images, etc.) from the filesystem based on the GET request path (e.g., serving `index.html` from disk).
+✅ **Done**: While you serve basic text responses, you do not yet handle serving actual static files (like HTML, CSS, JavaScript, images, etc.) from the filesystem based on the GET request path (e.g., serving `index.html` from disk).
 
 ### POST Method Support
-❌ **Missing**: Your server does not yet support POST requests. This would typically involve receiving data in the request body, processing it (such as saving a file or creating a resource), and returning a response.
+✅ **Done**: Your server does not yet support POST requests. This would typically involve receiving data in the request body, processing it (such as saving a file or creating a resource), and returning a response.
 
 ### DELETE Method Support
-❌ **Missing**: The DELETE method is not yet implemented. It should allow clients to delete resources (like files) on the server.
+✅ **Done**: The DELETE method is not yet implemented. It should allow clients to delete resources (like files) on the server.
 
 ### File Uploads
-❌ **Missing**: You do not currently handle file uploads with POST requests. This typically involves parsing multipart form data and saving the uploaded files to the server’s file system.
+✅ **Done**: You do not currently handle file uploads with POST requests. This typically involves parsing multipart form data and saving the uploaded files to the server’s file system.
 
 ### Serve Fully Static Website
-❌ **Missing**: Your server does not yet serve a fully static website from files, meaning it does not serve actual files (HTML, images, etc.) from disk based on the URL path.
+✅ **Done**: Your server does not yet serve a fully static website from files, meaning it does not serve actual files (HTML, images, etc.) from disk based on the URL path.
 
 ### Stress Testing / Performance Under Load
-❌ **Missing**: You will need to test your server’s performance under load, especially to ensure it stays available and responsive during high traffic.
-siege
-locust
-
-
-config;
-cout << config << endl;
-RDP;
-STL; std::map<>, std::pair<>, std::vec<>, 
-
-CLF common log format
+✅ **Done**: You will need to test your server’s performance under load, especially to ensure it stays available and responsive during high traffic using siege.
 
 ### Listening to Multiple Ports
-❌ **Missing**: Your server currently only listens on a single port (8080). You need to implement the ability to listen on multiple ports as specified in the configuration file.
+✅ **Done**: Your server currently only listens on a single port (8080). You need to implement the ability to listen on multiple ports as specified in the configuration file.
 
 ### Error Handling and Logging
-❌ **Missing**: The program should include robust error handling, especially around file operations and socket interactions. You also need logging to help debug and monitor the server's operation.
+✅ **Done**: The program should include robust error handling, especially around file operations and socket interactions. You also need logging to help debug and monitor the server's operation.
 
 ### Response Headers for Dynamic Content (like Content-Length)
-❌ **Missing**: When serving actual files (especially larger files), you'll need to properly set headers like `Content-Length` for dynamic responses. You’re currently hardcoding `Content-Length` for static responses, but this will need to be calculated for real file content.
+✅ **Done**: When serving actual files (especially larger files), you'll need to properly set headers like `Content-Length` for dynamic responses. You’re currently hardcoding `Content-Length` for static responses, but this will need to be calculated for real file content.
 
 ### CGI
-❌ **Missing**: JK
+✅ **Done**: JK
 - GET request done, POST WIP
 
-
-## Eval Checks
-
-### 5. Change server hostname
-
-Setup multiple servers with different hostnames (use something like: curl --resolve example.com:80:127.0.0.1 http://example.com/).
-
-Usually this is done by adding a mapping to /etc/hosts
-
-### 6. Handle standard error pages.
-
-These should be specified in the config, and then served via the response class.
-
-### 7. Return pages
-
-### 8. MAX_BODY_SIZE
-
-Do we restrain max_body_size?
-
-
-## prepare eval
+## Preparation of the Evaluation
 
 ### homebrew
 1. Set up homebrew, direct packages to sgoingfre
@@ -133,10 +92,6 @@ echo "source ~/.zshrc"
 
 2. Install siege package
 `brew install siege`
-
-### ensure .py scripts are executable
-1. permissions
-
 
 ### Useful Network Diagnostic Commands
 
@@ -265,17 +220,3 @@ Below is a list of useful network diagnostic and troubleshooting commands.
       ```bash
       curl -x http://proxyserver:8080 http://127.0.0.1:8081/
       ```
-
-
-
-//TODO: do tasks below
-
-- config file segfault  ✅
-- POST request segfault (can we reproduce?)
-- autoindex always set on?? ✅
-- return? return 201 /index.html;
-- index? does the index show correct
-- location /filemanager.html
-- if # then ignore in config ✅
-- if location is fully hit, care for indexing -> problem with file-location
-- difference between index file and redirect in config
