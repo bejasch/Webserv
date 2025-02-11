@@ -9,6 +9,9 @@ bool	    isStandaloneWord(const std::string& line, const std::string& word, size
 std::string	trim(const std::string& str);
 bool	    isDirectory(const std::string &path);
 bool		saveFile(const std::string &filename, const char* data, size_t size);
+std::string getFileExtension(const std::string &target);
+char        *cpp_strdup(const std::string str);
+int         find_commented_line(std::string &line);
 
 std::vector<std::string> splitString(const std::string &str, const char delimiter);
 
@@ -16,8 +19,10 @@ std::vector<std::string> splitString(const std::string &str, const char delimite
 std::map<std::string, std::string>	parsePostData(const std::string &data);
 
 void				saveGuestbookEntry(const std::string &name, const std::string &message);
-const std::string	generateGuestbookHTML(void);
+const std::string	generateGuestbookHTML(const std::string &userName);
 
 bool	deleteFileDir(const std::string &path);
+
+std::string resolvePath(const std::string &target, const std::string &route_path, const std::string &root_dir);
 
 #endif

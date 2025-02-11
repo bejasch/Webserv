@@ -1,6 +1,3 @@
-
-
-#pragma once
 #ifndef HTTPREQ_HPP
 #define HTTPREQ_HPP
 
@@ -9,6 +6,7 @@
 class HttpReq {
 private:
 	time_t	_creationTime;
+	Server	*_server;
 
 	std::string	_buffer;
 	int			_httpStatus;
@@ -21,12 +19,12 @@ private:
     
 	std::string _body;
 
-	bool	_startlineParsed = false;	// Whether the start line is fully received
-	bool	_headersParsed = false;		// Whether the headers are fully received
-	bool	_isChunked = false;     	// Whether the body uses chunked transfer
-	bool	_bodyComplete = false;  	// Whether the body is fully received
+	bool	_startlineParsed;	// Whether the start line is fully received
+	bool	_headersParsed;		// Whether the headers are fully received
+	bool	_isChunked;     	// Whether the body uses chunked transfer
+	bool	_bodyComplete;  	// Whether the body is fully received
 
-    size_t	_currentChunkSize = 0;		// Size of the current chunk being read
+    size_t	_currentChunkSize;	// Size of the current chunk being read
 	
 	// Helper function to trim leading and trailing whitespaces
 	bool	verifyHeaders(void);
@@ -52,16 +50,18 @@ public:
 	HttpReq operator=(const HttpReq &another);
 	~HttpReq();
 
+	// --> Set-methods:
 
 	// --> Get-methods:
 	const std::string	&getMethod(void) const;
 	const std::string	&getTarget(void) const;
 	const std::string	&getProtocol(void) const;
 	const std::string	&getHeader(const std::string &key) const;
+	const std::map<std::string, std::string>	&getHeaders(void) const;
 	const std::string	&getBody(void);
 	int					getHttpStatus(void) const;
 
-	bool 	processData(const std::string &data);	// Encapsulates the parsing of the incoming data
+	bool	processData(Server &server, const std::string &data);	// Encapsulates the parsing of the incoming data
 
 	// print content
 	void	print(void) const;

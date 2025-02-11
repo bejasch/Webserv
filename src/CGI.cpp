@@ -1,34 +1,63 @@
 #include "../headers/AllHeaders.hpp"
 
-CGI::CGI() : pid(0), env({}) {
+CGI::CGI() : pid(0), env(), envp(NULL), argv(NULL) {
     std::cout << "CGI default constructor called" << std::endl;
 }
 
 CGI::~CGI() {
+    freeEnvironment();
     std::cout << "CGI destructor called" << std::endl;
 }
 
-void CGI::setAllEnv(HttpReq &httpRequest) {
-    env["SERVER_PROTOCOL"] = httpRequest.getProtocol();
-    env["REQUEST_METHOD"] = httpRequest.getMethod();
-    env["SCRIPT_NAME"] = httpRequest.getTarget();
+void    CGI::setAllEnv(HttpRes &httpResponse) {
+    env["SERVER_PROTOCOL"] = "HTTP/1.1";
+    env["REQUEST_METHOD"] = httpResponse.getMethod();
+    env["SCRIPT_NAME"] = httpResponse.getTarget();
+    env["DOCUMENT_ROOT"] = httpResponse.getRoute()->getRootDirRoute();
+    this->envp = new char*[this->env.size() + 1];
+    if (this->envp == NULL) {
+        perror("Failed to allocate memory for envp");
+        return;
+    }
+	std::map<std::string, std::string>::const_iterator it = this->env.begin();
+	for (int i = 0; it != this->env.end(); it++, i++)
+        this->envp[i] = cpp_strdup(it->first + "=" + it->second);
+    this->envp[this->env.size()] = NULL;
+    this->argv = new char*[3];
+    if (this->argv == NULL) {
+        perror("Failed to allocate memory for envp or argv");
+        return;
+    }
+    this->argv[0] = NULL;
+    this->argv[1] = NULL;
+    this->argv[2] = NULL;
 }
 
-std::string CGI::executeCGI_GET(HttpReq &httpRequest) {
-    setAllEnv(httpRequest);
-    std::string scriptPath = "data/cgi-bin" + env["SCRIPT_NAME"];
+//TODO: what happens when no .py or .php configs are set
+std::string CGI::executeCGI_GET(HttpRes &httpResponse) {
+    setAllEnv(httpResponse);
+    std::cout << "root dir: " << env["DOCUMENT_ROOT"] << std::endl;
+    std::string scriptPath = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
     std::cout << "Executing CGI script (GET): " << scriptPath << std::endl;
+
+    if (getFileExtension(scriptPath) == ".py")
+        this->argv[0] = cpp_strdup("/usr/bin/python3");
+    else if (getFileExtension(scriptPath) == ".php")
+        this->argv[0] = cpp_strdup("/usr/bin/php");
+    this->argv[1] = cpp_strdup(scriptPath);
 
     int pipe_fd[2];
     if (pipe(pipe_fd) == -1) {
         perror("Failed to create pipe");
-        return "500";  // Internal Server Error
+        httpResponse.setStatus(500);
+        return "";
     }
 
     pid = fork();
     if (pid == -1) {
         perror("Failed to fork");
-        return "500";
+        httpResponse.setStatus(500);
+        return "";
     }
 
     if (pid == 0) {  // Child process
@@ -37,18 +66,10 @@ std::string CGI::executeCGI_GET(HttpReq &httpRequest) {
         dup2(pipe_fd[1], STDERR_FILENO);
         close(pipe_fd[1]);
 
-        char *envp[env.size() + 1];
-        int i = 0;
-        for (auto it = env.begin(); it != env.end(); ++it) {
-            envp[i] = strdup((it->first + "=" + it->second).c_str());
-            ++i;
+        if (execve(argv[0], argv, envp) == -1) {
+            perror("Failed to execute script");
+            exit(EXIT_FAILURE);
         }
-        envp[i] = NULL;
-
-        const char *argv[] = {scriptPath.c_str(), NULL}; // No args
-        execve(scriptPath.c_str(), const_cast<char *const *>(argv), envp);
-        perror("Failed to execute script");
-        exit(EXIT_FAILURE);
     } 
 
     close(pipe_fd[1]);
@@ -56,6 +77,10 @@ std::string CGI::executeCGI_GET(HttpReq &httpRequest) {
     std::string output;
     int bytes_read;
     while ((bytes_read = read(pipe_fd[0], buffer, sizeof(buffer))) > 0) {
+		if (bytes_read == -1) {
+			perror("Read error");
+			break;
+		}
         output.append(buffer, bytes_read);
     }
     close(pipe_fd[0]);
@@ -63,13 +88,34 @@ std::string CGI::executeCGI_GET(HttpReq &httpRequest) {
     int status;
     waitpid(pid, &status, 0);
 
-    return (WIFEXITED(status) && WEXITSTATUS(status) == 0) ? output : "500";
+    if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+        return output;
+    } else {
+        std::cout << "CGI script exited with status " << WEXITSTATUS(status) << std::endl;
+        httpResponse.setStatus(500);
+        return "";
+    }
+    httpResponse.setStatus(500);
+    return "";
 }
 
-std::string CGI::executeCGI_POST(HttpReq &httpRequest, const std::map<std::string, std::string> &formData) {
-    setAllEnv(httpRequest);
-    
-    std::string scriptPath = "data/cgi-bin/modify_comments.py";
+std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::string, std::string> &formData) {
+    std::string scriptPath;
+    setAllEnv(httpResponse);
+
+    // Check if the "action" key exists in formData
+	std::map<std::string, std::string>::const_iterator it = formData.find("action");
+    if (it != formData.end()) {
+        if (it->second == "Scramble.py") {
+            scriptPath = "data/cgi-bin/modify_comments.py";
+            this->argv[0] = cpp_strdup("/usr/bin/python3");
+        }
+        else if (it->second == "Capitalize.php"){
+            scriptPath = "data/cgi-bin/modify_comments.php";
+            this->argv[0] = cpp_strdup("/usr/bin/php");
+        }
+        this->argv[1] = cpp_strdup(scriptPath);
+    }
     std::cout << "Executing CGI script (POST): " << scriptPath << std::endl;
 
     // Prepare the POST data
@@ -77,21 +123,24 @@ std::string CGI::executeCGI_POST(HttpReq &httpRequest, const std::map<std::strin
     if (formData.count("name") && formData.count("message")) {
         postData = "name=" + formData.at("name") + "&message=" + formData.at("message");
     } else {
-        return "500"; // Return an error if required fields are missing
+        httpResponse.setStatus(500);
+        return "";
     }
 
     // Create two pipes: one for input (stdin) and one for output (stdout)
     int inputPipe[2], outputPipe[2];
     if (pipe(inputPipe) == -1 || pipe(outputPipe) == -1) {
         perror("pipe");
-        return "500";
+        httpResponse.setStatus(500);
+        return "";
     }
 
     // Fork to execute the CGI script
     pid_t pid = fork();
     if (pid == -1) {
         perror("fork");
-        return "500";
+        httpResponse.setStatus(500);
+        return "";
     } else if (pid == 0) {
         // Child process
 
@@ -105,23 +154,11 @@ std::string CGI::executeCGI_POST(HttpReq &httpRequest, const std::map<std::strin
         close(outputPipe[1]);
         close(outputPipe[0]); // Close unused read end
 
-        // Prepare arguments for execve
-        std::vector<char*> argv;
-        argv.push_back(const_cast<char*>(scriptPath.c_str())); // Script path
-        argv.push_back(nullptr); // Null-terminate the argument list
-
-        // Prepare environment variables for execve
-        std::vector<char*> envp;
-        for (auto& env_var : env) {
-            std::string env_entry = env_var.first + "=" + env_var.second;
-            envp.push_back(const_cast<char*>(env_entry.c_str()));
-        }
-        envp.push_back(nullptr); // Null-terminate the environment list
-
         // Execute the CGI script using execve
-        execve(scriptPath.c_str(), argv.data(), envp.data());
-        perror("execve"); // If execve fails
-        exit(1);
+        if (execve(argv[0], argv, envp) == -1) {
+            perror("execve failed");
+            exit(1);
+        }
     } else {
         // Parent process
 
@@ -142,14 +179,17 @@ std::string CGI::executeCGI_POST(HttpReq &httpRequest, const std::map<std::strin
         ssize_t bytesRead = read(outputPipe[0], buffer, sizeof(buffer));
         close(outputPipe[0]); // Close read end after reading
 
-        if (bytesRead > 0) {
+        if (bytesRead >= 0) {
             std::cout << "Read " << bytesRead << " bytes from CGI script" << std::endl;
             return std::string(buffer, bytesRead);
         } else {
             std::cerr << "Failed to read from CGI script" << std::endl;
-            return "500";
+            httpResponse.setStatus(500);
+            return "";
         }
     }
+    httpResponse.setStatus(500);
+    return "";
 }
 
 void CGI::printCGI() {
@@ -158,4 +198,23 @@ void CGI::printCGI() {
     for (std::map<std::string, std::string>::iterator it = env.begin(); it != env.end(); ++it) {
         std::cout << it->first << ": " << it->second << std::endl;
     }
+}
+
+void CGI::freeEnvironment() {
+    if (envp) {
+        for (int i = 0; envp[i]; i++) {
+            delete[] envp[i];
+        }
+        delete[] envp;
+        envp = NULL;
+    }
+
+    if (argv) {
+        for (int i = 0; argv[i]; i++) {
+            delete[] argv[i];
+        }
+        delete[] argv;
+        argv = NULL;
+    }
+    env.clear();
 }

@@ -270,7 +270,7 @@ Below is a list of useful network diagnostic and troubleshooting commands.
 
 //TODO: do tasks below
 
-- config file segfault (couldnt reproduce, but made it more robust)  ✅
+- config file segfault  ✅
 - POST request segfault (can we reproduce?)
 - autoindex always set on?? ✅
 - return? return 201 /index.html;

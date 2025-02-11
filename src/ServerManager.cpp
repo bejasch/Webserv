@@ -8,17 +8,16 @@ ServerManager::ServerManager() {
 
 ServerManager::~ServerManager() {
     std::cout << "ServerManager destructor called" << std::endl;
-    // TODO: this is fine but not if there is an earlier error.
     freeResources();
 }
 
 int ServerManager::setServers(const std::string &config_file)
 {
     std::string line;
-    std::ifstream file(config_file); // Open the config file
-    Server *server;
-    Config *config;
-    Route *route;
+	std::ifstream file(config_file.c_str());	// Open the config file
+    Server *server = NULL;
+    Config *config = NULL;
+    Route *route = NULL;
 
     if (config_file.find(".conf") == std::string::npos) {
         std::cerr << "Invalid configuration file format: " << std::strerror(errno) << std::endl;
@@ -29,10 +28,17 @@ int ServerManager::setServers(const std::string &config_file)
         return (1); // TODO: remember to free (no need to free here, goes out of scope)
     }
     while (std::getline(file, line)) {
+        if (line.empty() || find_commented_line(line) == 1) {
+            continue; // Skip empty lines and comments
+        }
         if (line.find("server") != std::string::npos) {
             // Dynamically allocate memory for Server and Config
             server = new Server(*this);
             config = new Config();
+            if (server == NULL || config == NULL) {
+                std::cerr << "Failed to allocate memory for server or config" << std::endl;
+                return 1;
+            }
             // Call fillConfig to parse and fill the server's configuration
             line = fillConfig(line, file, config);  // Pass the file by reference
             if (checkConfig(config) == 1) {
@@ -43,12 +49,19 @@ int ServerManager::setServers(const std::string &config_file)
                 continue;
             }
             server->setServer(config);
+            std::string host_key = config->getName() + ":" + intToString(config->getPort());
+            std::cout << "Server added with host_name: " << host_key << std::endl;
+            create_base_route(config);
             servers.push_back(server);
         }
         if (line.find("location") != std::string::npos && server != NULL) {
             route = new Route();
+            if (route == NULL) {
+                std::cerr << "Failed to allocate memory for route" << std::endl;
+                return 1;
+            }
             route->setPath(line.substr(line.find("location") + std::string("location").length() + 1, line.find("{") - line.find(" ") - 2));
-            line = fillRoute(line, file, config, route);
+            line = fillRoute(line, file, route);
             if (line.empty()) {
                 std::cerr << "Discarding unfinished route: " << route->getPath() << std::endl;
                 delete route;
@@ -67,7 +80,8 @@ int ServerManager::setServers(const std::string &config_file)
         std::cerr << "No correctly initialised servers found in configuration file" << std::endl;
         return 1;
     }
-    //printConfigAll();  // Print the configuration
+    validateRoutes();
+    printConfigAll();  // Print the configuration
     file.close();  // Close the file explicitly (optional since it's auto-closed on scope exit)
     return 0;  // Return 0 to indicate success
 }
@@ -84,7 +98,7 @@ void ServerManager::startServers() {
         std::exit(EXIT_FAILURE);
     }
     // Add all server_fd to epoll instance to monitor incoming connections
-    for (int i = 0; i < servers.size(); ++i) {
+    for (unsigned long i = 0; i < servers.size(); ++i) {
         Server *server = servers[i]; // Access the Server object by index
         int server_fd = server->getServerFd();
         epoll_event ev;
@@ -117,7 +131,7 @@ void ServerManager::handleEvents() {
 }
 
 void ServerManager::dispatchEvent(const epoll_event& event) {
-    for (int i = 0; i < servers.size(); ++i) {
+    for (unsigned long i = 0; i < servers.size(); ++i) {
         Server *server = servers[i];
         // this implies its a new connection, that needs to be added to epoll instance
         if (event.data.fd == server->getServerFd()) {
@@ -127,13 +141,11 @@ void ServerManager::dispatchEvent(const epoll_event& event) {
     }
     for (std::map<int, Server*>::iterator it = clientfd_to_serverfd.begin(); it != clientfd_to_serverfd.end(); ++it) {
         if (event.data.fd == it->first) {
-            std::cout << "Existing connection" << std::endl;
             Server *server = it->second;
 			if (event.events & EPOLLIN) {
-            	server->handleRequest(event.data.fd);
+            	server->handleRequest(event.data.fd);	// Handle request for client_fd
 			} else if (event.events & EPOLLOUT) {
-				std::cout << "####### EPOLLOUT -> Handling response for client_fd: " << event.data.fd << std::endl;
-				server->handleResponse(event.data.fd);
+				server->handleResponse(event.data.fd);	// Handle response for client_fd
 			}
             return;
         }
@@ -142,11 +154,24 @@ void ServerManager::dispatchEvent(const epoll_event& event) {
     std::cerr << "Unknown fd: " << event.data.fd << std::endl;
 }
 
+int ServerManager::create_base_route(Config *config) {
+    Route *route = new Route();
+    route->setPath("/");
+    route->setAllowedMethods(config->getAllowedMethods());
+    route->setRootDirRoute(config->getRootDirConfig());
+    route->setIndexFile(config->getDefaultFile());
+    config->addRoute(route);
+    return 0;
+}
+
 //TODO: this assumes that there is only one space between the key and value
 //TODO: this also assumes that there are tabs in front of the key
 std::string ServerManager::fillConfig(std::string line, std::ifstream &file, Config *config) {
     // std::string line;
     while (std::getline(file, line)) {
+        if (line.empty() || find_commented_line(line) == 1) {
+            continue;
+        }
         if (line.find("{") != std::string::npos || line.find("}") != std::string::npos)
             return(line); // Stop if we find the closing brace
         if (line.find("listen") != std::string::npos)
@@ -154,7 +179,7 @@ std::string ServerManager::fillConfig(std::string line, std::ifstream &file, Con
         else if (line.find("server_name") != std::string::npos)
             config->setName(line.substr(line.find("server_name") + std::string("server_name").length() + 1, line.find(";") - line.find(" ") - 1));
         else if (line.find("root") != std::string::npos)
-            config->setRootDir(line.substr(line.find("root") + std::string("root").length() + 1, line.find(";") - line.find(" ") - 1));
+            config->setRootDirConfig(line.substr(line.find("root") + std::string("root").length() + 1, line.find(";") - line.find(" ") - 1));
         else if (line.find("client_max_body_size") != std::string::npos)
             config->setMaxBodySize(stringToInt(line.substr(line.find("client_max_body_size") + std::string("client_max_body_size").length() + 1, line.find(";") - line.find(" ") - 1)));
         else if (line.find("index") != std::string::npos)
@@ -175,11 +200,12 @@ std::string ServerManager::fillConfig(std::string line, std::ifstream &file, Con
     return NULL; // Return 0 to indicate successful parsing
 }
 
-std::string ServerManager::fillRoute(std::string line, std::ifstream &file, Config *config, Route *route) {
-    int braceCount = 1;  // Track number of open braces
+std::string ServerManager::fillRoute(std::string line, std::ifstream &file, Route *route) {
+    int braceCount = 1;
     while (std::getline(file, line)) {
-        if (line.find("{") != std::string::npos)
-            braceCount++;
+        if (line.empty() || find_commented_line(line) == 1) {
+            continue;
+        }
         if (line.find("}") != std::string::npos) {
             braceCount--;
             if (braceCount == 0)
@@ -187,20 +213,19 @@ std::string ServerManager::fillRoute(std::string line, std::ifstream &file, Conf
         }
         if (braceCount < 0) {
             std::cerr << "Error: Mismatched braces in config file!" << std::endl;
-            return ""; // Indicate an error
+            return NULL;
         }
-        if (line.find("location") != std::string::npos && braceCount == 2)
+        if (line.find("location") != std::string::npos)
         {
             route->setPath(line.substr(line.find("location") + std::string("location").length() + 1, line.find("{") - line.find(" ") - 2));
             route->cleanRoute(route);
         }
-        if (line.find("allow_methods") != std::string::npos) {
-            // Parse the allowed methods and set them to the route
+        else if (line.find("allow_methods") != std::string::npos) {
             std::string methods = line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1);
             route->setAllowedMethods(splitString(methods, ' '));
         }
         else if (line.find("root") != std::string::npos)
-            route->setRootDir(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
+            route->setRootDirRoute(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
         else if (line.find("return") != std::string::npos) {
             route->setRedirectStatus(stringToInt(line.substr(line.find("return") + std::string("return").length() + 1, line.find(" ") - line.find("return") - 1)));
             route->setRedirectUrl(line.substr(line.find("return") + std::string("return").length() + 5, line.find(";") - line.find(" ") - 5));
@@ -208,7 +233,15 @@ std::string ServerManager::fillRoute(std::string line, std::ifstream &file, Conf
         else if (line.find("index") != std::string::npos && isStandaloneWord(line, "index", line.find("index")))
             route->setIndexFile(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
         else if (line.find("autoindex") != std::string::npos)
-            route->setAutoindex(line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1));
+        {
+            std::string autoindex = line.substr(line.find(" ") + 1, line.find(";") - line.find(" ") - 1);
+            if (autoindex.find("on") != std::string::npos)
+                route->setAutoindex(true);
+            else if (autoindex.find("off") != std::string::npos)
+                route->setAutoindex(false);
+            else
+                std::cerr << "Invalid autoindex directive: " << line << std::endl;
+        }
         else if (!line.empty())
             std::cerr << "Unknown directive: " << line << std::endl;
     }
@@ -217,13 +250,13 @@ std::string ServerManager::fillRoute(std::string line, std::ifstream &file, Conf
 }
 
 void ServerManager::printConfigAll() {
-    for (int i = 0; i < servers.size(); i++) {
+    for (unsigned long i = 0; i < servers.size(); i++) {
         servers[i]->getConfig()->printConfig();
     }
 }
 
 int ServerManager::portCheck(int port) {
-    for (int i = 0; i < servers.size(); i++) {
+    for (unsigned long i = 0; i < servers.size(); i++) {
         if (servers[i]->getConfig()->getPort() == port) {
             std::cerr << "Port " << port << " already in use" << std::endl;
             return 1;
@@ -244,7 +277,7 @@ int ServerManager::checkConfig(Config *config) {
 
 int ServerManager::freeResources() {
     if (!servers.empty()) {
-        for (int i = 0; i < servers.size(); i++) {
+        for (unsigned long i = 0; i < servers.size(); i++) {
             servers[i]->getConfig()->freeConfig();
             servers[i]->freeServer();
             delete servers[i];
@@ -268,3 +301,66 @@ void ServerManager::signalHandler(int signum) {
         stop_flag = 1;
     }
 }
+
+static bool	compareRoutes(Route* a, Route* b) {
+    return (a->getPath().size() < b->getPath().size());
+}
+
+
+void ServerManager::validateRoutes() {
+    for (size_t i = 0; i < servers.size(); i++) {
+        Config *config = servers[i]->getConfig();
+        std::vector<Route *> routes = config->getRoutes();
+
+        // Sort routes by path length (shorter paths first)
+		std::sort(routes.begin(), routes.end(), compareRoutes);
+
+        Route *baseRoute = NULL;
+        for (size_t j = 0; j < routes.size(); j++) {
+            Route *route = routes[j];
+            if (route->getPath() == "/"){
+                baseRoute = route;
+                continue;
+            }
+
+            // Find parent route
+            Route *parent = baseRoute;
+            for (size_t k = 0; k < j; k++) {  // Only check previously processed routes
+                // Split paths into segments to compare directories
+                std::string routePath = route->getPath();
+                std::string parentPath = routes[k]->getPath();
+
+                // Compare the directory structure
+                if (routePath.substr(0, parentPath.size()) == parentPath && 
+                    (routePath[parentPath.size()] == '/' || routePath.size() == parentPath.size())) {
+                    parent = routes[k];
+                }
+            }
+
+            // If a parent is found, inherit missing config values
+            // TODO: cgi routes are also getting filled with the base route's values
+            if (parent) {
+                if (route->getRootDirRoute().empty()) {
+                    route->setRootDirRoute(parent->getRootDirRoute());
+                }
+                if (route->getIndexFile().empty()) {
+                    route->setIndexFile(parent->getIndexFile());
+                }
+                if (route->getAllowedMethods().empty()) {
+                    route->setAllowedMethods(parent->getAllowedMethods());
+                }
+                if (route->getRedirectStatus() == 0) {
+                    route->setRedirectStatus(parent->getRedirectStatus());
+                }
+                if (route->getRedirectUrl().empty()) {
+                    route->setRedirectUrl(parent->getRedirectUrl());
+                }
+                if (!route->getAutoindexSet()) {
+                    route->setAutoindex(parent->getAutoindex());
+                }
+            }
+        }
+    }
+}
+
+

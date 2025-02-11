@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": false,
-      "cwd": "/home/jkaller/Desktop/HomeOf42/Core_Curriculum_Projects/Rank05/Webserv/div_test",
-      "program": "/home/jkaller/Desktop/HomeOf42/Core_Curriculum_Projects/Rank05/Webserv/div_test/build/Debug/outDebug",
+      "cwd": "/home/jkaller/Desktop/HomeOf42/Core_Curriculum_Projects/Rank05/Webserv/src",
+      "program": "/home/jkaller/Desktop/HomeOf42/Core_Curriculum_Projects/Rank05/Webserv/src/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

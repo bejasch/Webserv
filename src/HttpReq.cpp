@@ -1,11 +1,12 @@
-
 #include "../headers/AllHeaders.hpp"
 
-
-HttpReq::HttpReq() : _creationTime(time(0)), _httpStatus(0) {}
+HttpReq::HttpReq() : _creationTime(time(0)), _server(NULL), _buffer(""), _httpStatus(0),
+					_method(""), _target(""), _protocol(""), _headers(), _body(""),	
+					_startlineParsed(false), _headersParsed(false), _isChunked(false),
+					_bodyComplete(false), _currentChunkSize(0) {}
 
 HttpReq::HttpReq(const HttpReq &other) : _creationTime(other._creationTime),
-	_httpStatus(other._httpStatus), _buffer(other._buffer),
+	_server(other._server), _buffer(other._buffer),	_httpStatus(other._httpStatus), 
 	_method(other._method), _target(other._target), _protocol(other._protocol), 
 	_headers(other._headers), _body(other._body),
 	_startlineParsed(other._startlineParsed), _headersParsed(other._headersParsed),
@@ -16,6 +17,7 @@ HttpReq	HttpReq::operator=(const HttpReq &another)	{
 	if (this == &another)
 		return (*this);
 	_creationTime = another._creationTime;
+	_server = another._server;
 	_httpStatus = another._httpStatus;
 	_buffer = another._buffer;
 	_method = another._method;
@@ -98,7 +100,8 @@ void	HttpReq::print(void) const {
     std::cout << "Method: " << _method << "\n";
     std::cout << "Target: " << _target << "\n";
     std::cout << "Protocol: " << _protocol << "\n";
-	std::cout << "Chunked transfer: " << _isChunked << "\n";
+	if (_isChunked)
+		std::cout << "This is a chunked transfer!\n";
     std::cout << "Headers:\n";
     for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
         std::cout << "\t" << it->first << ": " << it->second << "\n";
@@ -118,6 +121,8 @@ const std::string	&HttpReq::getProtocol(void) const { return (_protocol); }
 // Care for exceptions if key does not exist
 const std::string	&HttpReq::getHeader(const std::string &key) const { return (_headers.at(key)); }
 
+const std::map<std::string, std::string>	&HttpReq::getHeaders(void) const { return (_headers); }
+
 // size_t				&HttpReq::getBodySize(void) const { return (_bodySize); }
 
 const std::string	&HttpReq::getBody(void) { return (_body); }
@@ -126,7 +131,9 @@ int					HttpReq::getHttpStatus(void) const { return (_httpStatus); }
 
 // TODO: How to react if an error occurs during (previous) parsing ???
 // true means the full request is assembled (incl errors), false means more data is needed
-bool HttpReq::processData(const std::string &data) {
+bool HttpReq::processData(Server &server, const std::string &data) {
+	if (!_server)
+		_server = &server;
 	_buffer += data;
 	if (!_startlineParsed && !parseStartLine())	// Parse start line if not already done
 		return (true);							// Error occurred or short request in start line
@@ -270,12 +277,13 @@ bool HttpReq::verifyHeaders() {
 }
 
 bool	HttpReq::parseBody(void) {
-	
 	printf("\n\t##### Parsing body ... with status: %d\n", _httpStatus);
 	if (_headers.find("content-length") != _headers.end()) {
-		size_t	content_length = std::stoul(_headers["content-length"]);
-		printf("\n\n\t##### Content-Length: %lu\n", content_length);
-		printf("\n\t##### Buffer length: %lu\n", _buffer.length());
+		size_t content_length = std::strtoul(_headers["content-length"].c_str(), NULL, 10);
+		if (content_length > static_cast<size_t>(_server->getConfig()->getMaxBodySize())) {
+			_httpStatus = 413; // Payload Too Large
+			return (true);
+		}
 		_body += _buffer;
 		_buffer.clear();
 		if (_body.length() < content_length) {
