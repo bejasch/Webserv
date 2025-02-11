@@ -2,7 +2,7 @@
 
 int main(int argc, char **argv) {
 	if (argc != 2) {
-		std::cerr << "Usage: ./webserver <config_file>" << std::endl;
+		std::cerr << RED <<"Usage: ./webserver <config_file>" << RESET << std::endl;
 		return 1;
 	}
 	ServerManager serverManager;
