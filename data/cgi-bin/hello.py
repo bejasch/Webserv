@@ -3,6 +3,7 @@
 import cgi
 import os
 
+    
 # Set Content-Type header
 print("Content-Type: text/html\n")
 
@@ -25,3 +26,5 @@ print("</ul>")
 # End HTML
 print("</body>")
 print("</html>")
+
+# erg = 1 / 0 # Uncomment to test error handling
