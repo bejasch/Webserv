@@ -176,7 +176,7 @@ void	HttpRes::GET(void) {
 		std::cout << "Generated guestbook page in GET" << std::endl;
 		return;
 	}
-	if (_target.find(".py") != std::string::npos || _target.find(".php") != std::string::npos) {
+	if (_route->getPath().find(".py") != std::string::npos || _route->getPath().find(".php") != std::string::npos) {
 		CGI cgi;
 		_body = cgi.executeCGI_GET(*this);
 		_contentType = "text/html";
