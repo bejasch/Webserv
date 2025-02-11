@@ -81,7 +81,7 @@ int ServerManager::setServers(const std::string &config_file)
         return 1;
     }
     validateRoutes();
-    // printConfigAll();
+    //printConfigAll();
     file.close();
     return 0;
 }
@@ -125,7 +125,6 @@ int ServerManager::handleEvents() {
         for (int i = 0; i < n; ++i) {
             if (dispatchEvent(events[i])) {
                 std::cerr << "Error handling event" << std::endl;
-                //freeResources();
                 return (1);
             }
         }
@@ -265,7 +264,7 @@ void ServerManager::printConfigAll() {
 int ServerManager::portCheck(int port) {
     for (unsigned long i = 0; i < servers.size(); i++) {
         if (servers[i]->getConfig()->getPort() == port) {
-            std::cerr << "Port " << port << " already in use" << std::endl;
+            std::cerr << "Server not added. Port " << port << " already in use." << std::endl;
             return 1;
         }
     }
