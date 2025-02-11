@@ -219,15 +219,25 @@ std::string getFileExtension(const std::string &target) {
 	}
 	return "";  // No extension found
 }
+		
+std::string resolvePath(const std::string &target, const std::string &route_path, const std::string &root_dir) {
+	std::cout << "Target: " << target << " Route Path: " << route_path << " Root Dir: " << root_dir << std::endl;
+	// Check if the target starts with route_path
+	if (target.find(route_path) == 0) { // If route_path is a prefix of target
+		if (target == route_path) {
+			if (target.find_last_of('.') != std::string::npos) {
+				return root_dir + "/" + target; // Keep full target if it's a file
+			} else {
+				return root_dir + "/"; // If it's a directory, return root_dir only
+			}
+		}
+		std::string resolvedPath = target.substr(route_path.length());
 
-std::string	resolvePath(const std::string &target, const std::string &route_path, const std::string &root_dir) {
-	if (route_path == "/") {
-		return (root_dir + target);
+		if (resolvedPath.empty() || resolvedPath[0] != '/')
+			resolvedPath = "/" + resolvedPath;
+		return root_dir + resolvedPath;
 	}
-	if (target.find(route_path) == 0) { // If target starts with route_path
-		return (root_dir + target.substr(route_path.length())); // Replace route_path with root_dir
-	}
-	return (target); // Return unchanged if route_path is not found at the beginning
+	return ""; // Return empty string if route_path is not a prefix of target
 }
 
 char *cpp_strdup(const std::string str)

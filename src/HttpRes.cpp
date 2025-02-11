@@ -113,6 +113,7 @@ void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server) {
 		return;
 	}
 	_serverPath = resolvePath(_target, _route->getPath(), _route->getRootDirRoute());
+	std::cout << "Server path: " << _serverPath << std::endl;
 	
 	if (_method == "GET")
 		GET();
@@ -184,6 +185,7 @@ void	HttpRes::GET(void) {
 		_contentType = "text/html";
 		return;
 	}
+	std::cout << "Server path: " << _serverPath << std::endl;
 	if (!_wasRedirected && !_route->getRedirectUrl().empty()) {		// return directive
 		_wasRedirected = true;
 		_target = _route->getRedirectUrl();
