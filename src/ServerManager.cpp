@@ -21,11 +21,11 @@ int ServerManager::setServers(const std::string &config_file)
     Route *route;
 
     if (config_file.find(".conf") == std::string::npos) {
-        perror("Invalid configuration file format.");
+        std::cerr << "Invalid configuration file format: " << std::strerror(errno) << std::endl;
         return (1); // TODO: remember to free (no need to free here, goes out of scope)
     }
     if (!file.is_open()) {
-        perror("Failed to open configuration file");
+        std::cerr << "Failed to open configuration file: " << std::strerror(errno) << std::endl;
         return (1); // TODO: remember to free (no need to free here, goes out of scope)
     }
     while (std::getline(file, line)) {
