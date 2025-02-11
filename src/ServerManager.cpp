@@ -96,7 +96,7 @@ int ServerManager::setServers(const std::string &config_file)
 		return 1;
 	}
 	validateRoutes();
-	printConfigAll();
+	//printConfigAll();
 	file.close();
 	return 0;
 }
