@@ -128,13 +128,42 @@ void ServerManager::startServers() {
 	handleEvents();
 }
 
+// check CGI timeouts
+void	ServerManager::checkCGITimeouts() {
+	std::cout << "Checking CGI timeouts" << std::endl;
+    time_t now = time(NULL);
+    std::map<int, time_t>::iterator it = cgi_start_times.begin();
+    while (it != cgi_start_times.end()) {
+        int pipe_fd = it->first;
+        time_t start_time = it->second;
+		std::cout << "Time difference: " << now - start_time << std::endl;
+        if (now - start_time > CGI_TIMEOUT) {
+            pid_t pid = cgi_pids[pipe_fd];
+            std::cout << "Timeout exceeded → Kill CGI process " << pid << std::endl;
+            kill(pid, SIGKILL);
+            waitpid(pid, NULL, 0);
+
+            // Cleanup
+            epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, NULL);
+            close(pipe_fd);
+            cgi_pipes.erase(pipe_fd);
+            cgi_pids.erase(pipe_fd);
+            cgi_start_times.erase(it); // Erase and move to next element
+			it = cgi_start_times.begin();
+        } else {
+            ++it; // Move to next element if no timeout
+        }
+    }
+}
+
 // Central event loop that distributes events to the appropriate server
 int ServerManager::handleEvents() {
 	epoll_event events[MAX_EVENTS];
 
 	while (!stop_flag) {
-		int n = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+		int n = epoll_wait(epoll_fd, events, MAX_EVENTS, WAIT_CHECK);
 		if (n == -1) {
+			if (errno == EINTR) continue; // Ignore interrupted syscalls
 			std::cerr << "Epoll_wait failed: " << std::strerror(errno) << std::endl;
 			return (1);
 		}
@@ -144,6 +173,7 @@ int ServerManager::handleEvents() {
 				return (1);
 			}
 		}
+    	checkCGITimeouts();
 	}
 	freeResources();
 	return (0);

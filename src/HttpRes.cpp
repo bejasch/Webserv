@@ -187,7 +187,6 @@ void	HttpRes::GET(void) {
 		_httpStatus = 0;  // Special status to indicate CGI handling
 		return;
 	}
-	std::cout << "Server path: " << _serverPath << std::endl;
 	if (!_wasRedirected && !_route->getRedirectUrl().empty()) {		// return directive
 		_wasRedirected = true;
 		_target = _route->getRedirectUrl();

@@ -6,6 +6,8 @@
 #define MAX_RETRY_COUNT		5		// Maximum number of retries for write failures
 #define MAX_EVENTS			100		// Max events for epoll_wait
 #define GUESTBOOK_FILE		"data/guestbook/guestbook.txt"
+#define WAIT_CHECK			2000	// 5000 ms
+#define CGI_TIMEOUT			5		// 5 s
 
 #include <iostream>
 

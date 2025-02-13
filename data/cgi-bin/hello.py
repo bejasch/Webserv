@@ -13,7 +13,7 @@ print()  # Empty line to separate headers from body
 print("<html><body><h1>Hello from Python CGI!</h1></body></html>")
 
 print("Start")
-time.sleep(10)  # Pause for 2 seconds
+time.sleep(15)  # Pause for 15 seconds
 print("End")
 
 print("<p>This is a simple CGI script written in Python.</p>")

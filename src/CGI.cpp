@@ -49,67 +49,75 @@ int CGI::setAllEnv(HttpRes &httpResponse) {
 }
 
 std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
-    if (setAllEnv(httpResponse)) {
-        std::cerr << "Failed to set env variables: " << std::strerror(errno) << std::endl;
-        httpResponse.setStatus(500);
+	if (setAllEnv(httpResponse)) {
+		std::cerr << "Failed to set env variables: " << std::strerror(errno) << std::endl;
+		httpResponse.setStatus(500);
+		return "";
+	}
+
+	std::string scriptPath = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
+	std::cout << "Executing CGI script (GET): " << scriptPath << std::endl;
+
+	if (access(scriptPath.c_str(), X_OK) == -1) {
+        std::cerr << "Invalid CGI script path: " << scriptPath << std::endl;
+        httpResponse.setStatus(403);
         return "";
     }
 
-    std::string scriptPath = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
-    std::cout << "Executing CGI script (GET): " << scriptPath << std::endl;
+	if (getFileExtension(scriptPath) == ".py")
+		this->argv[0] = cpp_strdup("/usr/bin/python3");
+	else if (getFileExtension(scriptPath) == ".php")
+		this->argv[0] = cpp_strdup("/usr/bin/php-cgi");
+	this->argv[1] = cpp_strdup(scriptPath);
 
-    if (getFileExtension(scriptPath) == ".py")
-        this->argv[0] = cpp_strdup("/usr/bin/python3");
-    else if (getFileExtension(scriptPath) == ".php")
-        this->argv[0] = cpp_strdup("/usr/bin/php-cgi");
-    this->argv[1] = cpp_strdup(scriptPath);
-
-    int pipe_fd[2];
-    if (pipe(pipe_fd) == -1) {
-        std::cerr << "Failed to create pipe: " << std::strerror(errno) << std::endl;
-        httpResponse.setStatus(500);
-        return "";
-    }
+	int pipe_fd[2];
+	if (pipe(pipe_fd) == -1) {
+		std::cerr << "Failed to create pipe: " << std::strerror(errno) << std::endl;
+		httpResponse.setStatus(500);
+		return "";
+	}
 
 	// Make pipe non-blocking
 
-    pid = fork();
-    if (pid == -1) {
-        std::cerr << "Failed to fork: " << std::strerror(errno) << std::endl;
-        httpResponse.setStatus(500);
-        return "";
-    }
+	pid = fork();
+	if (pid == -1) {
+		std::cerr << "Failed to fork: " << std::strerror(errno) << std::endl;
+		httpResponse.setStatus(500);
+		return "";
+	}
 
-    if (pid == 0) {  // Child process
-        close(pipe_fd[0]);
-        dup2(pipe_fd[1], STDOUT_FILENO);
-        dup2(pipe_fd[1], STDERR_FILENO);
-        close(pipe_fd[1]);
-        if (execve(argv[0], argv, envp) == -1) {
-            std::cerr << "Failed to execute script: " << std::strerror(errno) << std::endl;
-            exit(EXIT_FAILURE);
-        }
-    } 
+	if (pid == 0) {  // Child process
+		close(pipe_fd[0]);
+		dup2(pipe_fd[1], STDOUT_FILENO);
+		dup2(pipe_fd[1], STDERR_FILENO);
+		close(pipe_fd[1]);
+		execve(argv[0], argv, envp);
+		exit(EXIT_FAILURE);		// if execve fails
+	} 
 
-    // Parent process
-    close(pipe_fd[1]);
+	// Parent process
+	close(pipe_fd[1]);
 	fcntl(pipe_fd[0], F_SETFL, O_NONBLOCK);
 
-	httpResponse.getServer()->getServerManager().cgi_pipes[pipe_fd[0]] = client_fd;
-	std::cout << "client fd: " << client_fd << " connected to pipe: " << pipe_fd[0] << std::endl;
-    // Add to epoll
-    epoll_event ev;
-    ev.events = EPOLLIN;
-    ev.data.fd = pipe_fd[0];
+	// Store CGI process info
+    httpResponse.getServer()->getServerManager().cgi_pipes[pipe_fd[0]] = client_fd;
+    httpResponse.getServer()->getServerManager().cgi_pids[pipe_fd[0]] = pid;
+    httpResponse.getServer()->getServerManager().cgi_start_times[pipe_fd[0]] = time(NULL);
+    std::cout << "Client FD: " << client_fd << " connected to pipe: " << pipe_fd[0] << std::endl;
+
+	// Add to epoll
+	epoll_event ev;
+	ev.events = EPOLLIN;
+	ev.data.fd = pipe_fd[0];
 
 	int epoll_fd = httpResponse.getServer()->getServerManager().getEpollFd();
-    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, pipe_fd[0], &ev) == -1) {
-        std::cerr << "Failed to add pipe to epoll" << std::endl;
-        close(pipe_fd[0]);
-        httpResponse.setStatus(500);
-        return "";
-    }
-    return "";
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, pipe_fd[0], &ev) == -1) {
+		std::cerr << "Failed to add pipe to epoll" << std::endl;
+		close(pipe_fd[0]);
+		httpResponse.setStatus(500);
+		return "";
+	}
+	return "";
 }
 
 
