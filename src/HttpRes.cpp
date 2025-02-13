@@ -230,12 +230,10 @@ void HttpRes::POST(HttpReq &httpRequest) {
 			if (formData.count("name") && formData.count("message")) {
 				// Check if this is a Scramble request
 				if (formData.count("action") && (formData["action"] == "Scramble.py" || formData["action"] == "Capitalize.php")) {
-					std::cout << "CGI POST request" << std::endl;
 					CGI cgi;
-					std::string Message = cgi.executeCGI_POST(*this, formData, _client_fd);
-					if (Message != "500") {
-						saveGuestbookEntry(formData["name"], Message);
-					}
+					cgi.executeCGI_POST(*this, formData, _client_fd);
+					_httpStatus = 0;
+					return;
 				} else {
 					// Regular submission
 					saveGuestbookEntry(formData["name"], formData["message"]);
@@ -338,6 +336,7 @@ std::string	HttpRes::getResponse(void) {
 	response += _body;
 
 	_responseSize = response.size();
+	// std::cout << "Response: " << response << std::endl;
 	return (response);
 }
 
@@ -367,4 +366,24 @@ Server	*HttpRes::getServer(void) const {
 
 int	HttpRes::getHttpStatus(void) const {
 	return (_httpStatus);
+}
+
+void HttpRes::setHttpStatus(int status) {
+	_httpStatus = status;
+}
+
+void HttpRes::setContentType(const std::string &contentType) {
+	_contentType = contentType;
+}
+
+void HttpRes::setContentLength(size_t length) {
+	_responseSize = length;
+}
+
+void HttpRes::setBody(const std::string &body) {
+	_body = body;
+}
+
+void HttpRes::setTarget(const std::string &target) {
+	_target = target;
 }

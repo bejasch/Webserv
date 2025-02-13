@@ -132,24 +132,24 @@ void ServerManager::startServers() {
 void	ServerManager::checkCGITimeouts() {
 	std::cout << "Checking CGI timeouts" << std::endl;
     time_t now = time(NULL);
-    std::map<int, time_t>::iterator it = cgi_start_times.begin();
-    while (it != cgi_start_times.end()) {
+    std::map<int, CgiRequestInfo>::iterator it = cgi_pipes.begin();
+    while (it != cgi_pipes.end()) {
         int pipe_fd = it->first;
-        time_t start_time = it->second;
+        time_t start_time = it->second.start_time;
 		std::cout << "Time difference: " << now - start_time << std::endl;
         if (now - start_time > CGI_TIMEOUT) {
-            pid_t pid = cgi_pids[pipe_fd];
+            pid_t pid = it->second.pid;
             std::cout << "Timeout exceeded → Kill CGI process " << pid << std::endl;
             kill(pid, SIGKILL);
             waitpid(pid, NULL, 0);
 
             // Cleanup
-            epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, NULL);
+            if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, NULL) == -1) {
+				std::cerr << "Failed to remove pipe from epoll: " << std::strerror(errno) << std::endl;
+			}
             close(pipe_fd);
             cgi_pipes.erase(pipe_fd);
-            cgi_pids.erase(pipe_fd);
-            cgi_start_times.erase(it); // Erase and move to next element
-			it = cgi_start_times.begin();
+            it = cgi_pipes.begin();
         } else {
             ++it; // Move to next element if no timeout
         }
@@ -170,7 +170,6 @@ int ServerManager::handleEvents() {
 		for (int i = 0; i < n; ++i) {
 			if (dispatchEvent(events[i])) {
 				std::cerr << "Error handling event" << std::endl;
-				return (1);
 			}
 		}
     	checkCGITimeouts();
@@ -434,12 +433,12 @@ int ServerManager::handleCGIResponse(int pipe_fd) {
     }
 
     // Find the client_fd that requested the CGI execution
-    int client_fd = cgi_pipes[pipe_fd];
+	CgiRequestInfo requestInfo = cgi_pipes[pipe_fd];
+    int client_fd = requestInfo.client_fd;
+    std::string method = requestInfo.method;
+    std::string output = cgi_outputs[pipe_fd];
 
 	std::cout << "client fd" << client_fd << std::endl;
-
-    // Get the accumulated output
-    std::string output = cgi_outputs[pipe_fd];
 
     // Clean up pipe resources
     close(pipe_fd);
@@ -454,25 +453,13 @@ int ServerManager::handleCGIResponse(int pipe_fd) {
         return 1;
     }
 
-    // Ensure proper HTTP headers are present
-    if (output.find("HTTP/1.1") == std::string::npos) {
-        std::string headers = "HTTP/1.1 200 OK\r\n"
-                            "Content-Type: text/html\r\n"
-                            "Content-Length: " + intToString(output.length()) + "\r\n"
-                            "\r\n";
-        output = headers + output;
-    }
+	std::cout << "output: " << output << std::endl;
 
-	std::cout << "CGI output: " << output << std::endl;
-
-    // Send the complete response in one go
-    ssize_t sent = send(client_fd, output.c_str(), output.length(), MSG_NOSIGNAL);
-    if (sent < 0) {
-        std::cerr << "Failed to send response: " << std::endl;
-        // Ensure we clean up the client_fd only if it was successfully sent
-        close(client_fd);
-        return 1;
-    }
+	// Send the CGI output to the client
+	if (method == "GET")
+		writeCGIResponseGET(client_fd, output);
+	else if (method == "POST")
+		writeCGIResponsePOST(client_fd, output);
 
     std::cout << "CGI response sent to client_fd: " << client_fd << std::endl;
     
@@ -483,6 +470,48 @@ int ServerManager::handleCGIResponse(int pipe_fd) {
 	close(client_fd);  // Close the connection
 	std::cout << "client fd closed: " << client_fd << std::endl;
     return 0;
+}
+
+void ServerManager::writeCGIResponseGET(int client_fd, const std::string &output) {
+	std::string response_str;
+	HttpRes httpResponse;
+	httpResponse.setHttpStatus(200);
+	httpResponse.setContentType("text/html");
+	httpResponse.setBody(output);
+	response_str = httpResponse.getResponse();
+	const char* response_cstr = response_str.c_str();
+	size_t		size = httpResponse.getResponseSize();
+	if (response_cstr == NULL || size == 0) {
+		std::cerr << "Error: Response is empty.\n";
+	} else {
+		size_t	total_sent = 0;
+		int		retry_count = 0;
+		while (total_sent < size) {
+			ssize_t sent = write(client_fd, response_cstr + total_sent, size - total_sent);
+			if (sent < 0) {
+				retry_count++;
+				// If maximum retries reached, log and stop trying
+				if (retry_count >= MAX_RETRY_COUNT) {
+					std::cerr << "Error: Failed to write to socket after " << MAX_RETRY_COUNT << " retries.\n";
+					break;
+				}
+				std::cerr << "Warning: Write failed, retrying (" << retry_count << "/" << MAX_RETRY_COUNT << ")...\n";
+				continue;
+			}
+			retry_count = 0;
+			total_sent += sent;
+		}
+		if (total_sent < size)
+			std::cerr << "Warning: Only " << total_sent << " out of " << size << " bytes were sent.\n";
+		else
+			std::cout << BOLD << "\tSuccessfully sent " << total_sent << " bytes to client.\n" << RESET;
+	}
+}
+
+void ServerManager::writeCGIResponsePOST(int client_fd, const std::string &output) {
+	(void)client_fd;
+	saveGuestbookEntry("Default", output);
+
 }
 
 int ServerManager::freeResources() {

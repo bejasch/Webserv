@@ -99,16 +99,25 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
 	close(pipe_fd[1]);
 	fcntl(pipe_fd[0], F_SETFL, O_NONBLOCK);
 
-	// Store CGI process info
-    httpResponse.getServer()->getServerManager().cgi_pipes[pipe_fd[0]] = client_fd;
-    httpResponse.getServer()->getServerManager().cgi_pids[pipe_fd[0]] = pid;
-    httpResponse.getServer()->getServerManager().cgi_start_times[pipe_fd[0]] = time(NULL);
-    std::cout << "Client FD: " << client_fd << " connected to pipe: " << pipe_fd[0] << std::endl;
+	// // Store CGI process info
+    // httpResponse.getServer()->getServerManager().cgi_pipes[pipe_fd[0]] = client_fd;
+    // httpResponse.getServer()->getServerManager().cgi_pids[pipe_fd[0]] = pid;
+    // httpResponse.getServer()->getServerManager().cgi_start_times[pipe_fd[0]] = time(NULL);
+    // std::cout << "Client FD: " << client_fd << " connected to pipe: " << pipe_fd[0] << std::endl;
 
-	// Add to epoll
-	epoll_event ev;
-	ev.events = EPOLLIN;
-	ev.data.fd = pipe_fd[0];
+	ServerManager::CgiRequestInfo requestInfo;
+	requestInfo.client_fd = client_fd;
+	requestInfo.method = "GET";
+	requestInfo.pid = pid;
+	requestInfo.start_time = time(NULL);
+	ServerManager &serverManager = httpResponse.getServer()->getServerManager();
+	serverManager.cgi_pipes[pipe_fd[0]] = requestInfo;
+	std::cout << "client fd: " << client_fd << " connected to pipe: " << pipe_fd[0] << std::endl;
+
+    // Add to epoll
+    epoll_event ev;
+    ev.events = EPOLLIN;
+    ev.data.fd = pipe_fd[0];
 
 	int epoll_fd = httpResponse.getServer()->getServerManager().getEpollFd();
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, pipe_fd[0], &ev) == -1) {
@@ -132,11 +141,11 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
 	std::map<std::string, std::string>::const_iterator it = formData.find("action");
 	if (it != formData.end()) {
 		if (it->second == "Scramble.py") {
-			scriptPath = "/data/cgi-bin/modify_comments.py";
+			scriptPath = "data/cgi-bin/modify_comments.py";
 			this->argv[0] = cpp_strdup("/usr/bin/python3");
 		}
 		else if (it->second == "Capitalize.php"){
-			scriptPath = "/data/cgi-bin/modify_comments.php";
+			scriptPath = "data/cgi-bin/modify_comments.php";
 			this->argv[0] = cpp_strdup("/usr/bin/php");
 		}
 		this->argv[1] = cpp_strdup(scriptPath);
@@ -215,7 +224,11 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
 		}
 
 		// Store the mapping of pipe to client_fd
-		httpResponse.getServer()->getServerManager().cgi_pipes[outputPipe[0]] = client_fd;
+		ServerManager::CgiRequestInfo requestInfo;
+		requestInfo.client_fd = client_fd;
+		requestInfo.method = "POST";
+		ServerManager &serverManager = httpResponse.getServer()->getServerManager();
+		serverManager.cgi_pipes[outputPipe[0]] = requestInfo;
 		return "";
 	}
 	return "";
