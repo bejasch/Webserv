@@ -141,7 +141,6 @@ int ServerManager::handleEvents() {
 		for (int i = 0; i < n; ++i) {
 			if (dispatchEvent(events[i])) {
 				std::cerr << "Error handling event" << std::endl;
-				return (1);
 			}
 		}
 	}
@@ -424,16 +423,15 @@ int ServerManager::handleCGIResponse(int pipe_fd) {
         return 1;
     }
 
-    // Ensure proper HTTP headers are present
-    if (output.find("HTTP/1.1") == std::string::npos) {
-        std::string headers = "HTTP/1.1 200 OK\r\n"
-                            "Content-Type: text/html\r\n"
-                            "Content-Length: " + intToString(output.length()) + "\r\n"
-                            "\r\n";
-        output = headers + output;
-    }
+	std::string response;
+	response = "HTTP/1.1 " + intToString(200) + " " + "OK" + "\r\n";
+	response += "Content-Type: text/html\r\n";
+	// response += "Location: " + _target + "\r\n";
+	response += "Content-Length: " + intToString(output.length()) + "\r\n";
+	response += "\r\n";
+	response += output;
 
-	std::cout << "CGI output: " << output << std::endl;
+	std::cout << "CGI output: " << response << std::endl;
 
     // Send the complete response in one go
     ssize_t sent = send(client_fd, output.c_str(), output.length(), MSG_NOSIGNAL);

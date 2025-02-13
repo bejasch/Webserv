@@ -61,7 +61,7 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
     if (getFileExtension(scriptPath) == ".py")
         this->argv[0] = cpp_strdup("/usr/bin/python3");
     else if (getFileExtension(scriptPath) == ".php")
-        this->argv[0] = cpp_strdup("/usr/bin/php-cgi");
+        this->argv[0] = cpp_strdup("/usr/bin/php");
     this->argv[1] = cpp_strdup(scriptPath);
 
     int pipe_fd[2];
@@ -124,11 +124,11 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
 	std::map<std::string, std::string>::const_iterator it = formData.find("action");
 	if (it != formData.end()) {
 		if (it->second == "Scramble.py") {
-			scriptPath = "/data/cgi-bin/modify_comments.py";
+			scriptPath = "data/cgi-bin/modify_comments.py";
 			this->argv[0] = cpp_strdup("/usr/bin/python3");
 		}
 		else if (it->second == "Capitalize.php"){
-			scriptPath = "/data/cgi-bin/modify_comments.php";
+			scriptPath = "data/cgi-bin/modify_comments.php";
 			this->argv[0] = cpp_strdup("/usr/bin/php");
 		}
 		this->argv[1] = cpp_strdup(scriptPath);

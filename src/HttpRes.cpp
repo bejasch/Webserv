@@ -233,10 +233,12 @@ void HttpRes::POST(HttpReq &httpRequest) {
 				if (formData.count("action") && (formData["action"] == "Scramble.py" || formData["action"] == "Capitalize.php")) {
 					std::cout << "CGI POST request" << std::endl;
 					CGI cgi;
-					std::string Message = cgi.executeCGI_POST(*this, formData, _client_fd);
-					if (Message != "500") {
-						saveGuestbookEntry(formData["name"], Message);
-					}
+					cgi.executeCGI_POST(*this, formData, _client_fd);
+					_httpStatus = 0;
+					return;
+					// if (Message != "500") {
+					// 	saveGuestbookEntry(formData["name"], Message);
+					// }
 				} else {
 					// Regular submission
 					saveGuestbookEntry(formData["name"], formData["message"]);
