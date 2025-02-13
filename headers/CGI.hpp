@@ -18,7 +18,7 @@ public:
 
 	int			setAllEnv(HttpRes &httpResponse);
 	std::string	executeCGI_GET(HttpRes &httpResponse, int client_fd);
-	std::string	executeCGI_POST(HttpRes &httpResponse, const std::map<std::string, std::string> &formData);
+	std::string	executeCGI_POST(HttpRes &httpResponse, const std::map<std::string, std::string> &formData, int client_fd);
 
 	void freeEnvironment();
 	void printCGI();

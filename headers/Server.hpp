@@ -20,14 +20,14 @@ class Server {
 		Server operator=(const Server &another);
 		~Server();
 		int		setServer(Config *config); //define server configs
-		int		setUpServer(); //define socket and bind to server fd
-	
+		int		setUpServer(); //define socket and bind to server fd	
 		Config	*getConfig() const { return this->config; } ;
 		ServerManager	&getServerManager() const { return this->server_manager; } ;
 		int		getServerFd() const { return this->server_fd; } ;
 		int		acceptConnection(int epoll_fd);
 		int		handleRequest(int fd);
 		int		handleResponse(int fd);
+		void	deleteClientResponse(int client_fd);
 		void	freeServer();
 };
 

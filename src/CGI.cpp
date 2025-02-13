@@ -1,11 +1,11 @@
 #include "../headers/AllHeaders.hpp"
 
 CGI::CGI() : pid(0), env(), envp(NULL), argv(NULL) {
-	std::cout << "CGI default constructor called" << std::endl;
+	// std::cout << "CGI default constructor called" << std::endl;
 }
 
 CGI::CGI(const CGI &other) : pid(other.pid), env(other.env), envp(NULL), argv(NULL) {
-	std::cout << "CGI copy constructor called" << std::endl;
+	// std::cout << "CGI copy constructor called" << std::endl;
 }
 
 CGI CGI::operator=(const CGI &another) {
@@ -20,7 +20,7 @@ CGI CGI::operator=(const CGI &another) {
 
 CGI::~CGI() {
 	freeEnvironment();
-	std::cout << "CGI destructor called" << std::endl;
+	// std::cout << "CGI destructor called" << std::endl;
 }
 
 int CGI::setAllEnv(HttpRes &httpResponse) {
@@ -55,14 +55,13 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
         return "";
     }
 
-    std::cout << "root dir: " << env["DOCUMENT_ROOT"] << std::endl;
     std::string scriptPath = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
     std::cout << "Executing CGI script (GET): " << scriptPath << std::endl;
 
     if (getFileExtension(scriptPath) == ".py")
         this->argv[0] = cpp_strdup("/usr/bin/python3");
     else if (getFileExtension(scriptPath) == ".php")
-        this->argv[0] = cpp_strdup("/usr/bin/php");
+        this->argv[0] = cpp_strdup("/usr/bin/php-cgi");
     this->argv[1] = cpp_strdup(scriptPath);
 
     int pipe_fd[2];
@@ -71,6 +70,8 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
         httpResponse.setStatus(500);
         return "";
     }
+
+	// Make pipe non-blocking
 
     pid = fork();
     if (pid == -1) {
@@ -92,16 +93,16 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
 
     // Parent process
     close(pipe_fd[1]);
-    // Make pipe non-blocking
-    fcntl(pipe_fd[0], F_SETFL, O_NONBLOCK);
+	fcntl(pipe_fd[0], F_SETFL, O_NONBLOCK);
+
 	httpResponse.getServer()->getServerManager().cgi_pipes[pipe_fd[0]] = client_fd;
+	std::cout << "client fd: " << client_fd << " connected to pipe: " << pipe_fd[0] << std::endl;
     // Add to epoll
     epoll_event ev;
-    ev.events = EPOLLIN | EPOLLET;
+    ev.events = EPOLLIN;
     ev.data.fd = pipe_fd[0];
 
 	int epoll_fd = httpResponse.getServer()->getServerManager().getEpollFd();
-	std::cout << "registered pipe: " << pipe_fd[0] << "to epoll_fd" << epoll_fd << std::endl;
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, pipe_fd[0], &ev) == -1) {
         std::cerr << "Failed to add pipe to epoll" << std::endl;
         close(pipe_fd[0]);
@@ -112,7 +113,7 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
 }
 
 
-std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::string, std::string> &formData) {
+std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::string, std::string> &formData, int client_fd) {
 	std::string scriptPath;
 	if (setAllEnv(httpResponse)){
 		std::cerr << "Failed to set env variables: " << std::strerror(errno) << std::endl;
@@ -123,11 +124,11 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
 	std::map<std::string, std::string>::const_iterator it = formData.find("action");
 	if (it != formData.end()) {
 		if (it->second == "Scramble.py") {
-			scriptPath = "data/cgi-bin/modify_comments.py";
+			scriptPath = "/data/cgi-bin/modify_comments.py";
 			this->argv[0] = cpp_strdup("/usr/bin/python3");
 		}
 		else if (it->second == "Capitalize.php"){
-			scriptPath = "data/cgi-bin/modify_comments.php";
+			scriptPath = "/data/cgi-bin/modify_comments.php";
 			this->argv[0] = cpp_strdup("/usr/bin/php");
 		}
 		this->argv[1] = cpp_strdup(scriptPath);
@@ -150,6 +151,9 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
 		httpResponse.setStatus(500);
 		return "";
 	}
+
+	// Make the output pipe non-blocking
+	fcntl(outputPipe[0], F_SETFL, O_NONBLOCK);
 
 	// Fork to execute the CGI script
 	pid_t pid = fork();
@@ -189,25 +193,23 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
 		write(inputPipe[1], postData.c_str(), postData.length());
 		close(inputPipe[1]); // Close write end after writing
 
-		// Wait for the CGI script to finish
-		int status;
-		waitpid(pid, &status, 0);
+		// Register the output pipe with epoll
+		epoll_event ev;
+		ev.events = EPOLLIN;
+		ev.data.fd = outputPipe[0];
 
-		// Read the output of the CGI script
-		char buffer[1024];
-		ssize_t bytesRead = read(outputPipe[0], buffer, sizeof(buffer));
-		close(outputPipe[0]); // Close read end after reading
-
-		if (bytesRead >= 0) {
-			std::cout << "Read " << bytesRead << " bytes from CGI script" << std::endl;
-			return std::string(buffer, bytesRead);
-		} else {
-			std::cerr << "Failed to read from CGI script" << std::endl;
+		int epoll_fd = httpResponse.getServer()->getServerManager().getEpollFd();
+		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, outputPipe[0], &ev) == -1) {
+			std::cerr << "Failed to add pipe to epoll" << std::endl;
+			close(outputPipe[0]);
 			httpResponse.setStatus(500);
 			return "";
 		}
+
+		// Store the mapping of pipe to client_fd
+		httpResponse.getServer()->getServerManager().cgi_pipes[outputPipe[0]] = client_fd;
+		return "";
 	}
-	httpResponse.setStatus(500);
 	return "";
 }
 

@@ -8,6 +8,7 @@ private:
 	int epoll_fd;
 	std::vector<Server*> servers;
 	static volatile sig_atomic_t stop_flag;
+	std::map<int, std::string> cgi_outputs;
 
 public:
 	ServerManager();

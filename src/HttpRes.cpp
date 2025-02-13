@@ -182,8 +182,9 @@ void	HttpRes::GET(void) {
 	}
 	if (_route->getPath().find(".py") != std::string::npos || _route->getPath().find(".php") != std::string::npos) {
 		CGI cgi;
-		_body = cgi.executeCGI_GET(*this, _client_fd);
-		_contentType = "text/html";
+		// Don't set body or generate response here, just execute CGI
+		cgi.executeCGI_GET(*this, _client_fd);
+		_httpStatus = 0;  // Special status to indicate CGI handling
 		return;
 	}
 	std::cout << "Server path: " << _serverPath << std::endl;
@@ -232,7 +233,7 @@ void HttpRes::POST(HttpReq &httpRequest) {
 				if (formData.count("action") && (formData["action"] == "Scramble.py" || formData["action"] == "Capitalize.php")) {
 					std::cout << "CGI POST request" << std::endl;
 					CGI cgi;
-					std::string Message = cgi.executeCGI_POST(*this, formData);
+					std::string Message = cgi.executeCGI_POST(*this, formData, _client_fd);
 					if (Message != "500") {
 						saveGuestbookEntry(formData["name"], Message);
 					}
@@ -303,6 +304,10 @@ bool	HttpRes::parseFile(void) {
 }
 
 std::string	HttpRes::getResponse(void) {
+	// If this is a CGI request, don't generate a response
+	if (_httpStatus == 0) {
+		return "";
+	}
 	if (_httpStatus >= 400 && _httpStatus < 600) {
 		// Store a reference to the map
 		const std::map<int, std::string> &errorPages = _server->getConfig()->getErrorPages();
@@ -329,8 +334,8 @@ std::string	HttpRes::getResponse(void) {
 	response += "Content-Type: " + _contentType + "\r\n";
 	response += "Location: " + _target + "\r\n";
 	response += "Content-Length: " + intToString(_body.length()) + "\r\n";
-	response += "Connection: close\r\n";
 	response += "\r\n";
+	//TODO check if correct
 	response += _body;
 
 	_responseSize = response.size();
@@ -359,4 +364,8 @@ void	HttpRes::setStatus(int status) {
 
 Server	*HttpRes::getServer(void) const {
 	return (_server);
+}
+
+int	HttpRes::getHttpStatus(void) const {
+	return (_httpStatus);
 }

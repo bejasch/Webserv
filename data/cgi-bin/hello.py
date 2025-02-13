@@ -2,18 +2,18 @@
 
 import cgi
 import os
+import time
 
-    
-# Set Content-Type header
-print("Content-Type: text/html\n")
+# print("Start")
+# time.sleep(30)  # Pause for 2 seconds
+# print("End")
 
-# Start HTML
-print("<html>")
-print("<head><title>CGI Test</title></head>")
-print("<body>")
+#!/usr/bin/env python3
+print("HTTP/1.1 200 OK")
+print("Content-Type: text/html")
+print()  # Empty line to separate headers from body
+print("<html><body><h1>Hello from Python CGI!</h1></body></html>")
 
-# Print some information about the request
-print("<h1>CGI Test Script</h1>")
 print("<p>This is a simple CGI script written in Python.</p>")
 
 # Print environment variables
