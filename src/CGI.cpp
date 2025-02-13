@@ -227,6 +227,8 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
 		ServerManager::CgiRequestInfo requestInfo;
 		requestInfo.client_fd = client_fd;
 		requestInfo.method = "POST";
+		requestInfo.pid = pid;
+		requestInfo.start_time = time(NULL);
 		ServerManager &serverManager = httpResponse.getServer()->getServerManager();
 		serverManager.cgi_pipes[outputPipe[0]] = requestInfo;
 		return "";
