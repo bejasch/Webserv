@@ -95,7 +95,11 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
     close(pipe_fd[1]);
 	fcntl(pipe_fd[0], F_SETFL, O_NONBLOCK);
 
-	httpResponse.getServer()->getServerManager().cgi_pipes[pipe_fd[0]] = client_fd;
+	ServerManager::CgiRequestInfo requestInfo;
+	requestInfo.client_fd = client_fd;
+	requestInfo.method = "POST";
+	ServerManager &serverManager = httpResponse.getServer()->getServerManager();
+	serverManager.cgi_pipes[pipe_fd[0]] = requestInfo;
 	std::cout << "client fd: " << client_fd << " connected to pipe: " << pipe_fd[0] << std::endl;
     // Add to epoll
     epoll_event ev;
@@ -207,7 +211,11 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
 		}
 
 		// Store the mapping of pipe to client_fd
-		httpResponse.getServer()->getServerManager().cgi_pipes[outputPipe[0]] = client_fd;
+		ServerManager::CgiRequestInfo requestInfo;
+		requestInfo.client_fd = client_fd;
+		requestInfo.method = "POST";
+		ServerManager &serverManager = httpResponse.getServer()->getServerManager();
+		serverManager.cgi_pipes[outputPipe[0]] = requestInfo;
 		return "";
 	}
 	return "";

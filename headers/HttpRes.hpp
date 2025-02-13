@@ -51,9 +51,14 @@ public:
 	// --> Get/Set-methods:
 	const std::string	&getMethod(void) const;
 	const std::string	&getTarget(void) const;
-	int			getHttpStatus(void) const;
+	int					getHttpStatus(void) const;
 	Route				*getRoute(void) const;
 	void				setStatus(int status);
+	void				setHttpStatus(int status);
+	void				setContentType(const std::string &contentType);
+	void				setContentLength(size_t length);
+	void 				setTarget(const std::string &target);
+	void				setBody(const std::string &body);
 	
 	Server				*getServer(void) const;
 };

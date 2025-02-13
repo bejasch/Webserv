@@ -1,7 +1,5 @@
 #!/usr/bin/php-cgi
-<?php
-header("Content-Type: text/html");
-?>
+
 <html>
 <body>
 <h1>Hello from PHP CGI!</h1>

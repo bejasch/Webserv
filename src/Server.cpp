@@ -107,7 +107,7 @@ int	Server::handleRequest(int client_fd) {
 	// Process the incoming data if the request is complete
 	if (request.processData(*this, std::string(buffer, valread))) {
 		pending_responses[client_fd].handleRequest(request, *this, client_fd);
-		request.print();
+		//request.print();
 		client_requests.erase(client_fd);
 
 		epoll_event ev;
@@ -126,7 +126,6 @@ int	Server::handleRequest(int client_fd) {
 // When the server is ready to send a response to the client, it calls handleResponse
 int		Server::handleResponse(int client_fd) {
 	if (pending_responses.find(client_fd) != pending_responses.end()) {
-		std::cout << "entered if statement in handle Response" << std::endl; 
 		HttpRes &response = pending_responses[client_fd];
 		std::string response_str = response.getResponse();
 		const char* response_cstr = response_str.c_str();

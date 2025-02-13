@@ -6,15 +6,7 @@ import cgi
 import os
 import time
 
-
-print("HTTP/1.1 200 OK")
-print("Content-Type: text/html")
-print()  # Empty line to separate headers from body
 print("<html><body><h1>Hello from Python CGI!</h1></body></html>")
-
-print("Start")
-time.sleep(10)  # Pause for 2 seconds
-print("End")
 
 print("<p>This is a simple CGI script written in Python.</p>")
 
@@ -24,6 +16,10 @@ print("<ul>")
 for key, value in os.environ.items():
     print(f"<li>{key}: {value}</li>")
 print("</ul>")
+
+# print("Start")
+# time.sleep(10)  # Pause for 2 seconds
+# print("End")
 
 # End HTML
 print("</body>")
