@@ -96,7 +96,7 @@ int	Server::handleRequest(int client_fd) {
 		close(client_fd);
 		client_requests.erase(client_fd); // Clean up state
 		if (valread == 0) {
-			std::cerr << RED << "Connection closed by client.\n" << RESET;
+			std::cerr << RED << "Connection closed by client with client_fd " << client_fd << RESET << std::endl;
 			return(0);
 		}
 		std::cout << "client_fd: " << client_fd << std::endl;
