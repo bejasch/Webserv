@@ -17,12 +17,14 @@ for key, value in os.environ.items():
     print(f"<li>{key}: {value}</li>")
 print("</ul>")
 
-print("Start")
-time.sleep(10)  # Pause for 2 seconds
-print("End")
+# print("Start")
+# time.sleep(10)  # Pause for 2 seconds
+# print("End")
 
 # End HTML
 print("</body>")
 print("</html>")
+
+print('<button onclick="window.location.href=\'index.html\'">Back to Main Page</button>')
 
 # erg = 1 / 0 # Uncomment to test error handling

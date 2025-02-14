@@ -130,7 +130,7 @@ void ServerManager::startServers() {
 
 // check CGI timeouts
 void	ServerManager::checkCGITimeouts() {
-	std::cout << "Checking CGI timeouts" << std::endl;
+	// std::cout << "Checking CGI timeouts" << std::endl;
     time_t now = time(NULL);
     std::map<int, CgiRequestInfo>::iterator it = cgi_pipes.begin();
     while (it != cgi_pipes.end()) {
@@ -198,7 +198,7 @@ int ServerManager::dispatchEvent(const epoll_event& event) {
 		if (event.data.fd == it->first) {
 			Server *server = it->second;
 			if (event.events & EPOLLIN) {
-				if (server->handleRequest(event.data.fd))	// Handle request for client_fd
+				if (server->handleRequestServer(event.data.fd))	// Handle request for client_fd
 					return (1);
 			} else if (event.events & EPOLLOUT) {
 				if (server->handleResponse(event.data.fd))	// Handle response for client_fd
@@ -457,9 +457,9 @@ int ServerManager::handleCGIResponse(int pipe_fd) {
 
 	// Send the CGI output to the client
 	if (method == "GET")
-		writeCGIResponseGET(client_fd, output);
+		writeCGIResponseGET(requestInfo, output);
 	else if (method == "POST")
-		writeCGIResponsePOST(client_fd, output);
+		writeCGIResponsePOST(requestInfo, output);
 
     std::cout << "CGI response sent to client_fd: " << client_fd << std::endl;
     
@@ -467,49 +467,33 @@ int ServerManager::handleCGIResponse(int pipe_fd) {
 	// Server *server = clientfd_to_serverfd[client_fd];
 	// server->deleteClientResponse(client_fd);
 	// Remove client_fd from epoll instance
-	close(client_fd);  // Close the connection
+	// close(client_fd);  // Close the connection
 	std::cout << "client fd closed: " << client_fd << std::endl;
     return 0;
 }
 
-void ServerManager::writeCGIResponseGET(int client_fd, const std::string &output) {
+void ServerManager::writeCGIResponseGET(CgiRequestInfo requestInfo, const std::string &output) {
 	std::string response_str;
 	HttpRes httpResponse;
 	httpResponse.setHttpStatus(200);
 	httpResponse.setContentType("text/html");
 	httpResponse.setBody(output);
-	response_str = httpResponse.getResponse();
-	const char* response_cstr = response_str.c_str();
-	size_t		size = httpResponse.getResponseSize();
-	if (response_cstr == NULL || size == 0) {
-		std::cerr << "Error: Response is empty.\n";
-	} else {
-		size_t	total_sent = 0;
-		int		retry_count = 0;
-		while (total_sent < size) {
-			ssize_t sent = write(client_fd, response_cstr + total_sent, size - total_sent);
-			if (sent < 0) {
-				retry_count++;
-				// If maximum retries reached, log and stop trying
-				if (retry_count >= MAX_RETRY_COUNT) {
-					std::cerr << "Error: Failed to write to socket after " << MAX_RETRY_COUNT << " retries.\n";
-					break;
-				}
-				std::cerr << "Warning: Write failed, retrying (" << retry_count << "/" << MAX_RETRY_COUNT << ")...\n";
-				continue;
-			}
-			retry_count = 0;
-			total_sent += sent;
-		}
-		if (total_sent < size)
-			std::cerr << "Warning: Only " << total_sent << " out of " << size << " bytes were sent.\n";
-		else
-			std::cout << BOLD << "\tSuccessfully sent " << total_sent << " bytes to client.\n" << RESET;
+
+	requestInfo.server->addPendingResponse(requestInfo.client_fd, httpResponse);
+	epoll_event ev;
+	ev.events = EPOLLOUT;		// replace event with client_fd for writing data back as response
+	ev.data.fd = requestInfo.client_fd;
+	// std::cout << "Adding client_fd to epoll for writing" << std::endl;
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, requestInfo.client_fd, &ev) == -1) {
+		std::cerr << "Failed to add client_fd to epoll for writing: " << std::strerror(errno) << std::endl;
+		requestInfo.server->deleteClientResponse(requestInfo.client_fd);
+		close(requestInfo.client_fd); // Clean up if adding to epoll fails. Might want to use EAGAIN or EINTR
+		return;
 	}
 }
 
-void ServerManager::writeCGIResponsePOST(int client_fd, const std::string &output) {
-	(void)client_fd;
+void ServerManager::writeCGIResponsePOST(CgiRequestInfo requestInfo, const std::string &output) {
+	(void)requestInfo;
 	saveGuestbookEntry("Default", output);
 
 }

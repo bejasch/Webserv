@@ -44,7 +44,7 @@ public:
 	~HttpRes();
 
 	// --> Response methods:
-	void				handleRequest(HttpReq &httpRequest, Server &server, int client_fd);
+	void				handleRequestResponse(HttpReq &httpRequest, Server &server, int client_fd);
 	std::string			getResponse(void);
 	size_t				getResponseSize(void) const;
 

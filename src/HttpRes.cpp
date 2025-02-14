@@ -94,7 +94,7 @@ void	HttpRes::getNameCookie(HttpReq &httpRequest) {
 	}
 }
 
-void	HttpRes::handleRequest(HttpReq &httpRequest, Server &server, int client_fd) {
+void	HttpRes::handleRequestResponse(HttpReq &httpRequest, Server &server, int client_fd) {
 	_server = &server;
 	_target = httpRequest.getTarget();
 	_httpStatus = httpRequest.getHttpStatus();

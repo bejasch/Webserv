@@ -28,6 +28,8 @@ int CGI::setAllEnv(HttpRes &httpResponse) {
 	env["REQUEST_METHOD"] = httpResponse.getMethod();
 	env["SCRIPT_NAME"] = httpResponse.getTarget();
 	env["DOCUMENT_ROOT"] = httpResponse.getRoute()->getRootDirRoute();
+	env["SCRIPT_FILENAME"] = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
+	env["REDIRECT_STATUS"] = "200";
 	this->envp = new char*[this->env.size() + 1];
 	if (this->envp == NULL) {
 		std::cerr << "Failed to allocate memory for envp: " << std::strerror(errno) << std::endl;
@@ -57,13 +59,11 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
 
 	std::string scriptPath = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
 	std::cout << "Executing CGI script (GET): " << scriptPath << std::endl;
-
 	if (access(scriptPath.c_str(), X_OK) == -1) {
         std::cerr << "Invalid CGI script path: " << scriptPath << std::endl;
         httpResponse.setStatus(403);
         return "";
     }
-
 	if (getFileExtension(scriptPath) == ".py")
 		this->argv[0] = cpp_strdup("/usr/bin/python3");
 	else if (getFileExtension(scriptPath) == ".php")
@@ -110,6 +110,7 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
 	requestInfo.method = "GET";
 	requestInfo.pid = pid;
 	requestInfo.start_time = time(NULL);
+	requestInfo.server = httpResponse.getServer();
 	ServerManager &serverManager = httpResponse.getServer()->getServerManager();
 	serverManager.cgi_pipes[pipe_fd[0]] = requestInfo;
 	std::cout << "client fd: " << client_fd << " connected to pipe: " << pipe_fd[0] << std::endl;
@@ -229,6 +230,7 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
 		requestInfo.method = "POST";
 		requestInfo.pid = pid;
 		requestInfo.start_time = time(NULL);
+		requestInfo.server = httpResponse.getServer();
 		ServerManager &serverManager = httpResponse.getServer()->getServerManager();
 		serverManager.cgi_pipes[outputPipe[0]] = requestInfo;
 		return "";

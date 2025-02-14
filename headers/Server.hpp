@@ -25,9 +25,11 @@ class Server {
 		ServerManager	&getServerManager() const { return this->server_manager; } ;
 		int		getServerFd() const { return this->server_fd; } ;
 		int		acceptConnection(int epoll_fd);
-		int		handleRequest(int fd);
+		int		handleRequestServer(int fd);
 		int		handleResponse(int fd);
 		void	deleteClientResponse(int client_fd);
+		void	addPendingResponse(int client_fd, HttpRes &response);
+		void	deletePendingResponse(int client_fd);
 		void	freeServer();
 };
 

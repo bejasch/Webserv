@@ -88,7 +88,7 @@ int	Server::acceptConnection(int epoll_fd) {
 }
 
 // Data is available to read from the socket
-int	Server::handleRequest(int client_fd) {
+int	Server::handleRequestServer(int client_fd) {
 	HttpReq	&request = client_requests[client_fd];
 	char buffer[30000] = {0};
 	int valread = read(client_fd, buffer, sizeof(buffer));
@@ -106,9 +106,15 @@ int	Server::handleRequest(int client_fd) {
 	std::cout << BOLD << "\n\tReceived " << valread << " bytes from client_fd: " << client_fd << std::endl << RESET;
 	// Process the incoming data if the request is complete
 	if (request.processData(*this, std::string(buffer, valread))) {
-		pending_responses[client_fd].handleRequest(request, *this, client_fd);
-		//request.print();
+		pending_responses[client_fd].handleRequestResponse(request, *this, client_fd);
+		request.print();
 		client_requests.erase(client_fd);
+		if (pending_responses[client_fd].getHttpStatus() == 0) {
+			pending_responses.erase(client_fd);
+			if (epoll_ctl(server_manager.getEpollFd(), EPOLL_CTL_DEL, client_fd, NULL) == -1)
+				std::cerr << "Failed to add client_fd to epoll for writing: " << std::strerror(errno) << std::endl;
+			return (0);
+		}
 
 		epoll_event ev;
 		ev.events = EPOLLOUT;		// replace event with client_fd for writing data back as response
@@ -130,6 +136,7 @@ int		Server::handleResponse(int client_fd) {
 		std::string response_str = response.getResponse();
 		const char* response_cstr = response_str.c_str();
 		size_t		size = response.getResponseSize();
+		std::cout << "client fd: " << client_fd << std::endl;
 		if (response_cstr == NULL || size == 0) {
 			std::cerr << "Error: Response is empty.\n";
 		} else {
@@ -162,9 +169,6 @@ int		Server::handleResponse(int client_fd) {
 		std::cerr << "Failed to remove client_fd from epoll: " << std::strerror(errno) << std::endl;
 		return(1);
 	}
-	HttpRes &response = pending_responses[client_fd];
-	if (response.getHttpStatus() == 0)
-		return (0);
 	close(client_fd);  // Close the connection
 	std::cout << "client fd closed: " << client_fd << std::endl;
 	return (0);
@@ -181,4 +185,14 @@ void	Server::freeServer() {
 void	Server::deleteClientResponse(int client_fd) {
 	pending_responses.erase(client_fd);
 	std::cout << "deleted client fd :" << client_fd << " from pending responses" << std::endl;
+}
+
+void	Server::addPendingResponse(int client_fd, HttpRes &response) {
+	if (pending_responses.find(client_fd) != pending_responses.end())
+		pending_responses.erase(client_fd);
+	pending_responses[client_fd] = response;
+}
+
+void	Server::deletePendingResponse(int client_fd) {
+	pending_responses.erase(client_fd);
 }

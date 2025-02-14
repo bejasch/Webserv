@@ -1,4 +1,4 @@
-#!/usr/bin/php-cgi
+#!/usr/bin/php
 
 <html>
 <body>
@@ -13,6 +13,7 @@ foreach ($_SERVER as $key => $value) {
     echo "<li>$key: $value</li>";
 }
 echo "</ul>";
+echo '<button onclick="window.location.href=\'index.html\'">Back to Main Page</button>';
 ?>
 </body>
 </html>

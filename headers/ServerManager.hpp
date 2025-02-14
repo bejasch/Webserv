@@ -20,6 +20,7 @@ public:
 		std::string method;
 		pid_t pid;
 		time_t start_time;
+		Server *server;
 	};
 	int setServers(const std::string& config_file);
 	void startServers(); // Runs the central event loop
@@ -33,8 +34,8 @@ public:
 	int checkConfig(Config *config);
 	int	handleCGIResponse(int pipe_fd);
 	void	checkCGITimeouts();
-	void writeCGIResponseGET(int client_fd, const std::string &output);
-	void writeCGIResponsePOST(int client_fd, const std::string &output);
+	void writeCGIResponseGET(CgiRequestInfo requestInfo, const std::string &output);
+	void writeCGIResponsePOST(CgiRequestInfo requestInfo, const std::string &output);
 	int freeResources();
 
 private:
