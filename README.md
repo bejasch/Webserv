@@ -178,6 +178,10 @@ Below is a list of useful network diagnostic and troubleshooting commands.
      ```bash
      curl -H "Content-Type: application/json" http://127.0.0.1:8081/
      ```
+    - Example Chunking:
+    ```bash
+    curl --no-progress-meter -H "Transfer-Encoding: chunked" 127.0.0.1:8080 -T.
+    ```
 
 8. **`curl -X DELETE`**
    - Send a DELETE request.

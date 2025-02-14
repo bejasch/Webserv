@@ -21,14 +21,13 @@ public:
 		pid_t pid;
 		time_t start_time;
 		Server *server;
+		std::string guestbookName;
 	};
 	int setServers(const std::string& config_file);
 	void startServers(); // Runs the central event loop
 	int getEpollFd() const { return epoll_fd; }
 	std::map<int, Server*> clientfd_to_serverfd;
 	std::map<int, CgiRequestInfo>	cgi_pipes;	// Maps pipe_fd to pipe.infos
-	// std::map<int, pid_t>	cgi_pids;
-	// std::map<int, time_t>	cgi_start_times;
 	void printConfigAll();
 	int portCheck(int port);
 	int checkConfig(Config *config);

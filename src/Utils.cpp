@@ -171,37 +171,6 @@ const std::string	generateGuestbookHTML(const std::string &userName) {
 	return (html.str());
 }
 
-bool	deleteFileDir(const std::string &path) {
-	pid_t	pid = fork();
-	if (pid < 0) {
-		std::cerr << "Fork failed: " << std::strerror(errno) << std::endl;
-		return (false);
-	}
-
-	if (pid == 0) {
-		const char *const args[] = {"/bin/rm", "-rf", path.c_str(), NULL};
-		if (execve("/bin/rm", (char *const *)args, NULL) == -1) {
-			// If execve fails, report the error
-			std::cerr << "Execve failed: " << std::strerror(errno) << std::endl;
-			return (false);  // Return false if execve fails
-		}
-	} else {
-		// Parent process: Wait for the child process to finish
-		int status;
-		waitpid(pid, &status, 0);
-
-		// Check the exit status of the child process
-		if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-			std::cout << "Successful DELETE with target: " << path << std::endl;
-			return (true);
-		} else {
-			std::cerr << "Failed to delete from request with target: " << path << std::endl;
-			return (false);
-		}
-	}
-	return (false);
-}
-
 std::vector<std::string> splitString(const std::string &str, const char delimiter) {
 	std::vector<std::string> allowed_methods;
 	std::string method;

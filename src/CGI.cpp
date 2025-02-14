@@ -111,6 +111,7 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
 	requestInfo.pid = pid;
 	requestInfo.start_time = time(NULL);
 	requestInfo.server = httpResponse.getServer();
+	requestInfo.guestbookName = "";
 	ServerManager &serverManager = httpResponse.getServer()->getServerManager();
 	serverManager.cgi_pipes[pipe_fd[0]] = requestInfo;
 	std::cout << "client fd: " << client_fd << " connected to pipe: " << pipe_fd[0] << std::endl;
@@ -231,6 +232,7 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
 		requestInfo.pid = pid;
 		requestInfo.start_time = time(NULL);
 		requestInfo.server = httpResponse.getServer();
+		requestInfo.guestbookName = formData.at("name");
 		ServerManager &serverManager = httpResponse.getServer()->getServerManager();
 		serverManager.cgi_pipes[outputPipe[0]] = requestInfo;
 		return "";

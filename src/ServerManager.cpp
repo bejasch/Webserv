@@ -130,7 +130,7 @@ void ServerManager::startServers() {
 
 // check CGI timeouts
 void	ServerManager::checkCGITimeouts() {
-	// std::cout << "Checking CGI timeouts" << std::endl;
+	std::cout << "Checking CGI timeouts" << std::endl;
     time_t now = time(NULL);
     std::map<int, CgiRequestInfo>::iterator it = cgi_pipes.begin();
     while (it != cgi_pipes.end()) {
@@ -409,13 +409,18 @@ void ServerManager::validateRoutes() {
 
 int ServerManager::handleCGIResponse(int pipe_fd) {
     std::cout << "Handling CGI response" << std::endl;
-    char buffer[30000] = {0};
+    char buffer[10] = {0};
     int bytes_read;
     
     // Read CGI output
-    while (true) {
+	int i = -1;
+    while (true)
+	{	
+		std::cout << "Iteration " << ++i << std::endl;
+		std::cout << "READING " << sizeof(buffer) << " bytes" << std::endl;
         bytes_read = read(pipe_fd, buffer, sizeof(buffer));
         if (bytes_read > 0) {
+			std::cout << "Read this data " << std::string(buffer, bytes_read) << std::endl;
             cgi_outputs[pipe_fd].append(buffer, bytes_read);
             std::cout << "Read " << bytes_read << " bytes from CGI output\n";
         }
@@ -424,10 +429,7 @@ int ServerManager::handleCGIResponse(int pipe_fd) {
             break;
         }
         else if (bytes_read == -1) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                return 0;  // Keep the pipe in epoll and wait for more data
-            }
-            std::cerr << "Read error: " << strerror(errno) << std::endl;
+			std::cout << "Read error: " << strerror(errno) << std::endl;
             break;
         }
     }
@@ -473,7 +475,6 @@ int ServerManager::handleCGIResponse(int pipe_fd) {
 }
 
 void ServerManager::writeCGIResponseGET(CgiRequestInfo requestInfo, const std::string &output) {
-	std::string response_str;
 	HttpRes httpResponse;
 	httpResponse.setHttpStatus(200);
 	httpResponse.setContentType("text/html");
@@ -493,9 +494,23 @@ void ServerManager::writeCGIResponseGET(CgiRequestInfo requestInfo, const std::s
 }
 
 void ServerManager::writeCGIResponsePOST(CgiRequestInfo requestInfo, const std::string &output) {
-	(void)requestInfo;
-	saveGuestbookEntry("Default", output);
+	saveGuestbookEntry(requestInfo.guestbookName, output);
+	HttpRes httpResponse;
+	httpResponse.setHttpStatus(303);
+	httpResponse.setContentType("text/html");
+	httpResponse.setTarget("/guestbook.html");
 
+	requestInfo.server->addPendingResponse(requestInfo.client_fd, httpResponse);
+	epoll_event ev;
+	ev.events = EPOLLOUT;		// replace event with client_fd for writing data back as response
+	ev.data.fd = requestInfo.client_fd;
+	// std::cout << "Adding client_fd to epoll for writing" << std::endl;
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, requestInfo.client_fd, &ev) == -1) {
+		std::cerr << "Failed to add client_fd to epoll for writing: " << std::strerror(errno) << std::endl;
+		requestInfo.server->deleteClientResponse(requestInfo.client_fd);
+		close(requestInfo.client_fd); // Clean up if adding to epoll fails. Might want to use EAGAIN or EINTR
+		return;
+	}
 }
 
 int ServerManager::freeResources() {

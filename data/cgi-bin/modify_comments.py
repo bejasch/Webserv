@@ -27,4 +27,4 @@ def scramble_word(word):
 scrambled_message = " ".join([scramble_word(word) for word in message.split()])
 
 # Print the scrambled message
-print(scrambled_message)
+print(end=scrambled_message)

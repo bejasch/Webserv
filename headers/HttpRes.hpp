@@ -53,6 +53,7 @@ public:
 	const std::string	&getTarget(void) const;
 	int					getHttpStatus(void) const;
 	Route				*getRoute(void) const;
+	
 	void				setStatus(int status);
 	void				setHttpStatus(int status);
 	void				setContentType(const std::string &contentType);
