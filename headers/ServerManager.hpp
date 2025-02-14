@@ -8,7 +8,6 @@ private:
 	int epoll_fd;
 	std::vector<Server*> servers;
 	static volatile sig_atomic_t stop_flag;
-	std::map<int, std::string> cgi_outputs;
 
 public:
 	ServerManager();
@@ -22,6 +21,7 @@ public:
 		time_t start_time;
 		Server *server;
 		std::string guestbookName;
+		std::string output;
 	};
 	int setServers(const std::string& config_file);
 	void startServers(); // Runs the central event loop
@@ -31,6 +31,7 @@ public:
 	void printConfigAll();
 	int portCheck(int port);
 	int checkConfig(Config *config);
+	int handleCGIRequest(int pipe_fd);
 	int	handleCGIResponse(int pipe_fd);
 	void	checkCGITimeouts();
 	void writeCGIResponseGET(CgiRequestInfo requestInfo, const std::string &output);

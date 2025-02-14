@@ -99,12 +99,6 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
 	close(pipe_fd[1]);
 	fcntl(pipe_fd[0], F_SETFL, O_NONBLOCK);
 
-	// // Store CGI process info
-    // httpResponse.getServer()->getServerManager().cgi_pipes[pipe_fd[0]] = client_fd;
-    // httpResponse.getServer()->getServerManager().cgi_pids[pipe_fd[0]] = pid;
-    // httpResponse.getServer()->getServerManager().cgi_start_times[pipe_fd[0]] = time(NULL);
-    // std::cout << "Client FD: " << client_fd << " connected to pipe: " << pipe_fd[0] << std::endl;
-
 	ServerManager::CgiRequestInfo requestInfo;
 	requestInfo.client_fd = client_fd;
 	requestInfo.method = "GET";
@@ -118,7 +112,7 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
 
     // Add to epoll
     epoll_event ev;
-    ev.events = EPOLLIN;
+    ev.events = EPOLLIN | EPOLLHUP;
     ev.data.fd = pipe_fd[0];
 
 	int epoll_fd = httpResponse.getServer()->getServerManager().getEpollFd();

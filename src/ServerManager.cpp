@@ -179,9 +179,16 @@ int ServerManager::handleEvents() {
 }
 
 int ServerManager::dispatchEvent(const epoll_event& event) {
-	if (cgi_pipes.find(event.data.fd) != cgi_pipes.end()) {
-		std::cout << "CGI response received on pipe_fd: " << event.data.fd << std::endl;
-		return (handleCGIResponse(event.data.fd));
+	// if (cgi_pipes.find(event.data.fd) != cgi_pipes.end()) {
+	// 	std::cout << "CGI response received on pipe_fd: " << event.data.fd << std::endl;
+	// 	return (handleCGIResponse(event.data.fd));
+	// }
+	if (event.events & EPOLLIN && cgi_pipes.find(event.data.fd) != cgi_pipes.end()) {
+		handleCGIRequest(event.data.fd);
+		return(0);
+	} else if (event.events & EPOLLHUP) {
+		handleCGIResponse(event.data.fd);
+		return(0);
 	}
 	for (unsigned long i = 0; i < servers.size(); ++i) {
 		Server *server = servers[i];
@@ -407,70 +414,67 @@ void ServerManager::validateRoutes() {
 	}
 }
 
-int ServerManager::handleCGIResponse(int pipe_fd) {
-    std::cout << "Handling CGI response" << std::endl;
-    char buffer[10] = {0};
-    int bytes_read;
-    
+// case EPOLLIN
+int ServerManager::handleCGIRequest(int pipe_fd) {
+    std::cout << "Handling CGI resquest" << std::endl;
+    char buffer[30000] = {0};
+	std::cout << "pipe_fd: " << pipe_fd << std::endl;
+	CgiRequestInfo &requestInfo = cgi_pipes[pipe_fd];
     // Read CGI output
-	int i = -1;
-    while (true)
-	{	
-		std::cout << "Iteration " << ++i << std::endl;
-		std::cout << "READING " << sizeof(buffer) << " bytes" << std::endl;
-        bytes_read = read(pipe_fd, buffer, sizeof(buffer));
-        if (bytes_read > 0) {
-			std::cout << "Read this data " << std::string(buffer, bytes_read) << std::endl;
-            cgi_outputs[pipe_fd].append(buffer, bytes_read);
-            std::cout << "Read " << bytes_read << " bytes from CGI output\n";
-        }
-        else if (bytes_read == 0) {
-            std::cout << "CGI process closed the pipe.\n";
-            break;
-        }
-        else if (bytes_read == -1) {
-			std::cout << "Read error: " << strerror(errno) << std::endl;
-            break;
-        }
-    }
+	int bytes_read = read(pipe_fd, buffer, sizeof(buffer));
+	if (bytes_read > 0) {
+		std::cout << "Read this data " << std::string(buffer, bytes_read) << std::endl;
+		requestInfo.output.append(buffer, bytes_read);
+		std::cout << "Output from request Info: " << requestInfo.output << std::endl;
+		std::cout << "Read " << bytes_read << " bytes from CGI output\n";
+	}
+	else if (bytes_read == 0) {
+		std::cout << "CGI process closed the pipe.\n";
+	}
+	else if (bytes_read == -1) {
+		std::cout << "Read error:" << std::endl;
+	}
+	return 0;
+}
 
+// case EPOLLHUP
+int ServerManager::handleCGIResponse(int pipe_fd) {
     // Find the client_fd that requested the CGI execution
+	if (cgi_pipes.find(pipe_fd) == cgi_pipes.end()) {
+		std::cerr << "Error: CGI pipe not found in cgi_pipes map.\n";
+		return 1;
+	}
 	CgiRequestInfo requestInfo = cgi_pipes[pipe_fd];
     int client_fd = requestInfo.client_fd;
     std::string method = requestInfo.method;
-    std::string output = cgi_outputs[pipe_fd];
 
 	std::cout << "client fd" << client_fd << std::endl;
+	std::cout << "pipe_fd" << pipe_fd << std::endl;
 
     // Clean up pipe resources
     close(pipe_fd);
     epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, NULL);
     cgi_pipes.erase(pipe_fd);
-    cgi_outputs.erase(pipe_fd);
+
+	std::cout << "output handleCGIResponse: " << requestInfo.output << std::endl;
 
     // If no output was received, return error
-    if (output.empty()) {
+    if (requestInfo.output.empty()) {
         std::cerr << "Error: CGI script produced no output.\n";
         close(client_fd);
         return 1;
     }
 
-	std::cout << "output: " << output << std::endl;
+	std::cout << "output: " << requestInfo.output << std::endl;
 
 	// Send the CGI output to the client
 	if (method == "GET")
-		writeCGIResponseGET(requestInfo, output);
+		writeCGIResponseGET(requestInfo, requestInfo.output);
 	else if (method == "POST")
-		writeCGIResponsePOST(requestInfo, output);
+		writeCGIResponsePOST(requestInfo, requestInfo.output);
 
     std::cout << "CGI response sent to client_fd: " << client_fd << std::endl;
-    
-    // Clean up client connection
-	// Server *server = clientfd_to_serverfd[client_fd];
-	// server->deleteClientResponse(client_fd);
-	// Remove client_fd from epoll instance
-	// close(client_fd);  // Close the connection
-	std::cout << "client fd closed: " << client_fd << std::endl;
+    std::cout << "client fd closed: " << client_fd << std::endl;
     return 0;
 }
 
