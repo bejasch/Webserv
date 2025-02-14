@@ -136,7 +136,7 @@ int		Server::handleResponse(int client_fd) {
 		std::string response_str = response.getResponse();
 		const char* response_cstr = response_str.c_str();
 		size_t		size = response.getResponseSize();
-		std::cout << "client fd: " << client_fd << std::endl;
+		// std::cout << "client fd: " << client_fd << std::endl;
 		if (response_cstr == NULL || size == 0) {
 			std::cerr << "Error: Response is empty.\n";
 		} else {

@@ -239,3 +239,12 @@ std::string removeTrailingSlash(std::string &path){
 		path = path.substr(0, path.length() - 1);
 	return path;
 }
+
+bool fileExists(const char *filename) {
+    FILE *file = std::fopen(filename, "r");
+    if (file) {
+        std::fclose(file);
+        return true;
+    }
+    return false;
+}

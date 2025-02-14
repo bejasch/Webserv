@@ -130,13 +130,13 @@ void ServerManager::startServers() {
 
 // check CGI timeouts
 void	ServerManager::checkCGITimeouts() {
-	std::cout << "Checking CGI timeouts" << std::endl;
+	// std::cout << "Checking CGI timeouts" << std::endl;
     time_t now = time(NULL);
     std::map<int, CgiRequestInfo>::iterator it = cgi_pipes.begin();
     while (it != cgi_pipes.end()) {
         int pipe_fd = it->first;
         time_t start_time = it->second.start_time;
-		std::cout << "Time difference: " << now - start_time << std::endl;
+		// std::cout << "Time difference: " << now - start_time << std::endl;
         if (now - start_time > CGI_TIMEOUT) {
             pid_t pid = it->second.pid;
             std::cout << "Timeout exceeded → Kill CGI process " << pid << std::endl;
@@ -179,15 +179,13 @@ int ServerManager::handleEvents() {
 }
 
 int ServerManager::dispatchEvent(const epoll_event& event) {
-	// if (cgi_pipes.find(event.data.fd) != cgi_pipes.end()) {
-	// 	std::cout << "CGI response received on pipe_fd: " << event.data.fd << std::endl;
-	// 	return (handleCGIResponse(event.data.fd));
-	// }
 	if (event.events & EPOLLIN && cgi_pipes.find(event.data.fd) != cgi_pipes.end()) {
-		handleCGIRequest(event.data.fd);
+		if(handleCGIRequest(event.data.fd))
+			return(1);
 		return(0);
 	} else if (event.events & EPOLLHUP) {
-		handleCGIResponse(event.data.fd);
+		if(handleCGIResponse(event.data.fd))
+			return(1);
 		return(0);
 	}
 	for (unsigned long i = 0; i < servers.size(); ++i) {
@@ -416,23 +414,18 @@ void ServerManager::validateRoutes() {
 
 // case EPOLLIN
 int ServerManager::handleCGIRequest(int pipe_fd) {
-    std::cout << "Handling CGI resquest" << std::endl;
     char buffer[30000] = {0};
-	std::cout << "pipe_fd: " << pipe_fd << std::endl;
 	CgiRequestInfo &requestInfo = cgi_pipes[pipe_fd];
-    // Read CGI output
 	int bytes_read = read(pipe_fd, buffer, sizeof(buffer));
 	if (bytes_read > 0) {
-		std::cout << "Read this data " << std::string(buffer, bytes_read) << std::endl;
 		requestInfo.output.append(buffer, bytes_read);
-		std::cout << "Output from request Info: " << requestInfo.output << std::endl;
-		std::cout << "Read " << bytes_read << " bytes from CGI output\n";
 	}
 	else if (bytes_read == 0) {
 		std::cout << "CGI process closed the pipe.\n";
 	}
 	else if (bytes_read == -1) {
 		std::cout << "Read error:" << std::endl;
+		return 1;
 	}
 	return 0;
 }
@@ -448,15 +441,10 @@ int ServerManager::handleCGIResponse(int pipe_fd) {
     int client_fd = requestInfo.client_fd;
     std::string method = requestInfo.method;
 
-	std::cout << "client fd" << client_fd << std::endl;
-	std::cout << "pipe_fd" << pipe_fd << std::endl;
-
     // Clean up pipe resources
     close(pipe_fd);
     epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, NULL);
     cgi_pipes.erase(pipe_fd);
-
-	std::cout << "output handleCGIResponse: " << requestInfo.output << std::endl;
 
     // If no output was received, return error
     if (requestInfo.output.empty()) {
@@ -465,16 +453,11 @@ int ServerManager::handleCGIResponse(int pipe_fd) {
         return 1;
     }
 
-	std::cout << "output: " << requestInfo.output << std::endl;
-
 	// Send the CGI output to the client
 	if (method == "GET")
 		writeCGIResponseGET(requestInfo, requestInfo.output);
 	else if (method == "POST")
 		writeCGIResponsePOST(requestInfo, requestInfo.output);
-
-    std::cout << "CGI response sent to client_fd: " << client_fd << std::endl;
-    std::cout << "client fd closed: " << client_fd << std::endl;
     return 0;
 }
 

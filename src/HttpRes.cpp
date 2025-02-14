@@ -182,9 +182,7 @@ void	HttpRes::GET(void) {
 	}
 	if (_route->getPath().find(".py") != std::string::npos || _route->getPath().find(".php") != std::string::npos) {
 		CGI cgi;
-		// Don't set body or generate response here, just execute CGI
 		cgi.executeCGI_GET(*this, _client_fd);
-		_httpStatus = 0;  // Special status to indicate CGI handling
 		return;
 	}
 	if (!_wasRedirected && !_route->getRedirectUrl().empty()) {		// return directive
@@ -232,7 +230,6 @@ void HttpRes::POST(HttpReq &httpRequest) {
 				if (formData.count("action") && (formData["action"] == "Scramble.py" || formData["action"] == "Capitalize.php")) {
 					CGI cgi;
 					cgi.executeCGI_POST(*this, formData, _client_fd);
-					_httpStatus = 0;
 					return;
 				} else {
 					// Regular submission

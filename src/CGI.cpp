@@ -59,6 +59,12 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
 
 	std::string scriptPath = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
 	std::cout << "Executing CGI script (GET): " << scriptPath << std::endl;
+	if (fileExists(scriptPath.c_str()) == false) {
+		std::cerr << "Invalid CGI script path: " << scriptPath << std::endl;
+		httpResponse.setStatus(404);
+		return "";
+	}
+	//TODO: is this written by me?
 	if (access(scriptPath.c_str(), X_OK) == -1) {
         std::cerr << "Invalid CGI script path: " << scriptPath << std::endl;
         httpResponse.setStatus(403);
@@ -108,7 +114,6 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
 	requestInfo.guestbookName = "";
 	ServerManager &serverManager = httpResponse.getServer()->getServerManager();
 	serverManager.cgi_pipes[pipe_fd[0]] = requestInfo;
-	std::cout << "client fd: " << client_fd << " connected to pipe: " << pipe_fd[0] << std::endl;
 
     // Add to epoll
     epoll_event ev;
@@ -122,6 +127,7 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
 		httpResponse.setStatus(500);
 		return "";
 	}
+	httpResponse.setStatus(0);
 	return "";
 }
 
@@ -147,7 +153,11 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
 		this->argv[1] = cpp_strdup(scriptPath);
 	}
 	std::cout << "Executing CGI script (POST): " << scriptPath << std::endl;
-
+	if (fileExists(scriptPath.c_str()) == false) {
+		std::cerr << "Invalid CGI script path: " << scriptPath << std::endl;
+		httpResponse.setStatus(404);
+		return "";
+	}
 	// Prepare the POST data
 	std::string postData;
 	if (formData.count("name") && formData.count("message")) {
@@ -229,8 +239,8 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
 		requestInfo.guestbookName = formData.at("name");
 		ServerManager &serverManager = httpResponse.getServer()->getServerManager();
 		serverManager.cgi_pipes[outputPipe[0]] = requestInfo;
-		return "";
 	}
+	httpResponse.setStatus(0);
 	return "";
 }
 
