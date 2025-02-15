@@ -6,19 +6,18 @@
 class HttpRes {
 private:
 	// - Static variables:
+	int					_client_fd;
 	Server				*_server;
 	Route				*_route;
 
 	std::string			_method;
 	int					_httpStatus;
-	size_t				_responseSize;
 	std::string			_userName;
 
 	std::string			_target;
 	std::string			_serverPath;
 	std::string			_contentType;
 	std::string			_body;
-	int					_client_fd;
 
 	bool				_wasRedirected;		// If the request was redirected (to avoid endless redirection loops)
 
@@ -56,7 +55,6 @@ public:
 	void				setStatus(int status);
 	void				setHttpStatus(int status);
 	void				setContentType(const std::string &contentType);
-	void				setContentLength(size_t length);
 	void 				setTarget(const std::string &target);
 	void				setBody(const std::string &body);
 	

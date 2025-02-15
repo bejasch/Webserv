@@ -1,12 +1,12 @@
 #include "../headers/AllHeaders.hpp"
 
-HttpRes::HttpRes(void) : _server(NULL), _route(NULL), _method(""), _httpStatus(0), _responseSize(0),
+HttpRes::HttpRes(void) : _server(NULL), _route(NULL), _method(""), _httpStatus(0),
 	_userName(""), _target(""), _serverPath(""), _contentType(""), _body(""), _wasRedirected(false) {
 	// std::cout << "HttpRes default constructor called" << std::endl;
 }
 
 HttpRes::HttpRes(const HttpRes &other) : _server(other._server), _route(other._route), _method(other._method),
-	_httpStatus(other._httpStatus), _responseSize(other._responseSize), _userName(other._userName),
+	_httpStatus(other._httpStatus), _userName(other._userName),
 	_target(other._target), _serverPath(other._serverPath), _contentType(other._contentType),
 	_body(other._body), _wasRedirected(other._wasRedirected) {
 	// std::cout << "HttpRes copy constructor called" << std::endl;
@@ -19,7 +19,6 @@ HttpRes HttpRes::operator=(const HttpRes &another) {
 	_route = another._route;
 	_method = another._method;
 	_httpStatus = another._httpStatus;
-	_responseSize = another._responseSize;
 	_userName = another._userName;
 	_target = another._target;
 	_serverPath = another._serverPath;
@@ -332,8 +331,6 @@ std::string	HttpRes::getResponse(void) {
 	//TODO check if correct
 	response += _body;
 
-	_responseSize = response.size();
-	// std::cout << "Response: " << response << std::endl;
 	return (response);
 }
 
@@ -367,10 +364,6 @@ void HttpRes::setHttpStatus(int status) {
 
 void HttpRes::setContentType(const std::string &contentType) {
 	_contentType = contentType;
-}
-
-void HttpRes::setContentLength(size_t length) {
-	_responseSize = length;
 }
 
 void HttpRes::setBody(const std::string &body) {
