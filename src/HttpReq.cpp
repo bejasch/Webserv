@@ -41,6 +41,23 @@ HttpReq::~HttpReq()	{
 	// std::cout << "HttpReq destructor called" << std::endl;
 }
 
+// true means the full request is assembled (incl errors), false means more data is needed
+bool HttpReq::processData(Server &server, const std::string &data) {
+	if (!_server)
+		_server = &server;
+	_buffer += data;
+	if (!_startlineParsed && !parseStartLine())	// Parse start line if not already done
+		return (true);							// Error occurred or short request in start line
+
+	if (!_headersParsed && !parseHeaders())
+		return (false);							// Headers are not fully received yet
+
+	if (_isChunked)								// If the request is chunked, process the chunked body
+		return (parseChunkedBody());			// Returns true if the full body is assembled, false otherwise
+	
+	return (parseBody());					// Full request assembled
+}
+
 // false means errors occurred, true means the startline does not contain errors
 bool	HttpReq::parseStartLine(void) {
 	size_t		pos = 0;
@@ -100,58 +117,6 @@ bool	HttpReq::isValidProtocol(void) const {
 	return (true);
 }
 
-void	HttpReq::print(void) const {
-	std::cout << BG_WHITE << BLUE << "Request received: " << std::ctime(&_creationTime) << RESET;
-	std::cout << BLINK<< GREEN << _method << "    " << CYAN << _target << "    " << YELLOW << _protocol << RESET << "\n";
-	if (_isChunked)
-		std::cout << "This is a chunked transfer!\n";
-	std::cout << MAGENTA << "Headers:\n";
-	for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
-		std::cout << "\t" << it->first << ": " << it->second << "\n";
-	}
-	if (_body.size() > 100)
-		std::cout << BLUE << "Body(head):\n" << _body.substr(0, 100) << "...\n" << RESET;
-	else
-		std::cout << BLUE << "Body:\n" << _body << "\n" << RESET;
-}
-
-const std::string	&HttpReq::getMethod(void) const { return (_method); }
-
-const std::string	&HttpReq::getTarget(void) const { return (_target); }
-
-const std::string	&HttpReq::getProtocol(void) const { return (_protocol); }
-
-// Care for exceptions if key does not exist
-const std::string	&HttpReq::getHeader(const std::string &key) const {
-	std::map<std::string, std::string>::const_iterator it = _headers.find(key);
-	if (it != _headers.end())
-		return (it->second);
-	static const std::string emptyString = "";
-	return (emptyString);
-}
-
-const std::map<std::string, std::string>	&HttpReq::getHeaders(void) const { return (_headers); }
-
-const std::string	&HttpReq::getBody(void) { return (_body); }
-
-int					HttpReq::getHttpStatus(void) const { return (_httpStatus); }
-
-// true means the full request is assembled (incl errors), false means more data is needed
-bool HttpReq::processData(Server &server, const std::string &data) {
-	if (!_server)
-		_server = &server;
-	_buffer += data;
-	if (!_startlineParsed && !parseStartLine())	// Parse start line if not already done
-		return (true);							// Error occurred or short request in start line
-
-	if (!_headersParsed && !parseHeaders())
-		return (false);							// Headers are not fully received yet
-
-	if (_isChunked)								// If the request is chunked, process the chunked body
-		return (parseChunkedBody());			// Returns true if the full body is assembled, false otherwise
-	
-	return (parseBody());					// Full request assembled
-}
 
 bool	HttpReq::parseChunkedBody(void) {
 	size_t pos = 0;
@@ -211,7 +176,6 @@ bool	HttpReq::parseHeaders(void) {
 			_headersParsed = true;
 			break;
 		}
-		
 		std::string	line = _buffer.substr(0, pos);
 		_buffer = _buffer.substr(pos + 2);
 		
@@ -296,20 +260,39 @@ bool	HttpReq::parseBody(void) {
 	return (true);
 }
 
-// Reset for a new request
-void	HttpReq::reset(void) {
-	_creationTime = time(0);
-	_server = NULL;
-	_buffer.clear();
-	_httpStatus = 0;
-	_method.clear();
-	_target.clear();
-	_protocol.clear();
-	_headers.clear();
-	_body.clear();
-	_startlineParsed = false;
-	_headersParsed = false;
-	_isChunked = false;
-	_bodyComplete = false;
-	_currentChunkSize = 0;
+void	HttpReq::print(void) const {
+	std::cout << BG_WHITE << BLUE << "Request received: " << std::ctime(&_creationTime) << RESET;
+	std::cout << BLINK<< GREEN << _method << "    " << CYAN << _target << "    " << YELLOW << _protocol << RESET << "\n";
+	if (_isChunked)
+		std::cout << "This is a chunked transfer!\n";
+	std::cout << MAGENTA << "Headers:\n";
+	for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
+		std::cout << "\t" << it->first << ": " << it->second << "\n";
+	}
+	if (_body.size() > 100)
+		std::cout << BLUE << "Body(head):\n" << _body.substr(0, 100) << "...\n" << RESET;
+	else
+		std::cout << BLUE << "Body:\n" << _body << "\n" << RESET;
 }
+
+Server				*HttpReq::getServer(void) const { return (_server); }
+
+const std::string	&HttpReq::getMethod(void) const { return (_method); }
+
+const std::string	&HttpReq::getTarget(void) const { return (_target); }
+
+const std::string	&HttpReq::getProtocol(void) const { return (_protocol); }
+
+const std::string	&HttpReq::getHeader(const std::string &key) const {
+	std::map<std::string, std::string>::const_iterator it = _headers.find(key);
+	if (it != _headers.end())
+		return (it->second);
+	static const std::string emptyString = "";
+	return (emptyString);
+}
+
+const std::map<std::string, std::string>	&HttpReq::getHeaders(void) const { return (_headers); }
+
+const std::string	&HttpReq::getBody(void) { return (_body); }
+
+int					HttpReq::getHttpStatus(void) const { return (_httpStatus); }

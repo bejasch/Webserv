@@ -1,14 +1,15 @@
 #include "../headers/AllHeaders.hpp"
 
 HttpRes::HttpRes(void) : _server(NULL), _route(NULL), _method(""), _httpStatus(0),
-	_userName(""), _target(""), _serverPath(""), _contentType(""), _body(""), _wasRedirected(false) {
+	_userName(""), _target(""), _serverPath(""), _contentType(""), _body(""), _wasRedirected(false),
+	_responseCreated(false), _response("") {
 	// std::cout << "HttpRes default constructor called" << std::endl;
 }
 
 HttpRes::HttpRes(const HttpRes &other) : _server(other._server), _route(other._route), _method(other._method),
-	_httpStatus(other._httpStatus), _userName(other._userName),
-	_target(other._target), _serverPath(other._serverPath), _contentType(other._contentType),
-	_body(other._body), _wasRedirected(other._wasRedirected) {
+	_httpStatus(other._httpStatus), _userName(other._userName),	_target(other._target),
+	_serverPath(other._serverPath), _contentType(other._contentType), _body(other._body),
+	_wasRedirected(other._wasRedirected), _responseCreated(other._responseCreated), _response(other._response) {
 	// std::cout << "HttpRes copy constructor called" << std::endl;
 }
 
@@ -25,6 +26,8 @@ HttpRes HttpRes::operator=(const HttpRes &another) {
 	_contentType = another._contentType;
 	_body = another._body;
 	_wasRedirected = another._wasRedirected;
+	_responseCreated = another._responseCreated;
+	_response = another._response;
 	return (*this);
 }
 
@@ -95,7 +98,7 @@ void	HttpRes::getNameCookie(HttpReq &httpRequest) {
 
 void	HttpRes::handleRequestResponse(HttpReq &httpRequest, Server &server, int client_fd) {
 	_client_fd = client_fd;
-	_server = &server;
+	_server = httpRequest.getServer();
 	_target = httpRequest.getTarget();
 	_httpStatus = httpRequest.getHttpStatus();
 	if (_httpStatus >= 400 && _httpStatus < 600) {
@@ -296,18 +299,14 @@ bool	HttpRes::parseFile(void) {
 	return (true);
 }
 
-std::string	HttpRes::getResponse(void) {
-	// If this is a CGI request, don't generate a response
-	if (_httpStatus == 0) {
-		return "";
-	}
-	if (_httpStatus >= 400 && _httpStatus < 600) {
-		// Store a reference to the map
-		const std::map<int, std::string> &errorPages = _server->getConfig()->getErrorPages();
-
-		// Now use the reference for finding the element
+void	HttpRes::createFullResponse(void) {
+	_responseCreated = true;
+	if (_httpStatus == 0)	// If this is a CGI request, don't generate a response
+		return ;
+	else if (_httpStatus >= 400 && _httpStatus < 600) {
+		const std::map<int, std::string> &errorPages = _server->getConfig()->getErrorPages();	// Premade error pages
 		std::map<int, std::string>::const_iterator it = errorPages.find(_httpStatus);
-		if (it != errorPages.end()) {
+		if (it != errorPages.end()) {															// There is a premade error page
 			std::ifstream file((_server->getConfig()->getRootDirConfig() + it->second).c_str());
 			if (!file.is_open()) {
 				generateErrorBody();
@@ -319,19 +318,20 @@ std::string	HttpRes::getResponse(void) {
 				_contentType = "text/html";
 			}
 		} else {
-			generateErrorBody();
+			generateErrorBody();																// Generate a default error page
 		}
 	}
-	std::string response;
-	response = "HTTP/1.1 " + intToString(_httpStatus) + " " + getStatusDescription(_httpStatus) + "\r\n";
-	response += "Content-Type: " + _contentType + "\r\n";
-	response += "Location: " + _target + "\r\n";
-	response += "Content-Length: " + intToString(_body.length()) + "\r\n";
-	response += "\r\n";
-	//TODO check if correct
-	response += _body;
+	_response = "HTTP/1.1 " + intToString(_httpStatus) + " " + getStatusDescription(_httpStatus) + "\r\n";
+	_response += "Content-Type: " + _contentType + "\r\n";
+	_response += "Location: " + _target + "\r\n";
+	_response += "Content-Length: " + intToString(_body.length()) + "\r\n\r\n";
+	_response += _body;
+}
 
-	return (response);
+std::string		&HttpRes::getResponse(void) {
+	if (!_responseCreated)
+		createFullResponse();
+	return (_response);
 }
 
 const std::string	&HttpRes::getTarget(void) const {

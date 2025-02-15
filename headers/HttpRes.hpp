@@ -21,6 +21,9 @@ private:
 
 	bool				_wasRedirected;		// If the request was redirected (to avoid endless redirection loops)
 
+	bool				_responseCreated;	// If the full response was created
+	std::string			_response;			// The response to be sent to the client or left part that was not sent yet
+
 	void				getNameCookie(HttpReq &httpRequest);	// Get the name of the user from the cookie
 	bool				parseFile(void);						
 	void				determineContentType(void);				
@@ -35,6 +38,8 @@ private:
 
 	void				generateAutoindexPage(const std::string &path);
 	void				generateErrorBody(void);
+
+	void				createFullResponse(void);
 	
 public:
 	HttpRes(void);
@@ -44,7 +49,7 @@ public:
 
 	// --> Response methods:
 	void				handleRequestResponse(HttpReq &httpRequest, Server &server, int client_fd);
-	std::string			getResponse(void);
+	std::string			&getResponse(void);
 
 	// --> Get/Set-methods:
 	const std::string	&getMethod(void) const;

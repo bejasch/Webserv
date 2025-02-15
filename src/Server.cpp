@@ -129,38 +129,27 @@ int	Server::handleRequestServer(int client_fd) {
 	return(0);
 }
 
-// When the server is ready to send a response to the client, it calls handleResponse
+// EPOLLOUT was triggered on an existing connection (event)
 int		Server::handleResponse(int client_fd) {
 	if (pending_responses.find(client_fd) != pending_responses.end()) {
-		HttpRes &response = pending_responses[client_fd];
-		std::string response_str = response.getResponse();
-		const char* response_cstr = response_str.c_str();
+
+		std::string &response_str = pending_responses[client_fd].getResponse();
 		size_t		size = response_str.size();
-		// std::cout << "client fd: " << client_fd << std::endl;
+		const char* response_cstr = response_str.c_str();
 		if (response_cstr == NULL || size == 0) {
-			std::cerr << "Error: Response is empty.\n";
+			std::cerr << "Response was empty -> Deleting pending response\n";
 		} else {
-			size_t	total_sent = 0;
-			int		retry_count = 0;
-			while (total_sent < size) {
-				ssize_t sent = write(client_fd, response_cstr + total_sent, size - total_sent);
-				if (sent < 0) {
-					retry_count++;
-					// If maximum retries reached, log and stop trying
-					if (retry_count >= MAX_RETRY_COUNT) {
-						std::cerr << "Error: Failed to write to socket after " << MAX_RETRY_COUNT << " retries.\n";
-						break;
-					}
-					std::cerr << "Warning: Write failed, retrying (" << retry_count << "/" << MAX_RETRY_COUNT << ")...\n";
-					continue;
-				}
-				retry_count = 0;
-				total_sent += sent;
+			ssize_t sent = write(client_fd, response_cstr, size);
+			if (sent < 0) {
+				std::cerr << "Writing to socket failed.\n";
 			}
-			if (total_sent < size)
-				std::cerr << "Warning: Only " << total_sent << " out of " << size << " bytes were sent.\n";
+			else if (sent < static_cast<ssize_t>(size)) {
+				response_str = response_str.substr(sent);
+				std::cout << "Warning: Only " << sent << " out of " << size << " bytes were sent to client_fd: " << client_fd << std::endl;
+				return (0);
+			}
 			else
-				std::cout << BOLD << "\tSuccessfully sent " << total_sent << " bytes to client.\n" << RESET;
+				std::cout << BOLD << "\tSuccessfully sent " << sent << " bytes to client_fd: " << client_fd << std::endl << RESET;
 		}
 		pending_responses.erase(client_fd);
 	}

@@ -47,6 +47,7 @@ public:
 	~HttpReq();
 
 	// --> Get-methods:
+	Server				*getServer(void) const;
 	const std::string	&getMethod(void) const;
 	const std::string	&getTarget(void) const;
 	const std::string	&getProtocol(void) const;
@@ -54,13 +55,11 @@ public:
 	const std::map<std::string, std::string>	&getHeaders(void) const;
 	
 	// --> Processing methods:
-	bool	processData(Server &server, const std::string &data);	// Encapsulates the parsing of the incoming data
+	bool				processData(Server &server, const std::string &data);	// Encapsulates the parsing of the incoming data
 	const std::string	&getBody(void);								// Get the body of the request
 	int					getHttpStatus(void) const;					// Get the status of the request
 
 	void	print(void) const;										// print content
-
-	void	reset(void);											// Reset for a new request
 };
 
 #endif
