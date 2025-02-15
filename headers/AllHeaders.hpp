@@ -7,6 +7,7 @@
 #define MAX_EVENTS			100		// Max events for epoll_wait
 #define GUESTBOOK_FILE		"data/guestbook/guestbook.txt"
 #define WAIT_CHECK			2000	// 5000 ms
+#define RESPONSE_TIMEOUT	20		// 5 s
 #define CGI_TIMEOUT			20		// 5 s
 
 #include <iostream>

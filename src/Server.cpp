@@ -143,7 +143,7 @@ int		Server::handleResponse(int client_fd) {
 			if (sent < 0) {
 				std::cerr << "Writing to socket failed.\n";
 			}
-			else if (sent < static_cast<ssize_t>(size)) {
+			else if (sent < static_cast<ssize_t>(size)) {	// Not all data was sent -> client remains in epoll for writing
 				response_str = response_str.substr(sent);
 				std::cout << "Warning: Only " << sent << " out of " << size << " bytes were sent to client_fd: " << client_fd << std::endl;
 				return (0);
@@ -170,6 +170,15 @@ void	Server::freeServer() {
 	if (config)
 		delete config;
 }
+
+ServerManager					&Server::getServerManager() const {
+	return this->server_manager;
+}
+
+std::map<int, HttpRes>	&Server::getPendingResponses() {
+	return this->pending_responses;
+}
+
 
 void	Server::deleteClientResponse(int client_fd) {
 	pending_responses.erase(client_fd);

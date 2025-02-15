@@ -19,11 +19,14 @@ class Server {
 		Server(const Server &other);
 		Server operator=(const Server &another);
 		~Server();
+	
 		int		setServer(Config *config); //define server configs
 		int		setUpServer(); //define socket and bind to server fd	
 		Config	*getConfig() const { return this->config; } ;
-		ServerManager	&getServerManager() const { return this->server_manager; } ;
+		ServerManager			&getServerManager() const;
+		std::map<int, HttpRes>	&getPendingResponses();
 		int		getServerFd() const { return this->server_fd; } ;
+
 		int		acceptConnection(int epoll_fd);
 		int		handleRequestServer(int fd);
 		int		handleResponse(int fd);

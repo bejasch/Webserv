@@ -1,21 +1,23 @@
 #include "../headers/AllHeaders.hpp"
 
-HttpRes::HttpRes(void) : _server(NULL), _route(NULL), _method(""), _httpStatus(0),
+HttpRes::HttpRes(void) : _creationTime(time(NULL)), _client_fd(0), _server(NULL), _route(NULL), _method(""), _httpStatus(0),
 	_userName(""), _target(""), _serverPath(""), _contentType(""), _body(""), _wasRedirected(false),
 	_responseCreated(false), _response("") {
 	// std::cout << "HttpRes default constructor called" << std::endl;
 }
 
-HttpRes::HttpRes(const HttpRes &other) : _server(other._server), _route(other._route), _method(other._method),
-	_httpStatus(other._httpStatus), _userName(other._userName),	_target(other._target),
-	_serverPath(other._serverPath), _contentType(other._contentType), _body(other._body),
-	_wasRedirected(other._wasRedirected), _responseCreated(other._responseCreated), _response(other._response) {
+HttpRes::HttpRes(const HttpRes &other) : _creationTime(other._creationTime), _client_fd(other._client_fd),
+	_server(other._server), _route(other._route), _method(other._method), _httpStatus(other._httpStatus),
+	_userName(other._userName), _target(other._target), _serverPath(other._serverPath), _contentType(other._contentType),
+	_body(other._body), _wasRedirected(other._wasRedirected), _responseCreated(other._responseCreated), _response(other._response) {
 	// std::cout << "HttpRes copy constructor called" << std::endl;
 }
 
 HttpRes HttpRes::operator=(const HttpRes &another) {
 	if (this == &another)
 		return (*this);
+	_creationTime = another._creationTime;
+	_client_fd = another._client_fd;
 	_server = another._server;
 	_route = another._route;
 	_method = another._method;
@@ -326,6 +328,10 @@ void	HttpRes::createFullResponse(void) {
 	_response += "Location: " + _target + "\r\n";
 	_response += "Content-Length: " + intToString(_body.length()) + "\r\n\r\n";
 	_response += _body;
+}
+
+const time_t	&HttpRes::getCreationTime(void) const {
+	return (_creationTime);
 }
 
 std::string		&HttpRes::getResponse(void) {

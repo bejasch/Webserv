@@ -5,7 +5,8 @@
 
 class HttpRes {
 private:
-	// - Static variables:
+	time_t				_creationTime;
+
 	int					_client_fd;
 	Server				*_server;
 	Route				*_route;
@@ -52,6 +53,7 @@ public:
 	std::string			&getResponse(void);
 
 	// --> Get/Set-methods:
+	const time_t		&getCreationTime(void) const;
 	const std::string	&getMethod(void) const;
 	const std::string	&getTarget(void) const;
 	int					getHttpStatus(void) const;

@@ -128,8 +128,32 @@ void ServerManager::startServers() {
 	handleEvents();
 }
 
+void	ServerManager::checkResponseTimeouts(void) {
+	// std::cout << "Checking response timeouts" << std::endl;
+	time_t now = time(NULL);
+	std::vector<Server*>::iterator it = servers.begin();
+	while (it != servers.end()) {
+		Server *server = *it;
+		std::map<int, HttpRes> &pending_responses = server->getPendingResponses();
+		std::map<int, HttpRes>::const_iterator response_it = pending_responses.begin();
+		while (response_it != pending_responses.end()) {
+			int client_fd = response_it->first;
+			time_t start_time = response_it->second.getCreationTime();
+			if (now - start_time > RESPONSE_TIMEOUT) {
+				std::cout << "Timeout exceeded → Close connection to client_fd: " << client_fd << std::endl;
+				close(client_fd);
+				pending_responses.erase(client_fd);
+				response_it = pending_responses.begin();
+			} else {
+				++response_it; // Move to next element if no timeout
+			}
+		}
+		++it;
+	}
+}
+
 // check CGI timeouts
-void	ServerManager::checkCGITimeouts() {
+void	ServerManager::checkCGITimeouts(void) {
 	// std::cout << "Checking CGI timeouts" << std::endl;
     time_t now = time(NULL);
     std::map<int, CgiRequestInfo>::iterator it = cgi_pipes.begin();
@@ -172,6 +196,7 @@ int ServerManager::handleEvents() {
 				std::cerr << "Error handling event" << std::endl;
 			}
 		}
+		checkResponseTimeouts();
     	checkCGITimeouts();
 	}
 	freeResources();
