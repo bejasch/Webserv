@@ -1,7 +1,7 @@
 # Webserv Key Requirements Checklist
 
 ### Non-blocking I/O
-✅ You have used `fcntl()` to make both the server socket and client sockets non-blocking. This allows the server to not block while waiting for data from clients, ensuring the server stays responsive.
+✅ You have used `fcntl()` to make both the server socket and client sockets non-blocking. This allows the server to not block while waiting for data from clients, ensuring the server stays responsive. Every read or write on file descriptors is only done when triggered by the epoll instance. B
 
 ### Using `epoll()` for I/O Multiplexing
 ✅ Your server uses `epoll_wait()` to monitor multiple file descriptors, handling I/O events (readable sockets) without blocking. This is the equivalent of `poll()`, but using `epoll` is more efficient.
@@ -63,6 +63,10 @@
 ### CGI
 ✅ **Done**: JK
 - GET request done, POST WIP
+
+### Timeout
+✅ **Done**: All open responses (not/partially sent) and CGI (pending) requests are checked for timeouts
+
 
 ## Preparation of the Evaluation
 
