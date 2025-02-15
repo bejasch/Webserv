@@ -135,7 +135,7 @@ int		Server::handleResponse(int client_fd) {
 		HttpRes &response = pending_responses[client_fd];
 		std::string response_str = response.getResponse();
 		const char* response_cstr = response_str.c_str();
-		size_t		size = response.getResponseSize();
+		size_t		size = response_str.size();
 		// std::cout << "client fd: " << client_fd << std::endl;
 		if (response_cstr == NULL || size == 0) {
 			std::cerr << "Error: Response is empty.\n";
@@ -170,7 +170,7 @@ int		Server::handleResponse(int client_fd) {
 		return(1);
 	}
 	close(client_fd);  // Close the connection
-	std::cout << "client fd closed: " << client_fd << std::endl;
+	std::cout << "Close the connection to the client_fd: " << client_fd << std::endl;
 	return (0);
 }
 

@@ -20,7 +20,7 @@ private:
 	std::string			_body;
 	int					_client_fd;
 
-	bool				_wasRedirected;		// If the request was redirected (to avoid double free)
+	bool				_wasRedirected;		// If the request was redirected (to avoid endless redirection loops)
 
 	void				getNameCookie(HttpReq &httpRequest);	// Get the name of the user from the cookie
 	bool				parseFile(void);						
@@ -46,7 +46,6 @@ public:
 	// --> Response methods:
 	void				handleRequestResponse(HttpReq &httpRequest, Server &server, int client_fd);
 	std::string			getResponse(void);
-	size_t				getResponseSize(void) const;
 
 	// --> Get/Set-methods:
 	const std::string	&getMethod(void) const;

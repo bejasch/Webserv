@@ -95,10 +95,10 @@ void	HttpRes::getNameCookie(HttpReq &httpRequest) {
 }
 
 void	HttpRes::handleRequestResponse(HttpReq &httpRequest, Server &server, int client_fd) {
+	_client_fd = client_fd;
 	_server = &server;
 	_target = httpRequest.getTarget();
 	_httpStatus = httpRequest.getHttpStatus();
-	_client_fd = client_fd;
 	if (_httpStatus >= 400 && _httpStatus < 600) {
 		return;
 	}
@@ -335,10 +335,6 @@ std::string	HttpRes::getResponse(void) {
 	_responseSize = response.size();
 	// std::cout << "Response: " << response << std::endl;
 	return (response);
-}
-
-size_t	HttpRes::getResponseSize(void) const {
-	return (_responseSize);
 }
 
 const std::string	&HttpRes::getTarget(void) const {
