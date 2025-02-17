@@ -537,7 +537,6 @@ int ServerManager::freeResources() {
 	}
 	// Clear the client-to-server mapping
 	clientfd_to_serverfd.clear();
-	//TODO: how about CgiRequestInfo?
     cgi_pipes.clear();
 	return 0;
 }
