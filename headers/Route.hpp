@@ -41,7 +41,6 @@ class Route {
 
 		bool	containsTarget(const std::string &target) const;
 		bool	allowsMethod(const std::string &method) const;
-		int		checkRoute(Route *route);
 		void	cleanRoute(Route *route);
 
 		//utils

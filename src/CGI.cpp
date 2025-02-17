@@ -59,17 +59,11 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
 
 	std::string scriptPath = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
 	std::cout << "Executing CGI script (GET): " << scriptPath << std::endl;
-	if (fileExists(scriptPath.c_str()) == false) {
-		std::cerr << "Invalid CGI script path: " << scriptPath << std::endl;
-		httpResponse.setStatus(404);
+	if (access(scriptPath.c_str(), X_OK) == -1) {
+		std::cerr << "CGI script error for requested path: " << scriptPath << std::endl;
+		httpResponse.setStatus(403);
 		return "";
 	}
-	//TODO: is this written by me?
-	if (access(scriptPath.c_str(), X_OK) == -1) {
-        std::cerr << "Invalid CGI script path: " << scriptPath << std::endl;
-        httpResponse.setStatus(403);
-        return "";
-    }
 	if (getFileExtension(scriptPath) == ".py")
 		this->argv[0] = cpp_strdup("/usr/bin/python3");
 	else if (getFileExtension(scriptPath) == ".php")
@@ -82,9 +76,6 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
 		httpResponse.setStatus(500);
 		return "";
 	}
-
-	// Make pipe non-blocking
-
 	pid = fork();
 	if (pid == -1) {
 		std::cerr << "Failed to fork: " << std::strerror(errno) << std::endl;
@@ -115,10 +106,10 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
 	ServerManager &serverManager = httpResponse.getServer()->getServerManager();
 	serverManager.cgi_pipes[pipe_fd[0]] = requestInfo;
 
-    // Add to epoll
-    epoll_event ev;
-    ev.events = EPOLLIN | EPOLLHUP;
-    ev.data.fd = pipe_fd[0];
+	// Add to epoll
+	epoll_event ev;
+	ev.events = EPOLLIN | EPOLLHUP;
+	ev.data.fd = pipe_fd[0];
 
 	int epoll_fd = httpResponse.getServer()->getServerManager().getEpollFd();
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, pipe_fd[0], &ev) == -1) {
@@ -153,9 +144,9 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
 		this->argv[1] = cpp_strdup(scriptPath);
 	}
 	std::cout << "Executing CGI script (POST): " << scriptPath << std::endl;
-	if (fileExists(scriptPath.c_str()) == false) {
-		std::cerr << "Invalid CGI script path: " << scriptPath << std::endl;
-		httpResponse.setStatus(404);
+	if (access(scriptPath.c_str(), X_OK) == -1) {
+		std::cerr << "CGI script error for requested path: " << scriptPath << std::endl;
+		httpResponse.setStatus(403);
 		return "";
 	}
 	// Prepare the POST data

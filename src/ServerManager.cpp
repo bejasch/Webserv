@@ -75,15 +75,10 @@ int ServerManager::setServers(const std::string &config_file)
 			}
 			std::string path = line.substr(line.find("location") + std::string("location").length() + 1, line.find("{") - line.find(" ") - 2);
 			route->setPath(removeTrailingSlash(path));
-            std::cout << BLUE << "\t🌱 Route path: " << route->getPath() << RESET << std::endl;
+			std::cout << BLUE << "\t🌱 Route path: " << route->getPath() << RESET << std::endl;
 			line = fillRoute(line, file, route);
 			if (line.empty()) {
 				std::cerr << "Discarding unfinished route: " << route->getPath() << std::endl;
-				delete route;
-				route = NULL;
-				continue;
-			}
-			if (route->checkRoute(route) == 1) {
 				delete route;
 				route = NULL;
 				continue;
@@ -124,7 +119,7 @@ void ServerManager::startServers() {
 			return;
 		}
 	}
-    std::cout << GREEN << "🚀Servers are running!" << RESET << std::endl;
+	std::cout << GREEN << "🚀Servers are running!" << RESET << std::endl;
 	handleEvents();
 }
 
@@ -155,29 +150,29 @@ void	ServerManager::checkResponseTimeouts(void) {
 // check CGI timeouts
 void	ServerManager::checkCGITimeouts(void) {
 	// std::cout << "Checking CGI timeouts" << std::endl;
-    time_t now = time(NULL);
-    std::map<int, CgiRequestInfo>::iterator it = cgi_pipes.begin();
-    while (it != cgi_pipes.end()) {
-        int pipe_fd = it->first;
-        time_t start_time = it->second.start_time;
+	time_t now = time(NULL);
+	std::map<int, CgiRequestInfo>::iterator it = cgi_pipes.begin();
+	while (it != cgi_pipes.end()) {
+		int pipe_fd = it->first;
+		time_t start_time = it->second.start_time;
 		// std::cout << "Time difference: " << now - start_time << std::endl;
-        if (now - start_time > CGI_TIMEOUT) {
-            pid_t pid = it->second.pid;
-            std::cout << "Timeout exceeded → Kill CGI process " << pid << std::endl;
-            kill(pid, SIGKILL);
-            waitpid(pid, NULL, 0);
+		if (now - start_time > CGI_TIMEOUT) {
+			pid_t pid = it->second.pid;
+			std::cout << "Timeout exceeded → Kill CGI process " << pid << std::endl;
+			kill(pid, SIGKILL);
+			waitpid(pid, NULL, 0);
 
-            // Cleanup
-            if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, NULL) == -1) {
+			// Cleanup
+			if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, NULL) == -1) {
 				std::cerr << "Failed to remove pipe from epoll: " << std::strerror(errno) << std::endl;
 			}
-            close(pipe_fd);
-            cgi_pipes.erase(pipe_fd);
-            it = cgi_pipes.begin();
-        } else {
-            ++it; // Move to next element if no timeout
-        }
-    }
+			close(pipe_fd);
+			cgi_pipes.erase(pipe_fd);
+			it = cgi_pipes.begin();
+		} else {
+			++it; // Move to next element if no timeout
+		}
+	}
 }
 
 // Central event loop that distributes events to the appropriate server
@@ -197,7 +192,7 @@ int ServerManager::handleEvents() {
 			}
 		}
 		checkResponseTimeouts();
-    	checkCGITimeouts();
+		checkCGITimeouts();
 	}
 	freeResources();
 	return (0);
@@ -397,7 +392,6 @@ void ServerManager::validateRoutes() {
 				baseRoute = route;
 				continue;
 			}
-
 			// Find parent route
 			Route *parent = baseRoute;
 			for (size_t k = 0; k < j; k++) {  // Only check previously processed routes
@@ -411,7 +405,6 @@ void ServerManager::validateRoutes() {
 					parent = routes[k];
 				}
 			}
-
 			// If a parent is found, inherit missing config values
 			if (parent) {
 				if (route->getRootDirRoute().empty()) {
@@ -439,7 +432,7 @@ void ServerManager::validateRoutes() {
 
 // case EPOLLIN
 int ServerManager::handleCGIRequest(int pipe_fd) {
-    char buffer[30000] = {0};
+	char buffer[30000] = {0};
 	CgiRequestInfo &requestInfo = cgi_pipes[pipe_fd];
 	int bytes_read = read(pipe_fd, buffer, sizeof(buffer));
 	if (bytes_read > 0) {
@@ -457,33 +450,33 @@ int ServerManager::handleCGIRequest(int pipe_fd) {
 
 // case EPOLLHUP
 int ServerManager::handleCGIResponse(int pipe_fd) {
-    // Find the client_fd that requested the CGI execution
+	// Find the client_fd that requested the CGI execution
 	if (cgi_pipes.find(pipe_fd) == cgi_pipes.end()) {
 		std::cerr << "Error: CGI pipe not found in cgi_pipes map.\n";
 		return 1;
 	}
 	CgiRequestInfo requestInfo = cgi_pipes[pipe_fd];
-    int client_fd = requestInfo.client_fd;
-    std::string method = requestInfo.method;
+	int client_fd = requestInfo.client_fd;
+	std::string method = requestInfo.method;
 
-    // Clean up pipe resources
-    close(pipe_fd);
-    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, NULL);
-    cgi_pipes.erase(pipe_fd);
+	// Clean up pipe resources
+	close(pipe_fd);
+	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, NULL);
+	cgi_pipes.erase(pipe_fd);
 
-    // If no output was received, return error
-    if (requestInfo.output.empty()) {
-        std::cerr << "Error: CGI script produced no output.\n";
-        close(client_fd);
-        return 1;
-    }
+	// If no output was received, return error
+	if (requestInfo.output.empty()) {
+		std::cerr << "Error: CGI script produced no output.\n";
+		close(client_fd);
+		return 1;
+	}
 
 	// Send the CGI output to the client
 	if (method == "GET")
 		writeCGIResponseGET(requestInfo, requestInfo.output);
 	else if (method == "POST")
 		writeCGIResponsePOST(requestInfo, requestInfo.output);
-    return 0;
+	return 0;
 }
 
 void ServerManager::writeCGIResponseGET(CgiRequestInfo requestInfo, const std::string &output) {
