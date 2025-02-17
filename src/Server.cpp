@@ -1,6 +1,6 @@
 #include "../headers/AllHeaders.hpp"
 
-Server::Server() : server_fd(0), address(), client_requests(), pending_responses(), config(NULL), server_manager(*(new ServerManager())) {
+Server::Server() : server_fd(-1), address(), client_requests(), pending_responses(), config(NULL), server_manager(*(new ServerManager())) {
 	// std::cout << "Server default constructor called" << std::endl;
 }
 

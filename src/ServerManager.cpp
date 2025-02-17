@@ -2,11 +2,11 @@
 
 volatile sig_atomic_t ServerManager::stop_flag = 0;
 
-ServerManager::ServerManager(): epoll_fd(0), servers(), clientfd_to_serverfd() {
+ServerManager::ServerManager(): epoll_fd(-1), servers(), clientfd_to_serverfd(), cgi_pipes(){
 	// std::cout << "ServerManager default constructor called" << std::endl;
 }
 
-ServerManager::ServerManager(const ServerManager &other): epoll_fd(other.epoll_fd), servers(other.servers), clientfd_to_serverfd(other.clientfd_to_serverfd) {
+ServerManager::ServerManager(const ServerManager &other): epoll_fd(other.epoll_fd), servers(other.servers), clientfd_to_serverfd(other.clientfd_to_serverfd), cgi_pipes(other.cgi_pipes){
 	// std::cout << "ServerManager copy constructor called" << std::endl;
 }
 
@@ -16,6 +16,7 @@ ServerManager ServerManager::operator=(const ServerManager &another) {
 	epoll_fd = another.epoll_fd;
 	servers = another.servers;
 	clientfd_to_serverfd = another.clientfd_to_serverfd;
+	cgi_pipes = another.cgi_pipes;
 	return (*this);
 }
 
@@ -543,6 +544,7 @@ int ServerManager::freeResources() {
 	}
 	// Clear the client-to-server mapping
 	clientfd_to_serverfd.clear();
-	cgi_pipes.clear();
+	//TODO: how about CgiRequestInfo?
+    cgi_pipes.clear();
 	return 0;
 }

@@ -1,6 +1,6 @@
 #include "../headers/AllHeaders.hpp"
 
-HttpRes::HttpRes(void) : _creationTime(time(NULL)), _client_fd(0), _server(NULL), _route(NULL), _method(""), _httpStatus(0),
+HttpRes::HttpRes(void) : _creationTime(time(NULL)), _client_fd(-1), _server(NULL), _route(NULL), _method(""), _httpStatus(0),
 	_userName(""), _target(""), _serverPath(""), _contentType(""), _body(""), _wasRedirected(false),
 	_responseCreated(false), _response("") {
 	// std::cout << "HttpRes default constructor called" << std::endl;

@@ -1,6 +1,6 @@
 #include "../headers/AllHeaders.hpp"
 
-CGI::CGI() : pid(0), env(), envp(NULL), argv(NULL) {
+CGI::CGI() : pid(-1), env(), envp(NULL), argv(NULL) {
 	// std::cout << "CGI default constructor called" << std::endl;
 }
 
