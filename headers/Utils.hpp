@@ -13,7 +13,6 @@ std::string getFileExtension(const std::string &target);
 char		*cpp_strdup(const std::string str);
 int			find_commented_line(std::string &line);
 std::string removeTrailingSlash(std::string &path);
-bool        fileExists(const char *filename);
 
 std::vector<std::string> splitString(const std::string &str, const char delimiter);
 

@@ -99,10 +99,3 @@ void Route::cleanRoute(Route *route) {
 	route->setRedirectStatus(0);
 	route->setRedirectUrl("");    
 }
-
-//TODO: implement this if needed
-int Route::checkRoute(Route *route)
-{
-	(void)route;
-	return (0);
-}

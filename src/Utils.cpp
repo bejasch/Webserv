@@ -15,13 +15,11 @@ bool isStandaloneWord(const std::string& line, const std::string& word, size_t p
 	if (pos > 0 && std::isalnum(line[pos - 1])) {
 		return false;
 	}
-
 	// Check character after the word (if not at the end of the string)
 	size_t after = pos + word.length();
 	if (after < line.size() && std::isalnum(line[after])) {
 		return false;
 	}
-
 	return true;
 }
 
@@ -95,7 +93,6 @@ void	saveGuestbookEntry(const std::string &name, const std::string &message) {
 		std::cerr << "Warning: Guestbook entry too long.\n";
 		return;
 	}
-
 	std::ofstream file(GUESTBOOK_FILE, std::ios::app); // Append mode
 	if (file) {
 		file << name << "|" << message << "\n";				// Append entry to file	
@@ -128,7 +125,6 @@ const std::string	generateGuestbookHTML(const std::string &userName) {
 	} else {
 		html << "<div id='login_status' style='background-color: red;'>Not logged in</div>";
 	}
-
 	html << "<button onclick=\"window.location.href='/index.html'\">Back to Main Page</button>";
 	
 	if (!userName.empty())
@@ -209,8 +205,7 @@ std::string resolvePath(const std::string &target, const std::string &route_path
 	return ""; // Return empty string if route_path is not a prefix of target
 }
 
-char *cpp_strdup(const std::string str)
-{
+char	*cpp_strdup(const std::string str) {
 	char *dup;
 
 	dup = new char[str.size() + 1];
@@ -232,19 +227,10 @@ int	find_commented_line(std::string &line) {
 	return (0);
 }
 
-std::string removeTrailingSlash(std::string &path){
+std::string	removeTrailingSlash(std::string &path) {
 	if (path == "/")
 		return path;
 	if (path[path.length() - 1] == '/')
 		path = path.substr(0, path.length() - 1);
 	return path;
-}
-
-bool fileExists(const char *filename) {
-    FILE *file = std::fopen(filename, "r");
-    if (file) {
-        std::fclose(file);
-        return true;
-    }
-    return false;
 }

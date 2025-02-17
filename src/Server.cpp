@@ -179,7 +179,6 @@ std::map<int, HttpRes>	&Server::getPendingResponses() {
 	return this->pending_responses;
 }
 
-
 void	Server::deleteClientResponse(int client_fd) {
 	pending_responses.erase(client_fd);
 	std::cout << "deleted client fd :" << client_fd << " from pending responses" << std::endl;
