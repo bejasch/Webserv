@@ -136,7 +136,7 @@ void	ServerManager::checkResponseTimeouts(void) {
 			int client_fd = response_it->first;
 			time_t start_time = response_it->second.getCreationTime();
 			if (now - start_time > RESPONSE_TIMEOUT) {
-				std::cout << "Timeout exceeded → Close connection to client_fd: " << client_fd << std::endl;
+				std::cout << RED << "Timeout exceeded → Close connection to client_fd: " << client_fd << std::endl << RESET;
 				close(client_fd);
 				pending_responses.erase(client_fd);
 				response_it = pending_responses.begin();
@@ -159,15 +159,11 @@ void	ServerManager::checkCGITimeouts(void) {
 		// std::cout << "Time difference: " << now - start_time << std::endl;
 		if (now - start_time > CGI_TIMEOUT) {
 			pid_t pid = it->second.pid;
-			std::cout << "Timeout exceeded → Kill CGI process " << pid << std::endl;
+			std::cout << RED << "Timeout exceeded → Kill CGI process " << pid << std::endl << RESET;
 			kill(pid, SIGKILL);
 			waitpid(pid, NULL, 0);
+			close(pipe_fd); // Close the pipe (automatically removes it from the epoll instance)
 
-			// Cleanup
-			if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, NULL) == -1) {
-				std::cerr << "Failed to remove pipe from epoll: " << std::strerror(errno) << std::endl;
-			}
-			close(pipe_fd);
 			cgi_pipes.erase(pipe_fd);
 			it = cgi_pipes.begin();
 		} else {
@@ -438,15 +434,19 @@ int ServerManager::handleCGIRequest(int pipe_fd) {
 	int bytes_read = read(pipe_fd, buffer, sizeof(buffer));
 	if (bytes_read > 0) {
 		requestInfo.output.append(buffer, bytes_read);
+		return 0;
 	}
-	else if (bytes_read == 0) {
+	else if (bytes_read == 0)
 		std::cout << "CGI process closed the pipe.\n";
-	}
-	else if (bytes_read == -1) {
+	else if (bytes_read == -1)
 		std::cout << "Read error:" << std::endl;
-		return 1;
+	// Clean up pipe resources
+	close(pipe_fd);
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, NULL) == -1) {
+		std::cerr << "Failed to remove pipe from epoll: " << std::strerror(errno) << std::endl;
 	}
-	return 0;
+	cgi_pipes.erase(pipe_fd);
+	return 1;
 }
 
 // case EPOLLHUP
@@ -456,35 +456,28 @@ int ServerManager::handleCGIResponse(int pipe_fd) {
 		std::cerr << "Error: CGI pipe not found in cgi_pipes map.\n";
 		return 1;
 	}
-	CgiRequestInfo requestInfo = cgi_pipes[pipe_fd];
-	int client_fd = requestInfo.client_fd;
-	std::string method = requestInfo.method;
-
-	// Clean up pipe resources
-	close(pipe_fd);
-	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, NULL);
-	cgi_pipes.erase(pipe_fd);
-
-	// If no output was received, return error
-	if (requestInfo.output.empty()) {
-		std::cerr << "Error: CGI script produced no output.\n";
-		close(client_fd);
-		return 1;
-	}
+	CgiRequestInfo &requestInfo = cgi_pipes[pipe_fd];
+	close(pipe_fd);	// Close the pipe (automatically removes it from the epoll instance)
 
 	// Send the CGI output to the client
-	if (method == "GET")
-		writeCGIResponseGET(requestInfo, requestInfo.output);
-	else if (method == "POST")
-		writeCGIResponsePOST(requestInfo, requestInfo.output);
+	if (requestInfo.method == "GET")
+		writeCGIResponseGET(requestInfo);
+	else if (requestInfo.method == "POST")
+		writeCGIResponsePOST(requestInfo);
+	else {
+		std::cerr << "Invalid CGI method: " << requestInfo.method << std::endl;
+		return 1;
+	}
+	cgi_pipes.erase(pipe_fd);
+	
 	return 0;
 }
 
-void ServerManager::writeCGIResponseGET(CgiRequestInfo requestInfo, const std::string &output) {
-	HttpRes httpResponse;
+int	ServerManager::writeCGIResponseGET(CgiRequestInfo &requestInfo) {
+	HttpRes	httpResponse;
 	httpResponse.setHttpStatus(200);
 	httpResponse.setContentType("text/html");
-	httpResponse.setBody(output);
+	httpResponse.setBody(requestInfo.output);
 
 	requestInfo.server->addPendingResponse(requestInfo.client_fd, httpResponse);
 	epoll_event ev;
@@ -495,13 +488,14 @@ void ServerManager::writeCGIResponseGET(CgiRequestInfo requestInfo, const std::s
 		std::cerr << "Failed to add client_fd to epoll for writing: " << std::strerror(errno) << std::endl;
 		requestInfo.server->deleteClientResponse(requestInfo.client_fd);
 		close(requestInfo.client_fd); // Clean up if adding to epoll fails. Might want to use EAGAIN or EINTR
-		return;
+		return 1;
 	}
+	return 0;
 }
 
-void ServerManager::writeCGIResponsePOST(CgiRequestInfo requestInfo, const std::string &output) {
-	saveGuestbookEntry(requestInfo.guestbookName, output);
-	HttpRes httpResponse;
+int	ServerManager::writeCGIResponsePOST(CgiRequestInfo &requestInfo) {
+	saveGuestbookEntry(requestInfo.guestbookName, requestInfo.output);
+	HttpRes	httpResponse;
 	httpResponse.setHttpStatus(303);
 	httpResponse.setContentType("text/html");
 	httpResponse.setTarget("/guestbook.html");
@@ -515,8 +509,9 @@ void ServerManager::writeCGIResponsePOST(CgiRequestInfo requestInfo, const std::
 		std::cerr << "Failed to add client_fd to epoll for writing: " << std::strerror(errno) << std::endl;
 		requestInfo.server->deleteClientResponse(requestInfo.client_fd);
 		close(requestInfo.client_fd); // Clean up if adding to epoll fails. Might want to use EAGAIN or EINTR
-		return;
+		return 1;
 	}
+	return 0;
 }
 
 int ServerManager::freeResources() {

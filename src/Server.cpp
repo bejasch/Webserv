@@ -62,8 +62,6 @@ int Server::setUpServer() {
 
 // A new socket is created for the communication with the client
 int	Server::acceptConnection(int epoll_fd) {	
-	//int addrlen = sizeof(address);
-	//client_fd = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
 	int	client_fd = accept(server_fd, NULL, NULL);
 	if (client_fd < 0) {
 		std::cerr << "Failed to accept connection: " << std::strerror(errno) << std::endl;
@@ -153,12 +151,7 @@ int		Server::handleResponse(int client_fd) {
 		}
 		pending_responses.erase(client_fd);
 	}
-	// Remove client_fd from epoll instance
-	if (epoll_ctl(server_manager.getEpollFd(), EPOLL_CTL_DEL, client_fd, NULL) == -1) {
-		std::cerr << "Failed to remove client_fd from epoll: " << std::strerror(errno) << std::endl;
-		return(1);
-	}
-	close(client_fd);  // Close the connection
+	close(client_fd);  // Close the pipe (automatically removes it from the epoll instance)
 	std::cout << "Close the connection to the client_fd: " << client_fd << std::endl;
 	return (0);
 }

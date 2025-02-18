@@ -35,8 +35,8 @@ public:
 	int		handleCGIResponse(int pipe_fd);
 	void	checkResponseTimeouts(void);
 	void	checkCGITimeouts();
-	void	writeCGIResponseGET(CgiRequestInfo requestInfo, const std::string &output);
-	void	writeCGIResponsePOST(CgiRequestInfo requestInfo, const std::string &output);
+	int		writeCGIResponseGET(CgiRequestInfo &requestInfo);
+	int		writeCGIResponsePOST(CgiRequestInfo &requestInfo);
 	int		freeResources();
 
 private:

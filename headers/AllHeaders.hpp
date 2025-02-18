@@ -7,10 +7,8 @@
 #define MAX_EVENTS			100		// Max events for epoll_wait
 #define GUESTBOOK_FILE		"data/guestbook/guestbook.txt"
 #define WAIT_CHECK			2000	// 5000 ms
-#define RESPONSE_TIMEOUT	20		// 5 s
-#define CGI_TIMEOUT			20		// 5 s
-
-#include <iostream>
+#define RESPONSE_TIMEOUT	5		// 5 s
+#define CGI_TIMEOUT			5		// 5 s
 
 // Text Colors
 #define RESET     "\033[0m"      // Reset all styles
@@ -45,32 +43,24 @@ class	Route;
 class	Server;
 class	ServerManager;
 
-#include <unistd.h>
+#include <iostream>
 #include <fcntl.h>
-#include <stdio.h>
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
-#include <stdlib.h>
 #include <netinet/in.h>
 #include <dirent.h>
-#include <cstring>
-#include <cstdlib> //probably illegal, used for malloc
-#include <cstdio> //probably illegal, used for sprintf
-#include <iostream>
 #include <string>
 #include <map>
 #include <vector>
 #include <fstream>
 #include <sstream>
 #include <algorithm>
-#include <cctype>
 #include <csignal>
-#include <cstdlib>  // For strtoul
+#include <cstring>
 #include <ctime>
 
-// #include "
 #include "Config.hpp"
 #include "HttpReq.hpp"
 #include "HttpRes.hpp"
