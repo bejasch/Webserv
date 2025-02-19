@@ -149,31 +149,31 @@ void Config::freeConfig() {
 
 int Config::initialisedCheck() {
 	if (server_port == 0) {
-		std::cerr << "Server port not set" << std::endl;
+		std::cerr << RED << "Server port not set" << std::endl << RESET;
 		return (1);
 	}
 	if (server_name == "") {
-		std::cerr << "Server name not set" << std::endl;
+		std::cerr << RED << "Server name not set" << std::endl << RESET;
 		return (1);
 	}
 	if (root_dir == "") {
-		std::cerr << "Root directory not set" << std::endl;
+		std::cerr << RED << "Root directory not set" << std::endl << RESET;
 		return (1);
 	}
 	if (max_body_size == 0) {
-		std::cerr << "Max body size not set" << std::endl;
+		std::cerr << RED << "Max body size not set" << std::endl << RESET;
 		return (1);
 	}
 	if (default_file == "") {
-		std::cerr << "Default file not set" << std::endl;
+		std::cerr << RED << "Default file not set" << std::endl << RESET;
 		return (1);
 	}
 	if (error_pages.empty()) {
-		std::cerr << "Error pages not set" << std::endl;
+		std::cerr << RED << "Error pages not set" << std::endl << RESET;
 		return (1);
 	}
 	if (allowed_methods.empty()) {
-		std::cerr << "Allowed methods not set" << std::endl;
+		std::cerr << RED << "Allowed methods not set" << std::endl << RESET;
 		return (1);
 	}
 	return (0);

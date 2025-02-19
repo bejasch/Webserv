@@ -271,7 +271,7 @@ void	HttpRes::DELETE(void) {
 	if (remove(_serverPath.c_str()) == 0) {				// Delete the file
 		_httpStatus = 204;
 	} else {
-		std::cerr << "Error deleting file: " << strerror(errno) << std::endl;
+		std::cerr << RED << "Error deleting file: " << strerror(errno) << std::endl << RESET;
 		_httpStatus = 500;
 	}
 }
@@ -290,7 +290,7 @@ void	HttpRes::determineContentType(void) {
 bool	HttpRes::parseFile(void) {
 	std::ifstream file((_server->getConfig()->getRootDirConfig() + _target).c_str());
 	if (!file.is_open()) {
-		std::cerr << "Error: Could not open file " << _target << std::endl;
+		std::cerr << RED << "Error: Could not open file " << _target << std::endl << RESET;
 		_httpStatus = 404;
 		return (false);
 	}

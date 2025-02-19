@@ -86,18 +86,18 @@ void	saveGuestbookEntry(const std::string &name, const std::string &message) {
 		return;
 	}
 	if (name.find('|') != std::string::npos || message.find('|') != std::string::npos) {
-		std::cerr << "Warning: Invalid characters in guestbook entry.\n";
+		std::cerr << RED << "Warning: Invalid characters in guestbook entry.\n" << RESET;
 		return;
 	}
 	if (name.length() > 100 || message.length() > 1000) {
-		std::cerr << "Warning: Guestbook entry too long.\n";
+		std::cerr << RED << "Warning: Guestbook entry too long.\n" << RESET;
 		return;
 	}
 	std::ofstream file(GUESTBOOK_FILE, std::ios::app); // Append mode
 	if (file) {
 		file << name << "|" << message << "\n";				// Append entry to file	
 	} else {
-		std::cerr << "Error: Could not open file " << GUESTBOOK_FILE << " for writing.\n";
+		std::cerr << RED << "Error: Could not open file " << GUESTBOOK_FILE << " for writing.\n" << RESET;
 	}
 }
 
@@ -210,7 +210,7 @@ char	*cpp_strdup(const std::string str) {
 
 	dup = new char[str.size() + 1];
 	if (dup == NULL) {
-		std::cerr << "Failed to allocate memory: " << std::strerror(errno) << std::endl;
+		std::cerr << RED << "Failed to allocate memory: " << std::strerror(errno) << std::endl << RESET;
 		return NULL;
 	}
 	std::copy(str.begin(), str.end(), dup);

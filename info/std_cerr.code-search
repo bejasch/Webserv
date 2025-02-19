@@ -1,0 +1,293 @@
+# Query: std::cerr
+# ContextLines: 1
+
+71 results - 9 files
+
+info/poll_VS_epoll.md:
+  80  if (epfd < 0) {
+  81:     std::cerr << "epoll_create failed!" << std::endl;
+  82      exit(EXIT_FAILURE);
+
+src/CGI.cpp:
+   34  	if (this->envp == NULL) {
+   35: 		std::cerr << RED << "Failed to allocate memory for envp: " << std::strerror(errno) << std::endl << RESET;
+   36  		return(1);
+
+   43  	if (this->argv == NULL) {
+   44: 		std::cerr << RED << "Failed to allocate memory for argv: " << std::strerror(errno) << std::endl << RESET;
+   45  		return(1);
+
+   54  	if (setAllEnv(httpResponse)) {
+   55: 		std::cerr << RED << "Failed to set env variables: " << std::strerror(errno) << std::endl    << RESET;
+   56  		httpResponse.setStatus(500);
+
+   62  	if (access(scriptPath.c_str(), X_OK) == -1) {
+   63: 		std::cerr << RED << "CGI script error for requested path: " << scriptPath << std::endl  << RESET;
+   64  		httpResponse.setStatus(403);
+
+   74  	if (pipe(pipe_fd) == -1) {
+   75: 		std::cerr << RED << "Failed to create pipe: " << std::strerror(errno) << std::endl  << RESET;
+   76  		httpResponse.setStatus(500);
+
+   80  	if (pid == -1) {
+   81: 		std::cerr << RED << "Failed to fork: " << std::strerror(errno) << std::endl << RESET;
+   82  		httpResponse.setStatus(500);
+
+  115  	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, pipe_fd[0], &ev) == -1) {
+  116: 		std::cerr << "Failed to add pipe to epoll" << std::endl;
+  117  		close(pipe_fd[0]);
+
+  128  	if (setAllEnv(httpResponse)){
+  129: 		std::cerr << "Failed to set env variables: " << std::strerror(errno) << std::endl;
+  130  		httpResponse.setStatus(500);
+
+  147  	if (access(scriptPath.c_str(), X_OK) == -1) {
+  148: 		std::cerr << "CGI script error for requested path: " << scriptPath << std::endl;
+  149  		httpResponse.setStatus(403);
+
+  163  	if (pipe(inputPipe) == -1 || pipe(outputPipe) == -1) {
+  164: 		std::cerr << "Pipe error: " << std::strerror(errno) << std::endl;
+  165  		httpResponse.setStatus(500);
+
+  174  	if (pid == -1) {
+  175: 		std::cerr << "Fork error: " << std::strerror(errno) << std::endl;
+  176  		httpResponse.setStatus(500);
+
+  192  		if (execve(argv[0], argv, envp) == -1) {
+  193: 			std::cerr << "Failed to execute script: " << std::strerror(errno) << std::endl;
+  194  			freeEnvironment();
+
+  216  		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, outputPipe[0], &ev) == -1) {
+  217: 			std::cerr << "Failed to add pipe to epoll" << std::endl;
+  218  			close(outputPipe[0]);
+
+src/Config.cpp:
+  151  	if (server_port == 0) {
+  152: 		std::cerr << "Server port not set" << std::endl;
+  153  		return (1);
+
+  155  	if (server_name == "") {
+  156: 		std::cerr << "Server name not set" << std::endl;
+  157  		return (1);
+
+  159  	if (root_dir == "") {
+  160: 		std::cerr << "Root directory not set" << std::endl;
+  161  		return (1);
+
+  163  	if (max_body_size == 0) {
+  164: 		std::cerr << "Max body size not set" << std::endl;
+  165  		return (1);
+
+  167  	if (default_file == "") {
+  168: 		std::cerr << "Default file not set" << std::endl;
+  169  		return (1);
+
+  171  	if (error_pages.empty()) {
+  172: 		std::cerr << "Error pages not set" << std::endl;
+  173  		return (1);
+
+  175  	if (allowed_methods.empty()) {
+  176: 		std::cerr << "Allowed methods not set" << std::endl;
+  177  		return (1);
+
+src/HttpReq.cpp:
+  207  	if (_headers.empty()) {
+  208: 		std::cerr << "Error: Request contains no headers.\n";
+  209  		_httpStatus = 400; // Bad Request
+
+  214  	if (_protocol == "HTTP/1.1" && _headers.find("host") == _headers.end()) {
+  215: 		std::cerr << "Error: Missing 'Host' header in HTTP/1.1 request.\n";
+  216  		_httpStatus = 400; // Bad Request
+
+  224  	if (hasContentLength && hasTransferEncoding) {
+  225: 		std::cerr << "Error: Both 'Content-Length' and 'Transfer-Encoding' are present.\n";
+  226  		_httpStatus = 400; // Bad Request
+
+  237  		} else {
+  238: 			std::cerr << "Error: Unsupported Transfer-Encoding: " << encoding << "\n";
+  239  			_httpStatus = 501; // Not Implemented
+
+src/HttpRes.cpp:
+  273  	} else {
+  274: 		std::cerr << "Error deleting file: " << strerror(errno) << std::endl;
+  275  		_httpStatus = 500;
+
+  292  	if (!file.is_open()) {
+  293: 		std::cerr << "Error: Could not open file " << _target << std::endl;
+  294  		_httpStatus = 404;
+
+src/main.cpp:
+  4  	if (argc != 2) {
+  5: 		std::cerr << RED <<"Usage: ./webserver <config_file>" << RESET << std::endl;
+  6  		return 1;
+
+src/Server.cpp:
+   41  	if (server_fd == 0 || server_fd == -1) {
+   42: 		std::cerr << "Socket creation failed: " << std::strerror(errno) << std::endl;
+   43  		return(1);
+
+   47  	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, (char*)&opt, sizeof(opt)) < 0) {
+   48: 		std::cerr << "Setsockopt failed: " << std::strerror(errno) << std::endl;
+   49  		return(1);
+
+   54  	if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) { // bind server file descriptor to socket address
+   55: 		std::cerr << "Bind failed: " << std::strerror(errno) << std::endl;
+   56  		return(1);
+
+   66  	if (client_fd < 0) {
+   67: 		std::cerr << "Failed to accept connection: " << std::strerror(errno) << std::endl;
+   68  		return (1);
+
+   76  	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1) {
+   77: 		std::cerr << "Failed to add client_fd to epoll: " << std::strerror(errno) << std::endl;
+   78  		close(client_fd);
+
+   94  		if (epoll_ctl(server_manager.getEpollFd(), EPOLL_CTL_DEL, client_fd, NULL) == -1) {
+   95: 			std::cerr << "Failed to delete client_fd from epoll for reading: " << std::strerror(errno) << std::endl;
+   96  		}
+
+   99  		if (valread == 0) {
+  100: 			std::cerr << RED << "Connection closed by client with client_fd " << client_fd << RESET << std::endl;
+  101  			return(0);
+  102  		} else if (valread == -1) {
+  103: 			std::cerr << "Error reading from socket with client_fd: " << client_fd << std::endl;
+  104  			return(1);
+
+  115  			if (epoll_ctl(server_manager.getEpollFd(), EPOLL_CTL_DEL, client_fd, NULL) == -1)
+  116: 				std::cerr << "Failed to delete client_fd to epoll for writing: " << std::strerror(errno) << std::endl;
+  117  			// std::cout << "CGI response will be created for client_fd: " << client_fd << std::endl;
+
+  124  		if (epoll_ctl(server_manager.getEpollFd(), EPOLL_CTL_MOD, client_fd, &ev) == -1) {
+  125: 			std::cerr << "Failed to add client_fd to epoll for writing: " << std::strerror(errno) << std::endl;
+  126  			pending_responses.erase(client_fd);
+
+  141  		if (response_cstr == NULL || size == 0) {
+  142: 			std::cerr << "Response was empty -> Deleting pending response\n";
+  143  		} else {
+
+  145  			if (sent < 0) {
+  146: 				std::cerr << "Writing to socket failed.\n";
+  147  			}
+
+  159  	if (epoll_ctl(server_manager.getEpollFd(), EPOLL_CTL_DEL, client_fd, NULL) == -1) {
+  160: 		std::cerr << RED << "Failed to delete client_fd " << client_fd 
+  161  				<< " from epoll: " << std::strerror(errno) << std::endl << RESET;
+
+src/ServerManager.cpp:
+   36  	if (config_file.find(".conf") == std::string::npos) {
+   37: 		std::cerr << "Invalid configuration file format: " << std::strerror(errno) << std::endl;
+   38  		return (1);
+
+   40  	if (!file.is_open()) {
+   41: 		std::cerr << "Failed to open configuration file: " << std::strerror(errno) << std::endl;
+   42  		return (1);
+
+   52  			if (server == NULL || config == NULL) {
+   53: 				std::cerr << "Failed to allocate memory for server or config: " << std::strerror(errno) << std::endl;
+   54  				return 1;
+
+   73  			if (route == NULL) {
+   74: 				std::cerr << "Failed to allocate memory for route: " << std::strerror(errno) << std::endl;
+   75  				return 1;
+
+   81  			if (line.empty()) {
+   82: 				std::cerr << "Discarding unfinished route: " << route->getPath() << std::endl;
+   83  				delete route;
+
+   90  	if (servers.size() == 0) {
+   91: 		std::cerr << "No correctly initialised servers found in configuration file" << std::endl;
+   92  		return 1;
+
+  103  	if (epoll_fd == -1) {
+  104: 		std::cerr << "Failed to create epoll instance: " << std::strerror(errno) << std::endl;
+  105  		return;
+
+  107  	if (signal(SIGINT, ServerManager::signalHandler) == SIG_ERR) {
+  108: 		std::cerr << "Error with signal: " << std::strerror(errno) << std::endl;
+  109  		std::exit(EXIT_FAILURE);
+
+  118  		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &ev) == -1) {
+  119: 			std::cerr << "Failed to add server_fd to epoll: " << std::strerror(errno) << std::endl;
+  120  			return;
+
+  140  				if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL) == -1) {
+  141: 					std::cerr << "Failed to delete client_fd " << client_fd 
+  142  							<< " from epoll: " << std::strerror(errno) << std::endl;
+
+  169  			if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, NULL) == -1) {
+  170: 				std::cerr << "Failed to delete pipe_fd " << pipe_fd 
+  171  						<< " from epoll: " << std::strerror(errno) << std::endl;
+
+  189  			if (errno == EINTR) continue; // Ignore interrupted syscalls
+  190: 			std::cerr << "Epoll_wait failed: " << std::strerror(errno) << std::endl;
+  191  			return (1);
+
+  194  			if (dispatchEvent(events[i])) {
+  195: 				std::cerr << "Error handling event" << std::endl;
+  196  			}
+
+  223  			if (server->acceptConnection(epoll_fd)) {
+  224: 				std::cerr << "Failed to accept connection for server_fd: " << server->getServerFd() << std::endl;
+  225  				return (1);
+
+  243  	//if it gets here, it means the fd is not recognized
+  244: 	std::cerr << "Unknown fd: " << event.data.fd << std::endl;
+  245  	return (1);
+
+  290  		else if (!line.empty())
+  291: 			std::cerr << "Unknown directive in Server Configs: " << line << std::endl;
+  292  	}
+
+  307  		if (braceCount < 0) {
+  308: 			std::cerr << "Error: Mismatched braces in config file!" << std::endl;
+  309  			return NULL;
+
+  342  			else
+  343: 				std::cerr << "Invalid autoindex directive: " << line << std::endl;
+  344  		}
+  345  		else if (!line.empty())
+  346: 			std::cerr << "Unknown directive: " << line << std::endl;
+  347  	}
+  348: 	std::cerr << "Error: Unclosed route block detected." << std::endl;
+  349  	return "";
+
+  360  		if (servers[i]->getConfig()->getPort() == port) {
+  361: 			std::cerr << "Server not added. Port " << port << " already in use." << std::endl;
+  362  			return 1;
+
+  457  		if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, NULL) == -1) {
+  458: 			std::cerr << "Failed to remove pipe from epoll: " << std::strerror(errno) << std::endl;
+  459  		}
+
+  472  	if (cgi_pipes.find(pipe_fd) == cgi_pipes.end()) {
+  473: 		std::cerr << "Error: CGI pipe not found in cgi_pipes map.\n";
+  474  		return (1);
+
+  477  	if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, NULL) == -1) {
+  478: 		std::cerr << "Failed to remove pipe from epoll: " << std::strerror(errno) << std::endl;
+  479  	}
+
+  504  	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, requestInfo.client_fd, &ev) == -1) {
+  505: 		std::cerr << "Failed to add CGI GET client_fd " << requestInfo.client_fd 
+  506  				<< " to epoll for writing: " << std::strerror(errno) << std::endl;
+
+  526  	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, requestInfo.client_fd, &ev) == -1) {
+  527: 		std::cerr << "Failed to add CGI POST client_fd to epoll for writing: " << std::strerror(errno) << std::endl;
+  528  		requestInfo.server->deleteClientResponse(requestInfo.client_fd);
+
+src/Utils.cpp:
+   88  	if (name.find('|') != std::string::npos || message.find('|') != std::string::npos) {
+   89: 		std::cerr << "Warning: Invalid characters in guestbook entry.\n";
+   90  		return;
+
+   92  	if (name.length() > 100 || message.length() > 1000) {
+   93: 		std::cerr << "Warning: Guestbook entry too long.\n";
+   94  		return;
+
+   99  	} else {
+  100: 		std::cerr << "Error: Could not open file " << GUESTBOOK_FILE << " for writing.\n";
+  101  	}
+
+  212  	if (dup == NULL) {
+  213: 		std::cerr << "Failed to allocate memory: " << std::strerror(errno) << std::endl;
+  214  		return NULL;

@@ -32,7 +32,7 @@ int CGI::setAllEnv(HttpRes &httpResponse) {
 	env["REDIRECT_STATUS"] = "200";
 	this->envp = new char*[this->env.size() + 1];
 	if (this->envp == NULL) {
-		std::cerr << "Failed to allocate memory for envp: " << std::strerror(errno) << std::endl;
+		std::cerr << RED << "Failed to allocate memory for envp: " << std::strerror(errno) << std::endl << RESET;
 		return(1);
 	}
 	std::map<std::string, std::string>::const_iterator it = this->env.begin();
@@ -41,7 +41,7 @@ int CGI::setAllEnv(HttpRes &httpResponse) {
 	this->envp[this->env.size()] = NULL;
 	this->argv = new char*[3];
 	if (this->argv == NULL) {
-		std::cerr << "Failed to allocate memory for argv: " << std::strerror(errno) << std::endl;
+		std::cerr << RED << "Failed to allocate memory for argv: " << std::strerror(errno) << std::endl << RESET;
 		return(1);
 	}
 	this->argv[0] = NULL;
@@ -52,7 +52,7 @@ int CGI::setAllEnv(HttpRes &httpResponse) {
 
 std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
 	if (setAllEnv(httpResponse)) {
-		std::cerr << "Failed to set env variables: " << std::strerror(errno) << std::endl;
+		std::cerr << RED << "Failed to set env variables: " << std::strerror(errno) << std::endl << RESET;
 		httpResponse.setStatus(500);
 		return "";
 	}
@@ -60,7 +60,7 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
 	std::string scriptPath = env["DOCUMENT_ROOT"] + env["SCRIPT_NAME"];
 	std::cout << "Executing CGI script (GET): " << scriptPath << std::endl;
 	if (access(scriptPath.c_str(), X_OK) == -1) {
-		std::cerr << "CGI script error for requested path: " << scriptPath << std::endl;
+		std::cerr << RED << "CGI script error for requested path: " << scriptPath << std::endl << RESET;
 		httpResponse.setStatus(403);
 		return "";
 	}
@@ -72,13 +72,13 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
 
 	int pipe_fd[2];
 	if (pipe(pipe_fd) == -1) {
-		std::cerr << "Failed to create pipe: " << std::strerror(errno) << std::endl;
+		std::cerr << RED << "Failed to create pipe: " << std::strerror(errno) << std::endl << RESET;
 		httpResponse.setStatus(500);
 		return "";
 	}
 	pid = fork();
 	if (pid == -1) {
-		std::cerr << "Failed to fork: " << std::strerror(errno) << std::endl;
+		std::cerr << RED << "Failed to fork: " << std::strerror(errno) << std::endl << RESET;
 		httpResponse.setStatus(500);
 		return "";
 	}
@@ -96,15 +96,15 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
 	close(pipe_fd[1]);
 	fcntl(pipe_fd[0], F_SETFL, O_NONBLOCK);
 
-	ServerManager::CgiRequestInfo requestInfo;
+	ServerManager &serverManager = httpResponse.getServer()->getServerManager();
+	ServerManager::CgiRequestInfo	&requestInfo = serverManager.cgi_pipes[pipe_fd[0]];
 	requestInfo.client_fd = client_fd;
 	requestInfo.method = "GET";
 	requestInfo.pid = pid;
 	requestInfo.start_time = time(NULL);
 	requestInfo.server = httpResponse.getServer();
-	requestInfo.guestbookName = "";
-	ServerManager &serverManager = httpResponse.getServer()->getServerManager();
-	serverManager.cgi_pipes[pipe_fd[0]] = requestInfo;
+	// requestInfo.guestbookName = "";
+	// serverManager.cgi_pipes[pipe_fd[0]] = requestInfo;
 
 	// Add to epoll
 	epoll_event ev;
@@ -113,7 +113,7 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
 
 	int epoll_fd = httpResponse.getServer()->getServerManager().getEpollFd();
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, pipe_fd[0], &ev) == -1) {
-		std::cerr << "Failed to add pipe to epoll" << std::endl;
+		std::cerr << RED << "Failed to add pipe to epoll" << std::endl << RESET;
 		close(pipe_fd[0]);
 		httpResponse.setStatus(500);
 		return "";
@@ -126,7 +126,7 @@ std::string CGI::executeCGI_GET(HttpRes &httpResponse, int client_fd) {
 std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::string, std::string> &formData, int client_fd) {
 	std::string scriptPath;
 	if (setAllEnv(httpResponse)){
-		std::cerr << "Failed to set env variables: " << std::strerror(errno) << std::endl;
+		std::cerr << RED << "Failed to set env variables: " << std::strerror(errno) << std::endl << RESET;
 		httpResponse.setStatus(500);
 		return "";
 	}
@@ -145,7 +145,7 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
 	}
 	std::cout << "Executing CGI script (POST): " << scriptPath << std::endl;
 	if (access(scriptPath.c_str(), X_OK) == -1) {
-		std::cerr << "CGI script error for requested path: " << scriptPath << std::endl;
+		std::cerr << RED << "CGI script error for requested path: " << scriptPath << std::endl << RESET;
 		httpResponse.setStatus(403);
 		return "";
 	}
@@ -161,7 +161,7 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
 	// Create two pipes: one for input (stdin) and one for output (stdout)
 	int inputPipe[2], outputPipe[2];
 	if (pipe(inputPipe) == -1 || pipe(outputPipe) == -1) {
-		std::cerr << "Pipe error: " << std::strerror(errno) << std::endl;
+		std::cerr << RED << "Pipe error: " << std::strerror(errno) << std::endl << RESET;
 		httpResponse.setStatus(500);
 		return "";
 	}
@@ -172,7 +172,7 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
 	// Fork to execute the CGI script
 	pid_t pid = fork();
 	if (pid == -1) {
-		std::cerr << "Fork error: " << std::strerror(errno) << std::endl;
+		std::cerr << RED << "Fork error: " << std::strerror(errno) << std::endl << RESET;
 		httpResponse.setStatus(500);
 		return "";
 	} else if (pid == 0) {
@@ -190,7 +190,7 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
 
 		// Execute the CGI script using execve
 		if (execve(argv[0], argv, envp) == -1) {
-			std::cerr << "Failed to execute script: " << std::strerror(errno) << std::endl;
+			std::cerr << RED << "Failed to execute script: " << std::strerror(errno) << std::endl << RESET;
 			freeEnvironment();
 			ServerManager &serverManager = httpResponse.getServer()->getServerManager();
 			serverManager.freeResources();
@@ -214,7 +214,7 @@ std::string CGI::executeCGI_POST(HttpRes &httpResponse, const std::map<std::stri
 
 		int epoll_fd = httpResponse.getServer()->getServerManager().getEpollFd();
 		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, outputPipe[0], &ev) == -1) {
-			std::cerr << "Failed to add pipe to epoll" << std::endl;
+			std::cerr << RED << "Failed to add pipe to epoll" << std::endl << RESET;
 			close(outputPipe[0]);
 			httpResponse.setStatus(500);
 			return "";

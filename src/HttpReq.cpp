@@ -205,14 +205,14 @@ bool	HttpReq::parseHeaders(void) {
 bool HttpReq::verifyHeaders() {
 	// Reject completely empty headers
 	if (_headers.empty()) {
-		std::cerr << "Error: Request contains no headers.\n";
+		std::cerr << RED << "Error: Request contains no headers.\n" << RESET;
 		_httpStatus = 400; // Bad Request
 		return (false);
 	}
 
 	// Check Host header (required in HTTP/1.1)
 	if (_protocol == "HTTP/1.1" && _headers.find("host") == _headers.end()) {
-		std::cerr << "Error: Missing 'Host' header in HTTP/1.1 request.\n";
+		std::cerr << RED << "Error: Missing 'Host' header in HTTP/1.1 request.\n" << RESET;
 		_httpStatus = 400; // Bad Request
 		return (false);
 	}
@@ -222,7 +222,7 @@ bool HttpReq::verifyHeaders() {
 	bool	hasTransferEncoding = _headers.find("transfer-encoding") != _headers.end();
 
 	if (hasContentLength && hasTransferEncoding) {
-		std::cerr << "Error: Both 'Content-Length' and 'Transfer-Encoding' are present.\n";
+		std::cerr << RED << "Error: Both 'Content-Length' and 'Transfer-Encoding' are present.\n" << RESET;
 		_httpStatus = 400; // Bad Request
 		return (false);
 	}
@@ -235,7 +235,7 @@ bool HttpReq::verifyHeaders() {
 		if (encoding == "chunked") {
 			_isChunked = true;
 		} else {
-			std::cerr << "Error: Unsupported Transfer-Encoding: " << encoding << "\n";
+			std::cerr << RED << "Error: Unsupported Transfer-Encoding: " << encoding << "\n" << RESET;
 			_httpStatus = 501; // Not Implemented
 			return (false);
 		}

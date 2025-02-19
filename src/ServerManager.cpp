@@ -34,11 +34,11 @@ int ServerManager::setServers(const std::string &config_file)
 	Route *route = NULL;
 
 	if (config_file.find(".conf") == std::string::npos) {
-		std::cerr << "Invalid configuration file format: " << std::strerror(errno) << std::endl;
+		std::cerr << RED << "Invalid configuration file format: " << std::strerror(errno) << std::endl << RESET;
 		return (1);
 	}
 	if (!file.is_open()) {
-		std::cerr << "Failed to open configuration file: " << std::strerror(errno) << std::endl;
+		std::cerr << RED << "Failed to open configuration file: " << std::strerror(errno) << std::endl << RESET;
 		return (1);
 	}
 	while (std::getline(file, line)) {
@@ -50,7 +50,7 @@ int ServerManager::setServers(const std::string &config_file)
 			server = new Server(*this);
 			config = new Config();
 			if (server == NULL || config == NULL) {
-				std::cerr << "Failed to allocate memory for server or config: " << std::strerror(errno) << std::endl;
+				std::cerr << RED << "Failed to allocate memory for server or config: " << std::strerror(errno) << std::endl << RESET;
 				return 1;
 			}
 			// Call fillConfig to parse and fill the server's configuration
@@ -71,7 +71,7 @@ int ServerManager::setServers(const std::string &config_file)
 		if (line.find("location") != std::string::npos && server != NULL) {
 			route = new Route();
 			if (route == NULL) {
-				std::cerr << "Failed to allocate memory for route: " << std::strerror(errno) << std::endl;
+				std::cerr << RED << "Failed to allocate memory for route: " << std::strerror(errno) << std::endl << RESET;
 				return 1;
 			}
 			std::string path = line.substr(line.find("location") + std::string("location").length() + 1, line.find("{") - line.find(" ") - 2);
@@ -79,7 +79,7 @@ int ServerManager::setServers(const std::string &config_file)
 			std::cout << BLUE << "\t🌱 Route path: " << route->getPath() << RESET << std::endl;
 			line = fillRoute(line, file, route);
 			if (line.empty()) {
-				std::cerr << "Discarding unfinished route: " << route->getPath() << std::endl;
+				std::cerr << RED << "Discarding unfinished route: " << route->getPath() << std::endl << RESET;
 				delete route;
 				route = NULL;
 				continue;
@@ -88,7 +88,7 @@ int ServerManager::setServers(const std::string &config_file)
 		}
 	}
 	if (servers.size() == 0) {
-		std::cerr << "No correctly initialised servers found in configuration file" << std::endl;
+		std::cerr << RED << "No correctly initialised servers found in configuration file" << std::endl << RESET;
 		return 1;
 	}
 	validateRoutes();
@@ -101,11 +101,11 @@ void ServerManager::startServers() {
 	// // Create epoll instance
 	epoll_fd = epoll_create1(0);
 	if (epoll_fd == -1) {
-		std::cerr << "Failed to create epoll instance: " << std::strerror(errno) << std::endl;
+		std::cerr << RED << "Failed to create epoll instance: " << std::strerror(errno) << std::endl << RESET;
 		return;
 	}
 	if (signal(SIGINT, ServerManager::signalHandler) == SIG_ERR) {
-		std::cerr << "Error with signal: " << std::strerror(errno) << std::endl;
+		std::cerr << RED << "Error with signal: " << std::strerror(errno) << std::endl << RESET;
 		std::exit(EXIT_FAILURE);
 	}
 	// Add all server_fd to epoll instance to monitor incoming connections
@@ -116,7 +116,7 @@ void ServerManager::startServers() {
 		ev.events = EPOLLIN;
 		ev.data.fd = server_fd;
 		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &ev) == -1) {
-			std::cerr << "Failed to add server_fd to epoll: " << std::strerror(errno) << std::endl;
+			std::cerr << RED << "Failed to add server_fd to epoll: " << std::strerror(errno) << std::endl << RESET;
 			return;
 		}
 	}
@@ -137,6 +137,10 @@ void	ServerManager::checkResponseTimeouts(void) {
 			time_t start_time = response_it->second.getCreationTime();
 			if (now - start_time > RESPONSE_TIMEOUT) {
 				std::cout << RED << "Timeout exceeded → Close connection to client_fd: " << client_fd << std::endl << RESET;
+				if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL) == -1) {
+					std::cerr << RED << "Failed to delete client_fd " << client_fd
+							<< " from epoll: " << std::strerror(errno) << std::endl << RESET;
+				}
 				close(client_fd);
 				pending_responses.erase(client_fd);
 				response_it = pending_responses.begin();
@@ -162,8 +166,11 @@ void	ServerManager::checkCGITimeouts(void) {
 			std::cout << RED << "Timeout exceeded → Kill CGI process " << pid << std::endl << RESET;
 			kill(pid, SIGKILL);
 			waitpid(pid, NULL, 0);
-			close(pipe_fd); // Close the pipe (automatically removes it from the epoll instance)
-
+			if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, NULL) == -1) {
+				std::cerr << RED << "Failed to delete pipe_fd " << pipe_fd
+						<< " from epoll: " << std::strerror(errno) << std::endl << RESET;
+			}
+			close(pipe_fd);	// Close the pipe
 			cgi_pipes.erase(pipe_fd);
 			it = cgi_pipes.begin();
 		} else {
@@ -180,12 +187,12 @@ int ServerManager::handleEvents() {
 		int n = epoll_wait(epoll_fd, events, MAX_EVENTS, WAIT_CHECK);
 		if (n == -1) {
 			if (errno == EINTR) continue; // Ignore interrupted syscalls
-			std::cerr << "Epoll_wait failed: " << std::strerror(errno) << std::endl;
+			std::cerr << RED << "Epoll_wait failed: " << std::strerror(errno) << std::endl << RESET;
 			return (1);
 		}
 		for (int i = 0; i < n; ++i) {
 			if (dispatchEvent(events[i])) {
-				std::cerr << "Error handling event" << std::endl;
+				std::cerr << RED << "Error handling event" << std::endl << RESET;
 			}
 		}
 		checkResponseTimeouts();
@@ -196,21 +203,25 @@ int ServerManager::handleEvents() {
 }
 
 int ServerManager::dispatchEvent(const epoll_event& event) {
-	if (event.events & EPOLLIN && cgi_pipes.find(event.data.fd) != cgi_pipes.end()) {
-		if(handleCGIRequest(event.data.fd))
-			return(1);
-		return(0);
-	} else if (event.events & EPOLLHUP) {
-		if(handleCGIResponse(event.data.fd))
-			return(1);
-		return(0);
+	// std::cout << "Dispatching event for fd: " << event.data.fd 
+	// 		<< " with event type: " << event.events << std::endl;
+	if (cgi_pipes.find(event.data.fd) != cgi_pipes.end()) {
+		if (event.events & EPOLLIN) {
+			if(handleCGIRequest(event.data.fd))
+				return (1);
+			return (0);
+		} else if (event.events & EPOLLHUP) {
+			if(handleCGIResponse(event.data.fd))
+				return (1);
+			return (0);
+		}
 	}
 	for (unsigned long i = 0; i < servers.size(); ++i) {
 		Server *server = servers[i];
 		// this implies its a new connection, that needs to be added to epoll instance
 		if (event.data.fd == server->getServerFd()) {
 			if (server->acceptConnection(epoll_fd)) {
-				std::cerr << "Failed to accept connection for server_fd: " << server->getServerFd() << std::endl;
+				std::cerr << RED << "Failed to accept connection for server_fd: " << server->getServerFd() << std::endl << RESET;
 				return (1);
 			}
 			return (0);
@@ -230,7 +241,7 @@ int ServerManager::dispatchEvent(const epoll_event& event) {
 		}
 	}
 	//if it gets here, it means the fd is not recognized
-	std::cerr << "Unknown fd: " << event.data.fd << std::endl;
+	std::cerr << RED << "Unknown fd: " << event.data.fd << std::endl << RESET;
 	return (1);
 }
 
@@ -277,7 +288,7 @@ std::string ServerManager::fillConfig(std::string line, std::ifstream &file, Con
 			config->setAllowedMethods(splitString(methods, ' '));
 		}
 		else if (!line.empty())
-			std::cerr << "Unknown directive in Server Configs: " << line << std::endl;
+			std::cerr << RED << "Unknown directive in Server Configs: " << line << std::endl << RESET;
 	}
 	return NULL;
 }
@@ -294,7 +305,7 @@ std::string ServerManager::fillRoute(std::string line, std::ifstream &file, Rout
 				return line;
 		}
 		if (braceCount < 0) {
-			std::cerr << "Error: Mismatched braces in config file!" << std::endl;
+			std::cerr << RED << "Error: Mismatched braces in config file!" << std::endl << RESET;
 			return NULL;
 		}
 		if (line.find("location") != std::string::npos)
@@ -329,12 +340,12 @@ std::string ServerManager::fillRoute(std::string line, std::ifstream &file, Rout
 			else if (autoindex.find("off") != std::string::npos)
 				route->setAutoindex(false);
 			else
-				std::cerr << "Invalid autoindex directive: " << line << std::endl;
+				std::cerr << RED << "Invalid autoindex directive: " << line << std::endl << RESET;
 		}
 		else if (!line.empty())
-			std::cerr << "Unknown directive: " << line << std::endl;
+			std::cerr << RED << "Unknown directive: " << line << std::endl << RESET;
 	}
-	std::cerr << "Error: Unclosed route block detected." << std::endl;
+	std::cerr << RED << "Error: Unclosed route block detected." << std::endl << RESET;
 	return "";
 }
 
@@ -347,7 +358,7 @@ void ServerManager::printConfigAll() {
 int ServerManager::portCheck(int port) {
 	for (unsigned long i = 0; i < servers.size(); i++) {
 		if (servers[i]->getConfig()->getPort() == port) {
-			std::cerr << "Server not added. Port " << port << " already in use." << std::endl;
+			std::cerr << RED << "Server not added. Port " << port << " already in use." << std::endl << RESET;
 			return 1;
 		}
 	}
@@ -431,32 +442,41 @@ void ServerManager::validateRoutes() {
 int ServerManager::handleCGIRequest(int pipe_fd) {
 	char buffer[30000] = {0};
 	CgiRequestInfo &requestInfo = cgi_pipes[pipe_fd];
-	int bytes_read = read(pipe_fd, buffer, sizeof(buffer));
+	ssize_t	bytes_read = read(pipe_fd, buffer, sizeof(buffer));
 	if (bytes_read > 0) {
 		requestInfo.output.append(buffer, bytes_read);
-		return 0;
+		return (0);
 	}
-	else if (bytes_read == 0)
+	else if (bytes_read == 0) {
 		std::cout << "CGI process closed the pipe.\n";
-	else if (bytes_read == -1)
-		std::cout << "Read error:" << std::endl;
-	// Clean up pipe resources
-	close(pipe_fd);
-	if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, NULL) == -1) {
-		std::cerr << "Failed to remove pipe from epoll: " << std::strerror(errno) << std::endl;
+		handleCGIResponse(pipe_fd);
+		return (0);
 	}
-	cgi_pipes.erase(pipe_fd);
-	return 1;
+	else if (bytes_read == -1) {
+		std::cout << "Read error in handleCGIRequest!" << std::endl;
+		if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, NULL) == -1) {
+			std::cerr << RED << "Failed to remove pipe from epoll: " << std::strerror(errno) << std::endl << RESET;
+		}
+		close(pipe_fd);
+		cgi_pipes.erase(pipe_fd);
+		return (1);
+	}
+	std::cout << "DOWN IN handleCGI - Erasing CGI_pipes: " << pipe_fd 
+			<< " and bytes_read with: " << bytes_read << std::endl;
+	return (1);
 }
 
 // case EPOLLHUP
 int ServerManager::handleCGIResponse(int pipe_fd) {
 	// Find the client_fd that requested the CGI execution
 	if (cgi_pipes.find(pipe_fd) == cgi_pipes.end()) {
-		std::cerr << "Error: CGI pipe not found in cgi_pipes map.\n";
-		return 1;
+		std::cerr << RED << "Error: CGI pipe not found in cgi_pipes map.\n" << RESET;
+		return (1);
 	}
 	CgiRequestInfo &requestInfo = cgi_pipes[pipe_fd];
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, NULL) == -1) {
+		std::cerr << RED << "Failed to remove pipe from epoll: " << std::strerror(errno) << std::endl << RESET;
+	}
 	close(pipe_fd);	// Close the pipe (automatically removes it from the epoll instance)
 
 	// Send the CGI output to the client
@@ -464,13 +484,10 @@ int ServerManager::handleCGIResponse(int pipe_fd) {
 		writeCGIResponseGET(requestInfo);
 	else if (requestInfo.method == "POST")
 		writeCGIResponsePOST(requestInfo);
-	else {
-		std::cerr << "Invalid CGI method: " << requestInfo.method << std::endl;
-		return 1;
-	}
+
 	cgi_pipes.erase(pipe_fd);
 	
-	return 0;
+	return (0);
 }
 
 int	ServerManager::writeCGIResponseGET(CgiRequestInfo &requestInfo) {
@@ -485,12 +502,13 @@ int	ServerManager::writeCGIResponseGET(CgiRequestInfo &requestInfo) {
 	ev.data.fd = requestInfo.client_fd;
 	// std::cout << "Adding client_fd to epoll for writing" << std::endl;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, requestInfo.client_fd, &ev) == -1) {
-		std::cerr << "Failed to add client_fd to epoll for writing: " << std::strerror(errno) << std::endl;
+		std::cerr << RED << "Failed to add CGI GET client_fd " << requestInfo.client_fd
+				<< " to epoll for writing: " << std::strerror(errno) << std::endl << RESET;
 		requestInfo.server->deleteClientResponse(requestInfo.client_fd);
-		close(requestInfo.client_fd); // Clean up if adding to epoll fails. Might want to use EAGAIN or EINTR
-		return 1;
+		close(requestInfo.client_fd); // Clean up if adding to epoll fails.
+		return (1);
 	}
-	return 0;
+	return (0);
 }
 
 int	ServerManager::writeCGIResponsePOST(CgiRequestInfo &requestInfo) {
@@ -506,7 +524,7 @@ int	ServerManager::writeCGIResponsePOST(CgiRequestInfo &requestInfo) {
 	ev.data.fd = requestInfo.client_fd;
 	// std::cout << "Adding client_fd to epoll for writing" << std::endl;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, requestInfo.client_fd, &ev) == -1) {
-		std::cerr << "Failed to add client_fd to epoll for writing: " << std::strerror(errno) << std::endl;
+		std::cerr << RED << "Failed to add CGI POST client_fd to epoll for writing: " << std::strerror(errno) << std::endl << RESET;
 		requestInfo.server->deleteClientResponse(requestInfo.client_fd);
 		close(requestInfo.client_fd); // Clean up if adding to epoll fails. Might want to use EAGAIN or EINTR
 		return 1;

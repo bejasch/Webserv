@@ -39,20 +39,20 @@ int Server::setUpServer() {
 	// Creating the file descriptor of the program running the server
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_fd == 0 || server_fd == -1) {
-		std::cerr << "Socket creation failed: " << std::strerror(errno) << std::endl;
+		std::cerr << RED << "Socket creation failed: " << std::strerror(errno) << std::endl << RESET;
 		return(1);
 	}
 	// Set SO_REUSEADDR to reuse the port immediately
 	int opt = 1;
 	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, (char*)&opt, sizeof(opt)) < 0) {
-		std::cerr << "Setsockopt failed: " << std::strerror(errno) << std::endl;
+		std::cerr << RED << "Setsockopt failed: " << std::strerror(errno) << std::endl << RESET;
 		return(1);
 	}
 	address.sin_family = AF_INET; // address family used previously
 	address.sin_addr.s_addr = INADDR_ANY; // this is my IP address
 	address.sin_port = htons( config->getPort() ); // the port I would like to expose
 	if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) { // bind server file descriptor to socket address
-		std::cerr << "Bind failed: " << std::strerror(errno) << std::endl;
+		std::cerr << RED << "Bind failed: " << std::strerror(errno) << std::endl << RESET;
 		return(1);
 	}
 	fcntl(server_fd, F_SETFL, O_NONBLOCK);		// Make server_fd non-blocking
@@ -64,7 +64,7 @@ int Server::setUpServer() {
 int	Server::acceptConnection(int epoll_fd) {	
 	int	client_fd = accept(server_fd, NULL, NULL);
 	if (client_fd < 0) {
-		std::cerr << "Failed to accept connection: " << std::strerror(errno) << std::endl;
+		std::cerr << RED << "Failed to accept connection: " << std::strerror(errno) << std::endl << RESET;
 		return (1);
 	}
 	// Make the new socket non-blocking
@@ -74,8 +74,8 @@ int	Server::acceptConnection(int epoll_fd) {
 	ev.events = EPOLLIN;		// Event for reading data
 	ev.data.fd = client_fd;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1) {
-		std::cerr << "Failed to add client_fd to epoll: " << std::strerror(errno) << std::endl;
-		close(client_fd); // Clean up if adding to epoll fails. Might want to use EAGAIN or EINTR
+		std::cerr << RED << "Failed to add client_fd to epoll: " << std::strerror(errno) << std::endl << RESET;
+		close(client_fd);
 		return (1);
 	}
 	// Add the new client to the client_requests map
@@ -89,17 +89,20 @@ int	Server::acceptConnection(int epoll_fd) {
 int	Server::handleRequestServer(int client_fd) {
 	HttpReq	&request = client_requests[client_fd];
 	char buffer[30000] = {0};
-	int valread = read(client_fd, buffer, sizeof(buffer));
+	ssize_t	valread = read(client_fd, buffer, sizeof(buffer));
 	if (valread <= 0) {
+		if (epoll_ctl(server_manager.getEpollFd(), EPOLL_CTL_DEL, client_fd, NULL) == -1) {
+			std::cerr << RED << "Failed to delete client_fd from epoll for reading: " << std::strerror(errno) << std::endl << RESET;
+		}
 		close(client_fd);
 		client_requests.erase(client_fd); // Clean up state
 		if (valread == 0) {
 			std::cerr << RED << "Connection closed by client with client_fd " << client_fd << RESET << std::endl;
 			return(0);
+		} else if (valread == -1) {
+			std::cerr << RED << "Error reading from socket with client_fd: " << client_fd << std::endl << RESET;
+			return(1);
 		}
-		std::cout << "client_fd: " << client_fd << std::endl;
-		std::cerr << "Error reading from socket.\n";
-		return(1);
 	}
 	std::cout << BOLD << "\n\tReceived " << valread << " bytes from client_fd: " << client_fd << std::endl << RESET;
 	// Process the incoming data if the request is complete
@@ -110,7 +113,8 @@ int	Server::handleRequestServer(int client_fd) {
 		if (pending_responses[client_fd].getHttpStatus() == 0) {
 			pending_responses.erase(client_fd);
 			if (epoll_ctl(server_manager.getEpollFd(), EPOLL_CTL_DEL, client_fd, NULL) == -1)
-				std::cerr << "Failed to add client_fd to epoll for writing: " << std::strerror(errno) << std::endl;
+				std::cerr << RED << "Failed to delete client_fd to epoll for writing: " << std::strerror(errno) << std::endl << RESET;
+			// std::cout << "CGI response will be created for client_fd: " << client_fd << std::endl;
 			return (0);
 		}
 
@@ -118,7 +122,7 @@ int	Server::handleRequestServer(int client_fd) {
 		ev.events = EPOLLOUT;		// replace event with client_fd for writing data back as response
 		ev.data.fd = client_fd;
 		if (epoll_ctl(server_manager.getEpollFd(), EPOLL_CTL_MOD, client_fd, &ev) == -1) {
-			std::cerr << "Failed to add client_fd to epoll for writing: " << std::strerror(errno) << std::endl;
+			std::cerr << RED << "Failed to add client_fd to epoll for writing: " << std::strerror(errno) << std::endl << RESET;
 			pending_responses.erase(client_fd);
 			close(client_fd); // Clean up if adding to epoll fails. Might want to use EAGAIN or EINTR
 			return(1);
@@ -135,11 +139,11 @@ int		Server::handleResponse(int client_fd) {
 		size_t		size = response_str.size();
 		const char* response_cstr = response_str.c_str();
 		if (response_cstr == NULL || size == 0) {
-			std::cerr << "Response was empty -> Deleting pending response\n";
+			std::cerr << RED << "Response was empty -> Deleting pending response\n" << RESET;
 		} else {
 			ssize_t sent = write(client_fd, response_cstr, size);
 			if (sent < 0) {
-				std::cerr << "Writing to socket failed.\n";
+				std::cerr << RED << "Writing to socket failed.\n" << RESET;
 			}
 			else if (sent < static_cast<ssize_t>(size)) {	// Not all data was sent -> client remains in epoll for writing
 				response_str = response_str.substr(sent);
@@ -147,12 +151,17 @@ int		Server::handleResponse(int client_fd) {
 				return (0);
 			}
 			else
-				std::cout << BOLD << "\tSuccessfully sent " << sent << " bytes to client_fd: " << client_fd << std::endl << RESET;
+				std::cout << GREEN << BOLD << "\tSuccessfully sent " << sent << " bytes to client_fd: " << client_fd << std::endl << RESET;
 		}
 		pending_responses.erase(client_fd);
 	}
-	close(client_fd);  // Close the pipe (automatically removes it from the epoll instance)
-	std::cout << "Close the connection to the client_fd: " << client_fd << std::endl;
+	std::cout << RED << "Close the connection to the client_fd: " << client_fd << std::endl << RESET;
+	if (epoll_ctl(server_manager.getEpollFd(), EPOLL_CTL_DEL, client_fd, NULL) == -1) {
+		std::cerr << RED << "Failed to delete client_fd " << client_fd 
+				<< " from epoll: " << std::strerror(errno) << std::endl << RESET;
+		return (1);
+	}
+	close(client_fd);
 	return (0);
 }
 
@@ -174,7 +183,7 @@ std::map<int, HttpRes>	&Server::getPendingResponses() {
 
 void	Server::deleteClientResponse(int client_fd) {
 	pending_responses.erase(client_fd);
-	std::cout << "deleted client fd :" << client_fd << " from pending responses" << std::endl;
+	std::cout << "Deleted client fd: " << client_fd << " from pending responses" << std::endl;
 }
 
 void	Server::addPendingResponse(int client_fd, HttpRes &response) {
